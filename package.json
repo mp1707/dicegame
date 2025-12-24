@@ -4,15 +4,24 @@
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web"
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web",
+    "devdevicebuild": "APP_VARIANT=development npx expo run:ios --device",
+    "proddevicebuild": "APP_VARIANT=production npx expo run:ios --device",
+    "previewdevicebuild": "APP_VARIANT=preview npx expo run:ios --device"
   },
   "dependencies": {
     "expo": "~54.0.30",
+    "expo-dev-client": "~6.0.20",
     "expo-status-bar": "~3.0.9",
     "react": "19.1.0",
-    "react-native": "0.81.5"
+    "react-native": "0.81.5",
+    "react-native-filament": "^1.9.0",
+    "react-native-reanimated": "~4.1.1",
+    "react-native-worklets": "0.5.1",
+    "react-native-worklets-core": "^1.6.2",
+    "zustand": "^5.0.9"
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
