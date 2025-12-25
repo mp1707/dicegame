@@ -25,6 +25,7 @@ export const COLORS = {
 
   // Green - Win state, shop button
   green: "#22C55E",
+  blue: "#3B82F6",
 
   // Neutrals
   darkBg: "rgba(20, 20, 25, 0.95)",

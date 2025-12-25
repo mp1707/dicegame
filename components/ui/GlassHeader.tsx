@@ -26,16 +26,16 @@ export const GlassHeader = () => {
 
         {/* Score Labels */}
         <View style={styles.progressLabels}>
-          <View style={styles.labelLeft}>
-            <Text style={styles.labelMicro}>STAND</Text>
-            <Text style={styles.scoreValue}>{formatNumber(currentScore)}</Text>
-          </View>
-          <View style={styles.labelRight}>
-            <Text style={styles.labelMicro}>ZIEL</Text>
-            <Text style={styles.targetValue}>{formatNumber(targetScore)}</Text>
-          </View>
+        <View style={styles.labelLeft}>
+          <Text style={styles.labelMicro}>STAND</Text>
+          <Text style={styles.scoreValue}>—</Text>
+        </View>
+        <View style={styles.labelRight}>
+          <Text style={styles.labelMicro}>ZIEL</Text>
+          <Text style={styles.targetValue}>—</Text>
         </View>
       </View>
+    </View>
     </View>
   );
 };

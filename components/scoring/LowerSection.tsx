@@ -1,35 +1,23 @@
 import React from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-} from "react-native";
+import { View, StyleSheet, TouchableOpacity } from "react-native";
 import {
   COLORS,
-  TYPOGRAPHY,
   SPACING,
   DIMENSIONS,
   SLOT_STATES,
 } from "../../constants/theme";
 import { useGameStore, useValidCategories } from "../../store/gameStore";
-import {
-  CategoryId,
-  CATEGORIES,
-  calculateScore,
-} from "../../utils/yahtzeeScoring";
+import { CategoryId, CATEGORIES } from "../../utils/yahtzeeScoring";
+import { CategoryIcon } from "../ui/CategoryIcon";
 
 const LOWER_CATEGORIES = CATEGORIES.filter((c) => c.section === "lower");
 
 interface LowerSlotProps {
   categoryId: CategoryId;
-  label: string;
 }
 
-const LowerSlot = ({ categoryId, label }: LowerSlotProps) => {
+const LowerSlot = ({ categoryId }: LowerSlotProps) => {
   const categories = useGameStore((s) => s.categories);
-  const diceValues = useGameStore((s) => s.diceValues);
   const submitCategory = useGameStore((s) => s.submitCategory);
   const validCategories = useValidCategories();
 
@@ -43,7 +31,6 @@ const LowerSlot = ({ categoryId, label }: LowerSlotProps) => {
   else if (isActive) state = "active";
 
   const stateStyle = SLOT_STATES[state];
-  const potentialScore = calculateScore(diceValues, categoryId);
 
   const handlePress = () => {
     if (isActive) {
@@ -66,58 +53,64 @@ const LowerSlot = ({ categoryId, label }: LowerSlotProps) => {
       disabled={!isActive}
       activeOpacity={0.7}
     >
-      {/* Category name */}
-      <Text style={[styles.categoryLabel, { color: stateStyle.textColor }]}>
-        {label}
-      </Text>
-
-      {/* Score and checkmark */}
-      <View style={styles.rightSide}>
-        <Text style={[styles.slotScore, { color: stateStyle.textColor }]}>
-          {isFilled
-            ? slot.scratched
-              ? "0"
-              : slot.score
-            : isActive
-            ? `+${potentialScore}`
-            : "-"}
-        </Text>
-        {stateStyle.showCheckmark && <Text style={styles.checkmark}>✓</Text>}
-      </View>
+      <CategoryIcon
+        categoryId={categoryId}
+        size={24}
+        strokeWidth={2}
+        color={stateStyle.textColor}
+      />
     </TouchableOpacity>
   );
 };
 
 export const LowerSection = () => {
+  const columns = 6;
+  const rows: (typeof LOWER_CATEGORIES)[] = [];
+  for (let i = 0; i < LOWER_CATEGORIES.length; i += columns) {
+    rows.push(LOWER_CATEGORIES.slice(i, i + columns));
+  }
+
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.contentContainer}
-      showsVerticalScrollIndicator={false}
-    >
-      {LOWER_CATEGORIES.map((cat) => (
-        <LowerSlot key={cat.id} categoryId={cat.id} label={cat.labelDe} />
+    <View style={styles.container}>
+      {rows.map((row, rowIndex) => (
+        <View key={`row-${rowIndex}`} style={styles.row}>
+          {Array.from({ length: columns }).map((_, index) => {
+            const cat = row[index];
+            if (!cat) {
+              return (
+                <View
+                  key={`empty-${rowIndex}-${index}`}
+                  style={[styles.lowerSlot, styles.placeholderSlot]}
+                  pointerEvents="none"
+                />
+              );
+            }
+
+            return <LowerSlot key={cat.id} categoryId={cat.id} />;
+          })}
+        </View>
       ))}
-    </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-  },
-  contentContainer: {
     paddingHorizontal: SPACING.screenPadding,
-    gap: SPACING.slotGapVertical,
     paddingBottom: SPACING.sectionGap,
+    gap: SPACING.slotGapVertical,
+  },
+  row: {
+    flexDirection: "row",
+    gap: SPACING.slotGapHorizontal,
   },
   lowerSlot: {
-    height: DIMENSIONS.lowerSlotHeight,
+    flex: 1,
+    aspectRatio: 1,
     borderRadius: DIMENSIONS.borderRadius,
-    flexDirection: "row",
+    justifyContent: "center",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 12,
+    position: "relative",
   },
   activeGlow: {
     shadowColor: COLORS.cyan,
@@ -126,20 +119,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
   },
-  categoryLabel: {
-    ...TYPOGRAPHY.labels,
-  },
-  rightSide: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  slotScore: {
-    ...TYPOGRAPHY.smallScore,
-  },
-  checkmark: {
-    color: COLORS.cyan,
-    fontSize: 14,
-    fontWeight: "700",
+  placeholderSlot: {
+    opacity: 0,
   },
 });

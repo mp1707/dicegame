@@ -1,5 +1,12 @@
 import React, { useState } from "react";
-import { View, StyleSheet, StatusBar, useWindowDimensions } from "react-native";
+import {
+  View,
+  StyleSheet,
+  StatusBar,
+  useWindowDimensions,
+  TouchableOpacity,
+  Text,
+} from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { DiceTray } from "./components/DiceTray";
 import { GlassHeader } from "./components/ui/GlassHeader";
@@ -8,11 +15,19 @@ import { LowerSection } from "./components/scoring/LowerSection";
 import { FooterControls } from "./components/ui/FooterControls";
 import { ScratchModal } from "./components/modals/ScratchModal";
 import { ShopModal } from "./components/modals/ShopModal";
+import { OverviewModal } from "./components/modals/OverviewModal";
 import { useGameStore } from "./store/gameStore";
-import { COLORS, SPACING, calculateDiceTrayHeight } from "./constants/theme";
+import {
+  COLORS,
+  SPACING,
+  calculateDiceTrayHeight,
+  TYPOGRAPHY,
+  DIMENSIONS,
+} from "./constants/theme";
 
 export default function App() {
   const [scratchModalVisible, setScratchModalVisible] = useState(false);
+  const [overviewVisible, setOverviewVisible] = useState(false);
   const phase = useGameStore((s) => s.phase);
 
   // Calculate responsive dice tray height
@@ -47,6 +62,14 @@ export default function App() {
           <View style={styles.lowerSection}>
             <LowerSection />
           </View>
+
+          <TouchableOpacity
+            style={styles.overviewButton}
+            onPress={() => setOverviewVisible(true)}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.overviewText}>Übersicht</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Footer Controls */}
@@ -56,6 +79,10 @@ export default function App() {
         <ScratchModal
           visible={scratchModalVisible}
           onClose={() => setScratchModalVisible(false)}
+        />
+        <OverviewModal
+          visible={overviewVisible}
+          onClose={() => setOverviewVisible(false)}
         />
         <ShopModal visible={phase === "shop"} />
       </SafeAreaView>
@@ -80,5 +107,19 @@ const styles = StyleSheet.create({
   },
   lowerSection: {
     flex: 1,
+  },
+  overviewButton: {
+    marginTop: 8,
+    marginHorizontal: SPACING.screenPadding,
+    height: 44,
+    backgroundColor: COLORS.blue,
+    borderRadius: DIMENSIONS.borderRadius,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  overviewText: {
+    color: COLORS.textWhite,
+    ...TYPOGRAPHY.mediumScore,
+    letterSpacing: 1,
   },
 });

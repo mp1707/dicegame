@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, StyleSheet, TouchableOpacity } from "react-native";
 import {
   COLORS,
   SPACING,
@@ -7,92 +7,24 @@ import {
   SLOT_STATES,
 } from "../../constants/theme";
 import { useGameStore, useValidCategories } from "../../store/gameStore";
-import { CategoryId, calculateScore } from "../../utils/yahtzeeScoring";
+import { CategoryId } from "../../utils/yahtzeeScoring";
+import { CategoryIcon } from "../ui/CategoryIcon";
 
-// Pip patterns for dice faces (1-6)
-const PIP_LAYOUTS: Record<number, [number, number][]> = {
-  1: [[0.5, 0.5]],
-  2: [
-    [0.25, 0.25],
-    [0.75, 0.75],
-  ],
-  3: [
-    [0.25, 0.25],
-    [0.5, 0.5],
-    [0.75, 0.75],
-  ],
-  4: [
-    [0.25, 0.25],
-    [0.75, 0.25],
-    [0.25, 0.75],
-    [0.75, 0.75],
-  ],
-  5: [
-    [0.25, 0.25],
-    [0.75, 0.25],
-    [0.5, 0.5],
-    [0.25, 0.75],
-    [0.75, 0.75],
-  ],
-  6: [
-    [0.25, 0.25],
-    [0.75, 0.25],
-    [0.25, 0.5],
-    [0.75, 0.5],
-    [0.25, 0.75],
-    [0.75, 0.75],
-  ],
-};
-
-const UPPER_CATEGORIES: { id: CategoryId; number: number }[] = [
-  { id: "ones", number: 1 },
-  { id: "twos", number: 2 },
-  { id: "threes", number: 3 },
-  { id: "fours", number: 4 },
-  { id: "fives", number: 5 },
-  { id: "sixes", number: 6 },
+const UPPER_CATEGORIES: CategoryId[] = [
+  "ones",
+  "twos",
+  "threes",
+  "fours",
+  "fives",
+  "sixes",
 ];
-
-interface DiceIconProps {
-  value: number;
-  size: number;
-  color: string;
-}
-
-const DiceIcon = ({ value, size, color }: DiceIconProps) => {
-  const pips = PIP_LAYOUTS[value] || [];
-  const pipSize = size * 0.18;
-
-  return (
-    <View style={[styles.diceIcon, { width: size, height: size }]}>
-      {pips.map(([x, y], i) => (
-        <View
-          key={i}
-          style={[
-            styles.pip,
-            {
-              width: pipSize,
-              height: pipSize,
-              borderRadius: pipSize / 2,
-              backgroundColor: color,
-              left: x * size - pipSize / 2,
-              top: y * size - pipSize / 2,
-            },
-          ]}
-        />
-      ))}
-    </View>
-  );
-};
 
 interface UpperSlotProps {
   categoryId: CategoryId;
-  diceNumber: number;
 }
 
-const UpperSlot = ({ categoryId, diceNumber }: UpperSlotProps) => {
+const UpperSlot = ({ categoryId }: UpperSlotProps) => {
   const categories = useGameStore((s) => s.categories);
-  const diceValues = useGameStore((s) => s.diceValues);
   const submitCategory = useGameStore((s) => s.submitCategory);
   const validCategories = useValidCategories();
 
@@ -106,7 +38,6 @@ const UpperSlot = ({ categoryId, diceNumber }: UpperSlotProps) => {
   else if (isActive) state = "active";
 
   const stateStyle = SLOT_STATES[state];
-  const potentialScore = calculateScore(diceValues, categoryId);
 
   const handlePress = () => {
     if (isActive) {
@@ -129,15 +60,12 @@ const UpperSlot = ({ categoryId, diceNumber }: UpperSlotProps) => {
       disabled={!isActive}
       activeOpacity={0.7}
     >
-      <DiceIcon value={diceNumber} size={24} color={stateStyle.textColor} />
-
-      {/* Score or dash */}
-      <Text style={[styles.slotScore, { color: stateStyle.textColor }]}>
-        {isFilled ? slot.score ?? "-" : isActive ? `+${potentialScore}` : "-"}
-      </Text>
-
-      {/* Checkmark for active */}
-      {stateStyle.showCheckmark && <Text style={styles.checkmark}>✓</Text>}
+      <CategoryIcon
+        categoryId={categoryId}
+        size={26}
+        strokeWidth={2}
+        color={stateStyle.textColor}
+      />
     </TouchableOpacity>
   );
 };
@@ -145,8 +73,8 @@ const UpperSlot = ({ categoryId, diceNumber }: UpperSlotProps) => {
 export const UpperSection = () => {
   return (
     <View style={styles.container}>
-      {UPPER_CATEGORIES.map(({ id, number }) => (
-        <UpperSlot key={id} categoryId={id} diceNumber={number} />
+      {UPPER_CATEGORIES.map((id) => (
+        <UpperSlot key={id} categoryId={id} />
       ))}
     </View>
   );
@@ -173,23 +101,5 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.6,
     shadowRadius: 8,
     elevation: 8,
-  },
-  diceIcon: {
-    position: "relative",
-  },
-  pip: {
-    position: "absolute",
-  },
-  slotScore: {
-    fontSize: 10,
-    fontWeight: "900",
-  },
-  checkmark: {
-    position: "absolute",
-    top: 4,
-    right: 4,
-    color: COLORS.cyan,
-    fontSize: 10,
-    fontWeight: "700",
   },
 });
