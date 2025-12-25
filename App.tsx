@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { View, StyleSheet, StatusBar, useWindowDimensions } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { DiceTray } from "./components/DiceTray";
@@ -9,27 +9,15 @@ import { FooterControls } from "./components/ui/FooterControls";
 import { ScratchModal } from "./components/modals/ScratchModal";
 import { ShopModal } from "./components/modals/ShopModal";
 import { useGameStore } from "./store/gameStore";
-import { COLORS, SPACING, DIMENSIONS, calculateDiceTrayHeight } from "./constants/theme";
+import { COLORS, SPACING, calculateDiceTrayHeight } from "./constants/theme";
 
 export default function App() {
   const [scratchModalVisible, setScratchModalVisible] = useState(false);
   const phase = useGameStore((s) => s.phase);
-  const isRolling = useGameStore((s) => s.isRolling);
-  const setRolling = useGameStore((s) => s.setRolling);
 
   // Calculate responsive dice tray height
   const { height: screenHeight } = useWindowDimensions();
   const diceTrayHeight = calculateDiceTrayHeight(screenHeight);
-
-  // Auto-stop rolling animation after 3s (dice should settle by then)
-  useEffect(() => {
-    if (isRolling) {
-      const timeout = setTimeout(() => {
-        setRolling(false);
-      }, 3000);
-      return () => clearTimeout(timeout);
-    }
-  }, [isRolling]);
 
   return (
     <SafeAreaProvider>

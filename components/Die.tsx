@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from "react";
 import { RigidBody, RapierRigidBody } from "@react-three/rapier";
 import * as THREE from "three";
-import { ThreeEvent } from "@react-three/fiber";
+import { ThreeEvent, useFrame } from "@react-three/fiber";
 
 // Standard D6 Face Normals
 const FACE_NORMALS = [
@@ -93,16 +93,21 @@ export const Die = ({
   const rigidBody = useRef<RapierRigidBody>(null);
   const prevRollTrigger = useRef(rollTrigger);
   const initialPosition = useRef(position);
+  const settleReportedRef = useRef(false);
+  const stableTimeRef = useRef(0);
 
   // Trigger Roll Logic - only when rollTrigger changes
   useEffect(() => {
     if (rollTrigger > prevRollTrigger.current) {
+      settleReportedRef.current = false;
+      stableTimeRef.current = 0;
+
       if (isLocked) {
         // LOCKED DICE: Immediate settle, no physics action
         // We report settle immediately so the parent knows this die is "done"
         // We use the current face value logic or we could store the last value.
         // Re-evaluating the face is safer to ensure sync.
-        handleSleep();
+        reportSettle();
       } else {
         // UNLOCKED DICE: Wake up and roll
         onWake(index); // Notify parent we are moving
@@ -149,6 +154,13 @@ export const Die = ({
     prevRollTrigger.current = rollTrigger;
   }, [rollTrigger, isLocked]);
 
+  const reportSettle = () => {
+    if (settleReportedRef.current) return;
+    settleReportedRef.current = true;
+    stableTimeRef.current = 0;
+    handleSleep();
+  };
+
   // Face Detection Logic - report to parent via callback
   const handleSleep = () => {
     if (!rigidBody.current) return;
@@ -178,9 +190,31 @@ export const Die = ({
     onSettle(index, resultFace);
   };
 
+  // Detect when the die becomes stable without waiting for Rapier's sleep timeout
+  useFrame((_, delta) => {
+    if (isLocked || settleReportedRef.current || !rigidBody.current) return;
+
+    const linvel = rigidBody.current.linvel();
+    const angvel = rigidBody.current.angvel();
+    const speed = Math.hypot(linvel.x, linvel.y, linvel.z);
+    const spin = Math.hypot(angvel.x, angvel.y, angvel.z);
+
+    if (speed < 0.05 && spin < 0.1) {
+      stableTimeRef.current += delta;
+      if (stableTimeRef.current >= 0.15) {
+        reportSettle();
+      }
+    } else {
+      stableTimeRef.current = 0;
+    }
+  });
+
   // also report wake on standard wake events (collisions etc)
   const handleWake = () => {
-    if (!isLocked) onWake(index);
+    if (!isLocked) {
+      stableTimeRef.current = 0;
+      onWake(index);
+    }
   };
 
   // Handle tap to toggle lock
@@ -200,7 +234,7 @@ export const Die = ({
       friction={0.8}
       // Fixed type for locked dice prevents any movement/drift
       type={isLocked ? "fixed" : "dynamic"}
-      onSleep={handleSleep}
+      onSleep={reportSettle}
       onWake={handleWake}
       position={position}
     >
