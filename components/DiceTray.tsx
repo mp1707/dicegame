@@ -48,6 +48,8 @@ export const DiceTray = ({ containerHeight, containerWidth }: DiceTrayProps) => 
   const selectedDice = useGameStore((state) => state.selectedDice);
   const diceValues = useGameStore((state) => state.diceValues);
   const isRolling = useGameStore((state) => state.isRolling);
+  const hasRolledThisRound = useGameStore((state) => state.hasRolledThisRound);
+  const phase = useGameStore((state) => state.phase);
   const diceVisible = useGameStore((state) => state.diceVisible);
   const completeRoll = useGameStore((state) => state.completeRoll);
   const toggleDiceLock = useGameStore((state) => state.toggleDiceLock);
@@ -196,6 +198,12 @@ export const DiceTray = ({ containerHeight, containerWidth }: DiceTrayProps) => 
         </Suspense>
       </Canvas>
 
+      {phase === "rolling" && !hasRolledThisRound && !isRolling && (
+        <View pointerEvents="none" style={styles.readyToRollOverlay}>
+          <Text style={styles.readyToRollText}>Du kannst würfeln!</Text>
+        </View>
+      )}
+
       {/* Game End Overlay */}
       <GameEndOverlay />
     </View>
@@ -233,5 +241,18 @@ const styles = StyleSheet.create({
     textShadowColor: "rgba(0, 0, 0, 0.5)",
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 10,
+  },
+  readyToRollOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  readyToRollText: {
+    color: COLORS.textWhite,
+    fontSize: 18,
+    fontWeight: "700",
+    textShadowColor: "rgba(0, 0, 0, 0.6)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 6,
   },
 });

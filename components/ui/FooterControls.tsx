@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { COLORS, TYPOGRAPHY, SPACING, DIMENSIONS } from "../../constants/theme";
-import { useGameStore, useHasValidCategories } from "../../store/gameStore";
+import { useGameStore } from "../../store/gameStore";
 
 // Roll pips indicator
 const RollPips = ({ remaining }: { remaining: number }) => {
@@ -20,23 +20,16 @@ const RollPips = ({ remaining }: { remaining: number }) => {
   );
 };
 
-interface FooterControlsProps {
-  onScratchPress: () => void;
-}
-
-export const FooterControls = ({ onScratchPress }: FooterControlsProps) => {
+export const FooterControls = () => {
   const rollsRemaining = useGameStore((s) => s.rollsRemaining);
   const isRolling = useGameStore((s) => s.isRolling);
   const triggerRoll = useGameStore((s) => s.triggerRoll);
   const phase = useGameStore((s) => s.phase);
-  const hasRolled = useGameStore((s) => s.hasRolledThisRound);
-  const hasValidCategories = useHasValidCategories();
   const goToShop = useGameStore((s) => s.goToShop);
   const retryRun = useGameStore((s) => s.retryRun);
 
   // Determine button state
   const canRoll = rollsRemaining > 0 && !isRolling && phase === "rolling";
-  const showScratch = hasRolled && !hasValidCategories && rollsRemaining === 0;
 
   // Different button modes based on phase
   if (phase === "won") {
@@ -73,19 +66,6 @@ export const FooterControls = ({ onScratchPress }: FooterControlsProps) => {
 
   return (
     <View style={styles.container}>
-      {/* Scratch button (conditional) */}
-      {showScratch && (
-        <TouchableOpacity
-          style={styles.scratchButton}
-          onPress={onScratchPress}
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.buttonText, { color: COLORS.textWhite }]}>
-            STREICHEN
-          </Text>
-        </TouchableOpacity>
-      )}
-
       {/* Main roll button */}
       <TouchableOpacity
         style={[styles.rollButton, !canRoll && styles.rollButtonDisabled]}
@@ -130,15 +110,6 @@ const styles = StyleSheet.create({
   retryButton: {
     backgroundColor: COLORS.red,
     borderColor: COLORS.redDark,
-  },
-  scratchButton: {
-    height: 40,
-    backgroundColor: COLORS.red,
-    borderRadius: DIMENSIONS.borderRadius,
-    borderWidth: 3,
-    borderColor: COLORS.redDark,
-    alignItems: "center",
-    justifyContent: "center",
   },
   buttonText: {
     color: COLORS.textBlack,

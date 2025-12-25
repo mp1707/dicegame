@@ -10,12 +10,13 @@ import {
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { DiceTray } from "./components/DiceTray";
 import { GlassHeader } from "./components/ui/GlassHeader";
+import { ScoreProgress } from "./components/ui/ScoreProgress";
 import { ScoringGrid } from "./components/scoring/ScoringGrid";
 import { FooterControls } from "./components/ui/FooterControls";
 import { ScratchModal } from "./components/modals/ScratchModal";
 import { ShopModal } from "./components/modals/ShopModal";
 import { OverviewModal } from "./components/modals/OverviewModal";
-import { useGameStore } from "./store/gameStore";
+import { useGameStore, useHasValidCategories } from "./store/gameStore";
 import {
   COLORS,
   SPACING,
@@ -28,10 +29,15 @@ export default function App() {
   const [scratchModalVisible, setScratchModalVisible] = useState(false);
   const [overviewVisible, setOverviewVisible] = useState(false);
   const phase = useGameStore((s) => s.phase);
+  const hasRolled = useGameStore((s) => s.hasRolledThisRound);
+  const rollsRemaining = useGameStore((s) => s.rollsRemaining);
+  const hasValidCategories = useHasValidCategories();
 
   // Calculate responsive dice tray height
   const { height: screenHeight, width: screenWidth } = useWindowDimensions();
   const diceTrayHeight = calculateDiceTrayHeight(screenHeight);
+  const canScratch =
+    hasRolled && !hasValidCategories && rollsRemaining === 0 && phase === "rolling";
 
   return (
     <SafeAreaProvider>
@@ -50,21 +56,39 @@ export default function App() {
           />
         </View>
 
+        {/* Progress Bar */}
+        <ScoreProgress />
+
         {/* Scoring Dashboard */}
         <View style={styles.scoringDashboard}>
-          <ScoringGrid />
+          <View style={styles.scoreActions}>
+            <TouchableOpacity
+              style={styles.overviewButton}
+              onPress={() => setOverviewVisible(true)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.overviewText}>Übersicht</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.overviewButton}
-            onPress={() => setOverviewVisible(true)}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.overviewText}>Übersicht</Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.scratchButton,
+                !canScratch && styles.actionButtonDisabled,
+              ]}
+              onPress={() => {
+                if (canScratch) setScratchModalVisible(true);
+              }}
+              disabled={!canScratch}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.scratchText}>STREICHEN</Text>
+            </TouchableOpacity>
+          </View>
+          <ScoringGrid />
         </View>
 
         {/* Footer Controls */}
-        <FooterControls onScratchPress={() => setScratchModalVisible(true)} />
+        <FooterControls />
 
         {/* Modals */}
         <ScratchModal
@@ -93,18 +117,45 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: SPACING.sectionGap,
   },
+  scoreActions: {
+    flexDirection: "row",
+    gap: SPACING.slotGapHorizontal,
+    paddingHorizontal: SPACING.screenPadding,
+    marginBottom: SPACING.slotGapHorizontal,
+  },
   overviewButton: {
-    marginTop: 8,
-    marginHorizontal: SPACING.screenPadding,
-    height: 44,
-    backgroundColor: COLORS.blue,
+    flex: 1,
+    height: DIMENSIONS.rollButtonHeight,
+    backgroundColor: COLORS.gold,
     borderRadius: DIMENSIONS.borderRadius,
+    borderWidth: 3,
+    borderColor: COLORS.goldDark,
+    borderBottomWidth: 5,
     alignItems: "center",
     justifyContent: "center",
   },
   overviewText: {
+    color: COLORS.textBlack,
+    ...TYPOGRAPHY.mediumScore,
+    letterSpacing: 1,
+  },
+  scratchButton: {
+    flex: 1,
+    height: DIMENSIONS.rollButtonHeight,
+    backgroundColor: COLORS.red,
+    borderRadius: DIMENSIONS.borderRadius,
+    borderWidth: 3,
+    borderColor: COLORS.redDark,
+    borderBottomWidth: 5,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  scratchText: {
     color: COLORS.textWhite,
     ...TYPOGRAPHY.mediumScore,
     letterSpacing: 1,
+  },
+  actionButtonDisabled: {
+    opacity: 0.5,
   },
 });
