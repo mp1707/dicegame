@@ -9,7 +9,10 @@
     "web": "expo start --web",
     "devdevicebuild": "APP_VARIANT=development npx expo run:ios --device",
     "proddevicebuild": "APP_VARIANT=production npx expo run:ios --device",
-    "previewdevicebuild": "APP_VARIANT=preview npx expo run:ios --device"
+    "previewdevicebuild": "APP_VARIANT=preview npx expo run:ios --device",
+    "start:dev": "APP_VARIANT=development expo start",
+    "start:preview": "APP_VARIANT=preview expo start",
+    "start:prod": "APP_VARIANT=production expo start"
   },
   "dependencies": {
     "expo": "~54.0.30",
