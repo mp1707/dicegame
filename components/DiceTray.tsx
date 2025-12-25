@@ -48,6 +48,7 @@ export const DiceTray = ({ containerHeight, containerWidth }: DiceTrayProps) => 
   const selectedDice = useGameStore((state) => state.selectedDice);
   const diceValues = useGameStore((state) => state.diceValues);
   const isRolling = useGameStore((state) => state.isRolling);
+  const diceVisible = useGameStore((state) => state.diceVisible);
   const completeRoll = useGameStore((state) => state.completeRoll);
   const toggleDiceLock = useGameStore((state) => state.toggleDiceLock);
 
@@ -181,6 +182,7 @@ export const DiceTray = ({ containerHeight, containerWidth }: DiceTrayProps) => 
                 index={i}
                 position={[x * diceSpacing, diceSpawnY, 0]}
                 isLocked={selectedDice[i]}
+                isVisible={diceVisible}
                 rollTrigger={rollTrigger}
                 onSettle={handleDieSettle}
                 onWake={handleDieWake}

@@ -59,10 +59,12 @@ const DieFace = ({
   faceValue,
   rotation,
   position,
+  opacity,
 }: {
   faceValue: number;
   rotation: [number, number, number];
   position: [number, number, number];
+  opacity: number;
 }) => {
   const pips = PIP_POSITIONS[faceValue] || [];
 
@@ -71,7 +73,7 @@ const DieFace = ({
       {pips.map((pipPos, i) => (
         <mesh key={i} position={[pipPos[0], pipPos[1], 0.01]}>
           <circleGeometry args={[PIP_RADIUS, 16]} />
-          <meshBasicMaterial color="black" />
+          <meshBasicMaterial color="black" transparent opacity={opacity} />
         </mesh>
       ))}
     </group>
@@ -82,6 +84,7 @@ interface DieProps {
   position: [number, number, number];
   index: number;
   isLocked: boolean;
+  isVisible: boolean;
   rollTrigger: number;
   onSettle: (index: number, value: number) => void;
   onTap: (index: number) => void;
@@ -91,6 +94,7 @@ export const Die = ({
   position,
   index,
   isLocked,
+  isVisible,
   rollTrigger,
   onSettle,
   onWake,
@@ -231,6 +235,7 @@ export const Die = ({
 
   // Die colors based on selection
   const dieColor = isLocked ? "#FFD700" : "#f5f5f5"; // Yellow when locked
+  const dieOpacity = isVisible ? 1 : 0;
 
   return (
     <RigidBody
@@ -248,7 +253,11 @@ export const Die = ({
         {/* Main die body */}
         <mesh castShadow receiveShadow>
           <boxGeometry args={[DIE_SIZE, DIE_SIZE, DIE_SIZE]} />
-          <meshStandardMaterial color={dieColor} />
+          <meshStandardMaterial
+            color={dieColor}
+            transparent
+            opacity={dieOpacity}
+          />
         </mesh>
 
         {/* Face 1 - Right (+X) */}
@@ -256,6 +265,7 @@ export const Die = ({
           faceValue={1}
           rotation={[0, Math.PI / 2, 0]}
           position={[FACE_OFFSET, 0, 0]}
+          opacity={dieOpacity}
         />
 
         {/* Face 6 - Left (-X) */}
@@ -263,6 +273,7 @@ export const Die = ({
           faceValue={6}
           rotation={[0, -Math.PI / 2, 0]}
           position={[-FACE_OFFSET, 0, 0]}
+          opacity={dieOpacity}
         />
 
         {/* Face 3 - Top (+Y) */}
@@ -270,6 +281,7 @@ export const Die = ({
           faceValue={3}
           rotation={[-Math.PI / 2, 0, 0]}
           position={[0, FACE_OFFSET, 0]}
+          opacity={dieOpacity}
         />
 
         {/* Face 4 - Bottom (-Y) */}
@@ -277,6 +289,7 @@ export const Die = ({
           faceValue={4}
           rotation={[Math.PI / 2, 0, 0]}
           position={[0, -FACE_OFFSET, 0]}
+          opacity={dieOpacity}
         />
 
         {/* Face 2 - Front (+Z) */}
@@ -284,6 +297,7 @@ export const Die = ({
           faceValue={2}
           rotation={[0, 0, 0]}
           position={[0, 0, FACE_OFFSET]}
+          opacity={dieOpacity}
         />
 
         {/* Face 5 - Back (-Z) */}
@@ -291,6 +305,7 @@ export const Die = ({
           faceValue={5}
           rotation={[0, Math.PI, 0]}
           position={[0, 0, -FACE_OFFSET]}
+          opacity={dieOpacity}
         />
       </group>
     </RigidBody>

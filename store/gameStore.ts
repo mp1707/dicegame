@@ -31,6 +31,7 @@ interface GameState {
   selectedDice: boolean[]; // true = locked (won't reroll)
   isRolling: boolean; // Animation in progress
   rollTrigger: number; // Increment to trigger physics
+  diceVisible: boolean; // Controls dice opacity for the player
 
   // Categories
   categories: Record<CategoryId, CategorySlot>;
@@ -111,6 +112,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   selectedDice: [false, false, false, false, false],
   isRolling: false,
   rollTrigger: 0,
+  diceVisible: false,
   categories: getInitialCategories(),
   currentScore: 0,
   targetScore: INITIAL_TARGET,
@@ -127,6 +129,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       isRolling: true,
       rollsRemaining: state.rollsRemaining - 1,
       hasRolledThisRound: true,
+      diceVisible: true,
     }));
   },
 
@@ -190,6 +193,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         round: 13,
         phase: won ? "won" : "lost",
         money: get().money + bonusMoney,
+        diceVisible: false,
       });
     } else {
       // Next round
@@ -201,6 +205,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         hasRolledThisRound: false,
         selectedDice: [false, false, false, false, false],
         phase: "rolling",
+        diceVisible: false,
       });
     }
   },
@@ -230,6 +235,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         round: 13,
         phase: won ? "won" : "lost",
         money: get().money + bonusMoney,
+        diceVisible: false,
       });
     } else {
       set({
@@ -240,6 +246,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         hasRolledThisRound: false,
         selectedDice: [false, false, false, false, false],
         phase: "rolling",
+        diceVisible: false,
       });
     }
   },
@@ -259,6 +266,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       diceValues: [1, 1, 1, 1, 1],
       selectedDice: [false, false, false, false, false],
       isRolling: false,
+      diceVisible: false,
       categories: getInitialCategories(),
       currentScore: 0,
       targetScore: Math.round(targetScore * TARGET_MULTIPLIER),
@@ -276,6 +284,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       diceValues: [1, 1, 1, 1, 1],
       selectedDice: [false, false, false, false, false],
       isRolling: false,
+      diceVisible: false,
       categories: getInitialCategories(),
       currentScore: 0,
       targetScore: INITIAL_TARGET,
