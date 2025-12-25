@@ -1,110 +1,88 @@
-import React, { useEffect } from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, StyleSheet, StatusBar } from "react-native";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { DiceTray } from "./components/DiceTray";
+import { GlassHeader } from "./components/ui/GlassHeader";
+import { UpperSection } from "./components/scoring/UpperSection";
+import { LowerSection } from "./components/scoring/LowerSection";
+import { FooterControls } from "./components/ui/FooterControls";
+import { ScratchModal } from "./components/modals/ScratchModal";
+import { ShopModal } from "./components/modals/ShopModal";
 import { useGameStore } from "./store/gameStore";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-} from "react-native-reanimated";
+import { COLORS, SPACING, DIMENSIONS } from "./constants/theme";
 
 export default function App() {
-  const { diceValues, triggerRoll, isRolling, setRolling } = useGameStore();
+  const [scratchModalVisible, setScratchModalVisible] = useState(false);
+  const phase = useGameStore((s) => s.phase);
+  const isRolling = useGameStore((s) => s.isRolling);
+  const setRolling = useGameStore((s) => s.setRolling);
 
-  // Simple Reanimated Example: Scale button when pressed
-  const scale = useSharedValue(1);
-  const rButtonStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  const handlePress = () => {
-    scale.value = withSpring(0.9, {}, () => {
-      scale.value = withSpring(1);
-    });
-    setRolling(true); // Enable frame loop
-    triggerRoll(); // Physics Impulse
-  };
-
-  // Hacky "settled" check for the POC to turn off the loop
-  // In production, you'd count how many dice are asleep
+  // Auto-stop rolling animation after 3s (dice should settle by then)
   useEffect(() => {
     if (isRolling) {
       const timeout = setTimeout(() => {
         setRolling(false);
-      }, 3000); // Assume dice settle in 3s
+      }, 3000);
       return () => clearTimeout(timeout);
     }
   }, [isRolling]);
 
   return (
-    <View style={styles.container}>
-      {/* Upper 50%: 3D Tray */}
-      <View style={styles.topContainer}>
-        <DiceTray />
-      </View>
+    <SafeAreaProvider>
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        {/* Glass Header HUD */}
+        <GlassHeader />
 
-      {/* Lower 50%: State Machine UI */}
-      <View style={styles.bottomContainer}>
-        <Text style={styles.title}>ROGUE YAHTZEE</Text>
-
-        <View style={styles.resultsRow}>
-          {diceValues.map((val, i) => (
-            <View key={i} style={styles.dieResult}>
-              <Text style={styles.dieText}>{val}</Text>
-            </View>
-          ))}
+        {/* 3D Dice Rolling Area (38% of remaining space) */}
+        <View style={styles.diceContainer}>
+          <DiceTray />
         </View>
 
-        <Animated.View style={rButtonStyle}>
-          <TouchableOpacity
-            style={styles.rollButton}
-            onPress={handlePress}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.buttonText}>
-              {isRolling ? "ROLLING..." : "ROLL"}
-            </Text>
-          </TouchableOpacity>
-        </Animated.View>
-      </View>
-    </View>
+        {/* Scoring Dashboard */}
+        <View style={styles.scoringDashboard}>
+          {/* Upper Section (6 dice slots) */}
+          <View style={styles.upperSection}>
+            <UpperSection />
+          </View>
+
+          {/* Lower Section (7 poker hand slots) */}
+          <View style={styles.lowerSection}>
+            <LowerSection />
+          </View>
+        </View>
+
+        {/* Footer Controls */}
+        <FooterControls onScratchPress={() => setScratchModalVisible(true)} />
+
+        {/* Modals */}
+        <ScratchModal
+          visible={scratchModalVisible}
+          onClose={() => setScratchModalVisible(false)}
+        />
+        <ShopModal visible={phase === "shop"} />
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#000" },
-  topContainer: { flex: 1, backgroundColor: "#111" }, // 50%
-  bottomContainer: {
-    flex: 1, // 50%
-    padding: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#1a1a1a",
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
   },
-  title: { color: "white", fontSize: 24, fontWeight: "bold", marginBottom: 40 },
-  resultsRow: { flexDirection: "row", gap: 10, marginBottom: 50 },
-  dieResult: {
-    width: 50,
-    height: 50,
-    backgroundColor: "#333",
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#555",
+  diceContainer: {
+    flex: DIMENSIONS.diceAreaPercent,
+    minHeight: 200,
   },
-  dieText: { color: "white", fontSize: 24, fontWeight: "bold" },
-  rollButton: {
-    backgroundColor: "#ff4040",
-    paddingHorizontal: 40,
-    paddingVertical: 15,
-    borderRadius: 30,
-    elevation: 5,
+  scoringDashboard: {
+    flex: 1 - DIMENSIONS.diceAreaPercent,
+    paddingTop: SPACING.sectionGap,
   },
-  buttonText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "900",
-    letterSpacing: 1,
+  upperSection: {
+    paddingBottom: SPACING.sectionGap,
+  },
+  lowerSection: {
+    flex: 1,
   },
 });

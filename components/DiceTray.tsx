@@ -5,14 +5,37 @@ import { Physics, RigidBody, CuboidCollider } from "@react-three/rapier";
 import { ContactShadows, Environment } from "@react-three/drei";
 import { Die } from "./Die";
 import { useGameStore } from "../store/gameStore";
+import { COLORS } from "../constants/theme";
 
 // Loading fallback component
 const LoadingFallback = () => (
   <View style={styles.loadingContainer}>
-    <ActivityIndicator size="large" color="#ff4040" />
+    <ActivityIndicator size="large" color={COLORS.gold} />
     <Text style={styles.loadingText}>Loading Physics...</Text>
   </View>
 );
+
+// Game end overlay
+const GameEndOverlay = () => {
+  const phase = useGameStore((s) => s.phase);
+
+  if (phase !== "won" && phase !== "lost") return null;
+
+  const isWon = phase === "won";
+
+  return (
+    <View style={styles.gameEndOverlay}>
+      <Text
+        style={[
+          styles.gameEndText,
+          { color: isWon ? COLORS.green : COLORS.red },
+        ]}
+      >
+        {isWon ? "GEWONNEN!" : "VERLOREN"}
+      </Text>
+    </View>
+  );
+};
 
 export const DiceTray = () => {
   const isRolling = useGameStore((state) => state.isRolling);
@@ -22,7 +45,7 @@ export const DiceTray = () => {
       <Canvas
         shadows
         style={styles.canvas}
-        frameloop="always" // Always render for now to debug
+        frameloop="always"
         camera={{ position: [0, 8, 4], fov: 50 }}
       >
         <ambientLight intensity={0.5} />
@@ -43,7 +66,7 @@ export const DiceTray = () => {
               </mesh>
             </RigidBody>
 
-            {/* Walls (Invisible colliders to keep dice in) */}
+            {/* Walls (Invisible colliders) */}
             <RigidBody type="fixed">
               <CuboidCollider args={[10, 2, 0.5]} position={[0, 2, 6]} />
               <CuboidCollider args={[10, 2, 0.5]} position={[0, 2, -6]} />
@@ -57,11 +80,13 @@ export const DiceTray = () => {
             ))}
           </Physics>
 
-          {/* High quality shadows for grounding */}
           <ContactShadows opacity={0.6} blur={2.5} />
           <Environment preset="studio" />
         </Suspense>
       </Canvas>
+
+      {/* Game End Overlay */}
+      <GameEndOverlay />
     </View>
   );
 };
@@ -69,7 +94,7 @@ export const DiceTray = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#111",
+    backgroundColor: COLORS.backgroundDark,
   },
   canvas: {
     flex: 1,
@@ -78,11 +103,24 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#111",
+    backgroundColor: COLORS.backgroundDark,
   },
   loadingText: {
-    color: "#fff",
+    color: COLORS.textWhite,
     marginTop: 10,
     fontSize: 14,
+  },
+  gameEndOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  gameEndText: {
+    fontSize: 32,
+    fontWeight: "900",
+    textShadowColor: "rgba(0, 0, 0, 0.5)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 10,
   },
 });

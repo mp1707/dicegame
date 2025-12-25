@@ -1,7 +1,8 @@
-import React, { useRef, useEffect, useMemo } from "react";
+import React, { useRef, useEffect } from "react";
 import { RigidBody, RapierRigidBody } from "@react-three/rapier";
 import * as THREE from "three";
 import { useGameStore } from "../store/gameStore";
+import { ThreeEvent } from "@react-three/fiber";
 
 // Standard D6 Face Normals
 const FACE_NORMALS = [
@@ -13,7 +14,7 @@ const FACE_NORMALS = [
   { face: 5, normal: new THREE.Vector3(0, 0, -1) }, // Back
 ];
 
-// Pip positions for each face value (relative to face center, scaled for 0.5 unit cube offset)
+// Pip positions for each face value
 const PIP_POSITIONS: Record<number, [number, number][]> = {
   1: [[0, 0]],
   2: [
@@ -80,53 +81,56 @@ interface DieProps {
 export const Die = ({ position, index }: DieProps) => {
   const rigidBody = useRef<RapierRigidBody>(null);
   const rollTrigger = useGameStore((state) => state.rollTrigger);
+  const selectedDice = useGameStore((state) => state.selectedDice);
+  const toggleDiceLock = useGameStore((state) => state.toggleDiceLock);
   const prevRollTrigger = useRef(rollTrigger);
 
-  // Store initial position in a ref to avoid dependency issues
+  const isSelected = selectedDice[index];
   const initialPosition = useRef(position);
 
-  // Trigger Roll Logic - only when rollTrigger actually changes
+  // Trigger Roll Logic - only when rollTrigger changes and die is not locked
   useEffect(() => {
-    // Only trigger if rollTrigger increased (actual button press)
     if (rigidBody.current && rollTrigger > prevRollTrigger.current) {
-      const pos = initialPosition.current;
+      // Only roll if NOT selected (locked)
+      if (!isSelected) {
+        const pos = initialPosition.current;
 
-      // 1. Reset Position (Lift them up, but keep them closer to center)
-      rigidBody.current.setTranslation(
-        { x: pos[0] * 0.7, y: 3, z: pos[2] },
-        true
-      );
-      rigidBody.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
-      rigidBody.current.setAngvel({ x: 0, y: 0, z: 0 }, true);
+        // Reset Position
+        rigidBody.current.setTranslation(
+          { x: pos[0] * 0.7, y: 3, z: pos[2] },
+          true
+        );
+        rigidBody.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
+        rigidBody.current.setAngvel({ x: 0, y: 0, z: 0 }, true);
 
-      // 2. Apply Random Impulse & Torque (Reduced for smaller viewport)
-      const rand = (min: number, max: number) =>
-        Math.random() * (max - min) + min;
+        // Apply Random Impulse & Torque
+        const rand = (min: number, max: number) =>
+          Math.random() * (max - min) + min;
 
-      rigidBody.current.applyImpulse(
-        {
-          x: rand(-0.5, 0.5),
-          y: rand(-2, -4), // Throw down
-          z: rand(-0.5, 0.5),
-        },
-        true
-      );
+        rigidBody.current.applyImpulse(
+          {
+            x: rand(-0.5, 0.5),
+            y: rand(-2, -4),
+            z: rand(-0.5, 0.5),
+          },
+          true
+        );
 
-      rigidBody.current.applyTorqueImpulse(
-        {
-          x: rand(-2, 2),
-          y: rand(-2, 2),
-          z: rand(-2, 2),
-        },
-        true
-      );
+        rigidBody.current.applyTorqueImpulse(
+          {
+            x: rand(-2, 2),
+            y: rand(-2, 2),
+            z: rand(-2, 2),
+          },
+          true
+        );
+      }
     }
 
-    // Update the ref to track current value
     prevRollTrigger.current = rollTrigger;
-  }, [rollTrigger]);
+  }, [rollTrigger, isSelected]);
 
-  // Face Detection Logic (Run when sleeping/settled)
+  // Face Detection Logic
   const onSleep = () => {
     if (!rigidBody.current) return;
 
@@ -137,12 +141,11 @@ export const Die = ({ position, index }: DieProps) => {
       rotation.z,
       rotation.w
     );
-    const upVector = new THREE.Vector3(0, 1, 0); // World Up
+    const upVector = new THREE.Vector3(0, 1, 0);
 
     let bestDot = -1.0;
     let resultFace = 1;
 
-    // Compare transformed normals to World Up
     FACE_NORMALS.forEach(({ face, normal }) => {
       const worldNormal = normal.clone().applyQuaternion(quaternion);
       const dot = worldNormal.dot(upVector);
@@ -160,6 +163,15 @@ export const Die = ({ position, index }: DieProps) => {
     });
   };
 
+  // Handle tap to toggle lock
+  const handlePointerDown = (e: ThreeEvent<PointerEvent>) => {
+    e.stopPropagation();
+    toggleDiceLock(index);
+  };
+
+  // Die colors based on selection
+  const dieColor = isSelected ? "#888888" : "#f5f5f5"; // Grey when locked
+
   return (
     <RigidBody
       ref={rigidBody}
@@ -169,11 +181,11 @@ export const Die = ({ position, index }: DieProps) => {
       onSleep={onSleep}
       position={position}
     >
-      <group>
+      <group onPointerDown={handlePointerDown}>
         {/* Main die body */}
         <mesh castShadow receiveShadow>
           <boxGeometry args={[1, 1, 1]} />
-          <meshStandardMaterial color="#f5f5f5" />
+          <meshStandardMaterial color={dieColor} />
         </mesh>
 
         {/* Face 1 - Right (+X) */}

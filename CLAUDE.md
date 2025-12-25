@@ -1,6 +1,6 @@
-# Dice Roller POC - Implementation Guide
+# Roguelike Yahtzee - Implementation Guide
 
-This document outlines the implementation of a high-performance 3D dice roller using **Expo**, **React Three Fiber**, and **Rapier Physics** with WebAssembly.
+A roguelike dice game combining Yahtzee mechanics with progression systems. Built with **Expo**, **React Three Fiber**, and **Rapier Physics**.
 
 ## Tech Stack
 
@@ -76,71 +76,56 @@ module.exports = config;
 
 ## Architecture
 
-### State Management (Zustand)
-
-Decouples physics from React rendering:
-
-```typescript
-// store/gameStore.ts
-interface GameState {
-  diceValues: number[]; // Final face values [1-6]
-  isRolling: boolean; // Controls frameloop
-  rollTrigger: number; // Increment to trigger roll
-  triggerRoll: () => void;
-  setRolling: (v: boolean) => void;
-}
-```
-
-### Component Structure
-
-```
-App.tsx
-├── DiceTray (3D scene - top 50%)
-│   ├── Canvas (R3F)
-│   │   ├── Physics (Rapier)
-│   │   │   ├── Floor (RigidBody fixed)
-│   │   │   ├── Walls (CuboidColliders)
-│   │   │   └── Die x 5 (RigidBody dynamic)
-│   │   ├── Lights
-│   │   └── Environment
-└── UI Controls (bottom 50%)
-    ├── Dice values display
-    └── Roll button
-```
-
-### Die Component Key Features
-
-1. **Pip Rendering**: Uses child `<mesh>` elements with `<circleGeometry>` for each pip
-2. **Physics**: `RigidBody` with `colliders="cuboid"` for accurate box collision
-3. **Face Detection**: On `onSleep` event, calculates which face is up using quaternion math
-4. **Roll Trigger**: Uses `useRef` to track previous `rollTrigger` value, preventing infinite loops
-
-```typescript
-// Only roll when button actually pressed
-if (rollTrigger > prevRollTrigger.current) {
-  // Apply impulse and torque
-}
-prevRollTrigger.current = rollTrigger;
-```
-
----
-
-## File Structure
+### File Structure
 
 ```
 dice-game/
-├── index.ts           # Entry point with polyfills
-├── App.tsx            # Main layout (50/50 split)
-├── metro.config.js    # WASM asset handling
-├── babel.config.js    # Reanimated plugin
+├── index.ts                 # Entry point with polyfills
+├── App.tsx                  # Main layout composition
+├── constants/theme.ts       # Colors, typography, spacing
+├── utils/yahtzeeScoring.ts  # All 13 category scoring logic
+├── store/gameStore.ts       # Zustand state (rounds, categories, phases)
 ├── components/
-│   ├── Die.tsx        # Individual die with pips
-│   └── DiceTray.tsx   # 3D scene container
-├── store/
-│   └── gameStore.ts   # Zustand state
-└── src/types/
-    └── polywasm.d.ts  # Type declarations
+│   ├── Die.tsx              # 3D die with tap-to-lock
+│   ├── DiceTray.tsx         # 3D scene + game end overlay
+│   ├── ui/
+│   │   ├── GlassHeader.tsx  # Round, progress bar, money
+│   │   └── FooterControls.tsx
+│   ├── scoring/
+│   │   ├── UpperSection.tsx # 6 dice slots (1-6)
+│   │   └── LowerSection.tsx # 7 poker hand slots
+│   └── modals/
+│       ├── ScratchModal.tsx # Zero out a category
+│       └── ShopModal.tsx    # Placeholder for upgrades
 ```
+
+### Game State (`store/gameStore.ts`)
+
+Key state properties:
+
+- `round` (1-13), `rollsRemaining` (0-3)
+- `categories`: Record of 13 slots with score/filled status
+- `selectedDice`: 5 booleans for locked dice
+- `phase`: `'rolling' | 'scoring' | 'won' | 'lost' | 'shop'`
+
+Key actions: `triggerRoll`, `toggleDiceLock`, `submitCategory`, `scratchCategory`
+
+### Dice Locking Pattern
+
+```typescript
+// Die.tsx - Skip roll for locked dice
+if (rollTrigger > prevRollTrigger.current && !isSelected) {
+  rigidBody.current.applyImpulse(...);
+}
+```
+
+### Slot Visual States
+
+All 13 category slots use 3 states defined in `theme.ts`:
+
+- **Active**: Cyan glow, tappable (valid category for current dice)
+- **Filled**: Muted gold, not tappable
+- **Empty**: Grey dash, not tappable
 
 ---
 
