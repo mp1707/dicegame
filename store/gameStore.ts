@@ -299,8 +299,9 @@ export const useValidCategories = () => {
   const diceValues = useGameStore((s) => s.diceValues);
   const categories = useGameStore((s) => s.categories);
   const hasRolled = useGameStore((s) => s.hasRolledThisRound);
+  const isRolling = useGameStore((s) => s.isRolling);
 
-  if (!hasRolled) return [];
+  if (!hasRolled || isRolling) return [];
 
   const filledSet = new Set<CategoryId>(
     CATEGORIES.filter((c) => categories[c.id].score !== null).map((c) => c.id)
