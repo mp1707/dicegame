@@ -35,11 +35,11 @@ export const CATEGORIES: CategoryInfo[] = [
   { id: "fives", labelDe: "Fünfer", section: "upper" },
   { id: "sixes", labelDe: "Sechser", section: "upper" },
   // Lower section
-  { id: "threeOfKind", labelDe: "Dreierpasch", section: "lower" },
-  { id: "fourOfKind", labelDe: "Viererpasch", section: "lower" },
+  { id: "threeOfKind", labelDe: "Dreier Pasch", section: "lower" },
+  { id: "fourOfKind", labelDe: "Vierer Pasch", section: "lower" },
   { id: "fullHouse", labelDe: "Full House", section: "lower" },
-  { id: "smallStraight", labelDe: "Kl. Straße", section: "lower" },
-  { id: "largeStraight", labelDe: "Gr. Straße", section: "lower" },
+  { id: "smallStraight", labelDe: "Kleine Straße", section: "lower" },
+  { id: "largeStraight", labelDe: "Große Straße", section: "lower" },
   { id: "yahtzee", labelDe: "Yahtzee", section: "lower" },
   { id: "chance", labelDe: "Chance", section: "lower" },
 ];

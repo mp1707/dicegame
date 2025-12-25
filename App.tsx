@@ -10,8 +10,7 @@ import {
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { DiceTray } from "./components/DiceTray";
 import { GlassHeader } from "./components/ui/GlassHeader";
-import { UpperSection } from "./components/scoring/UpperSection";
-import { LowerSection } from "./components/scoring/LowerSection";
+import { ScoringGrid } from "./components/scoring/ScoringGrid";
 import { FooterControls } from "./components/ui/FooterControls";
 import { ScratchModal } from "./components/modals/ScratchModal";
 import { ShopModal } from "./components/modals/ShopModal";
@@ -53,15 +52,7 @@ export default function App() {
 
         {/* Scoring Dashboard */}
         <View style={styles.scoringDashboard}>
-          {/* Upper Section (6 dice slots) */}
-          <View style={styles.upperSection}>
-            <UpperSection />
-          </View>
-
-          {/* Lower Section (7 poker hand slots) */}
-          <View style={styles.lowerSection}>
-            <LowerSection />
-          </View>
+          <ScoringGrid />
 
           <TouchableOpacity
             style={styles.overviewButton}
@@ -101,12 +92,6 @@ const styles = StyleSheet.create({
   scoringDashboard: {
     flex: 1,
     paddingTop: SPACING.sectionGap,
-  },
-  upperSection: {
-    paddingBottom: SPACING.sectionGap,
-  },
-  lowerSection: {
-    flex: 1,
   },
   overviewButton: {
     marginTop: 8,
