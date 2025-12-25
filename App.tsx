@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, StatusBar } from "react-native";
+import { View, StyleSheet, StatusBar, useWindowDimensions } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { DiceTray } from "./components/DiceTray";
 import { GlassHeader } from "./components/ui/GlassHeader";
@@ -9,13 +9,17 @@ import { FooterControls } from "./components/ui/FooterControls";
 import { ScratchModal } from "./components/modals/ScratchModal";
 import { ShopModal } from "./components/modals/ShopModal";
 import { useGameStore } from "./store/gameStore";
-import { COLORS, SPACING, DIMENSIONS } from "./constants/theme";
+import { COLORS, SPACING, DIMENSIONS, calculateDiceTrayHeight } from "./constants/theme";
 
 export default function App() {
   const [scratchModalVisible, setScratchModalVisible] = useState(false);
   const phase = useGameStore((s) => s.phase);
   const isRolling = useGameStore((s) => s.isRolling);
   const setRolling = useGameStore((s) => s.setRolling);
+
+  // Calculate responsive dice tray height
+  const { height: screenHeight } = useWindowDimensions();
+  const diceTrayHeight = calculateDiceTrayHeight(screenHeight);
 
   // Auto-stop rolling animation after 3s (dice should settle by then)
   useEffect(() => {
@@ -34,9 +38,9 @@ export default function App() {
         {/* Glass Header HUD */}
         <GlassHeader />
 
-        {/* 3D Dice Rolling Area (38% of remaining space) */}
-        <View style={styles.diceContainer}>
-          <DiceTray />
+        {/* 3D Dice Rolling Area (responsive sizing) */}
+        <View style={[styles.diceContainer, { height: diceTrayHeight }]}>
+          <DiceTray containerHeight={diceTrayHeight} />
         </View>
 
         {/* Scoring Dashboard */}
@@ -72,7 +76,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   diceContainer: {
-    height: DIMENSIONS.diceTrayHeight,
+    // Height set dynamically via inline style
   },
   scoringDashboard: {
     flex: 1,

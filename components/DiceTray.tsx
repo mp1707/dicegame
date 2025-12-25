@@ -37,7 +37,11 @@ const GameEndOverlay = () => {
   );
 };
 
-export const DiceTray = () => {
+interface DiceTrayProps {
+  containerHeight: number;
+}
+
+export const DiceTray = ({ containerHeight }: DiceTrayProps) => {
   // Subscribe only to what we need for triggering rolls
   const rollTrigger = useGameStore((state) => state.rollTrigger);
   const selectedDice = useGameStore((state) => state.selectedDice);
@@ -46,35 +50,68 @@ export const DiceTray = () => {
   const completeRoll = useGameStore((state) => state.completeRoll);
   const toggleDiceLock = useGameStore((state) => state.toggleDiceLock);
 
-  // Track settled dice values during a roll
+  // Calculate scene scaling based on container height
+  const BASE_HEIGHT = 180;
+  const sceneScale = containerHeight / BASE_HEIGHT;
+
+  // Adjust camera FOV for taller containers to maintain dice visibility
+  const baseFOV = 45;
+  const fovAdjustment = (containerHeight - BASE_HEIGHT) / (BASE_HEIGHT * 2);
+  const adjustedFOV = Math.min(baseFOV * (1 + fovAdjustment), 60);
+
+  // Scaled dimensions for 3D scene
+  // Keep width constant, only scale depth (Z-axis) to match taller container
+  const floorWidth = 10 * sceneScale; // Keep constant to fit screen width
+  const floorDepth = 6 * sceneScale; // Scale depth to match height
+  const wallXPosition = 5; // Keep constant
+  const wallZPosition = 3 * sceneScale; // Scale with depth
+  const diceSpawnY = 4 * sceneScale; // Scale spawn height
+
+  // Track settled values and sleep state
   const settledValuesRef = useRef<number[]>([...diceValues]);
-  const settledCountRef = useRef(0);
+  // Track which dice are currently "sleeping" (stopped moving)
+  // Initialize to true because usually they are still at start.
+  // When a roll starts, active dice become false.
+  const isSleepingRef = useRef<boolean[]>([true, true, true, true, true]);
+
   const lastRollTriggerRef = useRef(rollTrigger);
 
   // Reset tracking when a new roll starts
   if (rollTrigger > lastRollTriggerRef.current) {
-    // Count how many dice will actually roll (not locked)
-    const rollingCount = selectedDice.filter((locked) => !locked).length;
-    settledCountRef.current = 0;
-    // Keep locked dice values, reset rolling dice tracking
+    // Determine which dice are actually rolling
+    const newSleepState = selectedDice.map((locked) => locked); // Locked dice stay sleeping (true), others wake up (false)
+    isSleepingRef.current = newSleepState;
+
+    // Reset values source of truth to current, though they will update as dice settle
     settledValuesRef.current = [...diceValues];
     lastRollTriggerRef.current = rollTrigger;
   }
 
-  // Callback for when a die settles
+  // Callback: Die woke up (started moving)
+  const handleDieWake = useCallback((index: number) => {
+    isSleepingRef.current[index] = false;
+  }, []);
+
+  // Callback: Die settled (stopped moving)
   const handleDieSettle = useCallback(
     (index: number, value: number) => {
       settledValuesRef.current[index] = value;
-      settledCountRef.current += 1;
+      isSleepingRef.current[index] = true;
 
-      // Check if all 5 dice have reported their values
-      if (settledCountRef.current >= 5) {
-        // Batch update the store with all final values
+      // Check if ALL 5 dice are now sleeping
+      const allSleeping = isSleepingRef.current.every((s) => s);
+
+      if (allSleeping) {
+        // Only when everything is quiet do we update the game state
+        // This prevents the UI from flickering with partial results
         completeRoll([...settledValuesRef.current]);
       }
     },
     [completeRoll]
   );
+
+  // Also need to handle the case where a die MIGHT not wake up if it wasn't moved much?
+  // Our Die component forces a wakeUp() and impulse so it should be fine.
 
   // Callback for die tap
   const handleDieTap = useCallback(
@@ -90,38 +127,51 @@ export const DiceTray = () => {
         shadows
         style={styles.canvas}
         frameloop="always"
-        camera={{ position: [0, 10, 0], fov: 45, up: [0, 0, -1] }}
+        camera={{ position: [0, 10, 0], fov: adjustedFOV, up: [0, 0, -1] }}
       >
         <ambientLight intensity={0.5} />
         <spotLight position={[5, 10, 5]} angle={0.3} penumbra={1} castShadow />
 
         <Suspense fallback={null}>
           <Physics gravity={[0, -9.81, 0]}>
-            {/* Floor - sized for 16:9 viewport */}
+            {/* Floor - scaled based on container height */}
             <RigidBody type="fixed" restitution={0.2} friction={1}>
               <mesh position={[0, 0, 0]} receiveShadow>
-                <boxGeometry args={[10, 0.5, 6]} />
+                <boxGeometry args={[floorWidth, 0.5, floorDepth]} />
                 <meshStandardMaterial color="#222" />
               </mesh>
             </RigidBody>
 
-            {/* Walls (Invisible colliders) - tighter bounds */}
+            {/* Walls (Invisible colliders) - scaled to match floor */}
             <RigidBody type="fixed">
-              <CuboidCollider args={[5, 2, 0.3]} position={[0, 1.5, 3]} />
-              <CuboidCollider args={[5, 2, 0.3]} position={[0, 1.5, -3]} />
-              <CuboidCollider args={[0.3, 2, 3]} position={[5, 1.5, 0]} />
-              <CuboidCollider args={[0.3, 2, 3]} position={[-5, 1.5, 0]} />
+              <CuboidCollider
+                args={[floorWidth / 2, 2, 0.3]}
+                position={[0, 1.5, wallZPosition]}
+              />
+              <CuboidCollider
+                args={[floorWidth / 2, 2, 0.3]}
+                position={[0, 1.5, -wallZPosition]}
+              />
+              <CuboidCollider
+                args={[0.3, 2, floorDepth / 2]}
+                position={[wallXPosition, 1.5, 0]}
+              />
+              <CuboidCollider
+                args={[0.3, 2, floorDepth / 2]}
+                position={[-wallXPosition, 1.5, 0]}
+              />
             </RigidBody>
 
-            {/* The 5 Dice */}
+            {/* The 5 Dice - scaled spawn positions */}
             {[-2, -1, 0, 1, 2].map((x, i) => (
               <Die
                 key={i}
                 index={i}
-                position={[x * 1.2, 4, 0]}
+                position={[x * 1.2, diceSpawnY, 0]}
                 isLocked={selectedDice[i]}
                 rollTrigger={rollTrigger}
                 onSettle={handleDieSettle}
+                onWake={handleDieWake}
                 onTap={handleDieTap}
               />
             ))}

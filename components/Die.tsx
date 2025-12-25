@@ -87,48 +87,62 @@ export const Die = ({
   isLocked,
   rollTrigger,
   onSettle,
+  onWake,
   onTap,
-}: DieProps) => {
+}: DieProps & { onWake: (index: number) => void }) => {
   const rigidBody = useRef<RapierRigidBody>(null);
   const prevRollTrigger = useRef(rollTrigger);
   const initialPosition = useRef(position);
 
-  // Trigger Roll Logic - only when rollTrigger changes and die is not locked
+  // Trigger Roll Logic - only when rollTrigger changes
   useEffect(() => {
-    if (rigidBody.current && rollTrigger > prevRollTrigger.current) {
-      // Only roll if NOT locked
-      if (!isLocked) {
-        const pos = initialPosition.current;
+    if (rollTrigger > prevRollTrigger.current) {
+      if (isLocked) {
+        // LOCKED DICE: Immediate settle, no physics action
+        // We report settle immediately so the parent knows this die is "done"
+        // We use the current face value logic or we could store the last value.
+        // Re-evaluating the face is safer to ensure sync.
+        handleSleep();
+      } else {
+        // UNLOCKED DICE: Wake up and roll
+        onWake(index); // Notify parent we are moving
 
-        // Reset Position
-        rigidBody.current.setTranslation(
-          { x: pos[0] * 0.7, y: 3, z: pos[2] },
-          true
-        );
-        rigidBody.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
-        rigidBody.current.setAngvel({ x: 0, y: 0, z: 0 }, true);
+        if (rigidBody.current) {
+          const pos = initialPosition.current;
 
-        // Apply Random Impulse & Torque
-        const rand = (min: number, max: number) =>
-          Math.random() * (max - min) + min;
+          // awake() is sometimes needed to ensure impulses work if body was sleeping
+          rigidBody.current.wakeUp();
 
-        rigidBody.current.applyImpulse(
-          {
-            x: rand(-0.5, 0.5),
-            y: rand(-2, -4),
-            z: rand(-0.5, 0.5),
-          },
-          true
-        );
+          // Reset Position
+          rigidBody.current.setTranslation(
+            { x: pos[0] * 0.7, y: 3, z: pos[2] },
+            true
+          );
+          rigidBody.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
+          rigidBody.current.setAngvel({ x: 0, y: 0, z: 0 }, true);
 
-        rigidBody.current.applyTorqueImpulse(
-          {
-            x: rand(-2, 2),
-            y: rand(-2, 2),
-            z: rand(-2, 2),
-          },
-          true
-        );
+          // Apply Random Impulse & Torque
+          const rand = (min: number, max: number) =>
+            Math.random() * (max - min) + min;
+
+          rigidBody.current.applyImpulse(
+            {
+              x: rand(-0.5, 0.5),
+              y: rand(-2, -4),
+              z: rand(-0.5, 0.5),
+            },
+            true
+          );
+
+          rigidBody.current.applyTorqueImpulse(
+            {
+              x: rand(-2, 2),
+              y: rand(-2, 2),
+              z: rand(-2, 2),
+            },
+            true
+          );
+        }
       }
     }
 
@@ -164,6 +178,11 @@ export const Die = ({
     onSettle(index, resultFace);
   };
 
+  // also report wake on standard wake events (collisions etc)
+  const handleWake = () => {
+    if (!isLocked) onWake(index);
+  };
+
   // Handle tap to toggle lock
   const handlePointerDown = (e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
@@ -179,7 +198,10 @@ export const Die = ({
       colliders="cuboid"
       restitution={0.3}
       friction={0.8}
+      // Fixed type for locked dice prevents any movement/drift
+      type={isLocked ? "fixed" : "dynamic"}
       onSleep={handleSleep}
+      onWake={handleWake}
       position={position}
     >
       <group onPointerDown={handlePointerDown}>

@@ -104,7 +104,7 @@ export const FooterControls = ({ onScratchPress }: FooterControlsProps) => {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: SPACING.screenPadding,
+    paddingHorizontal: 40,
     paddingVertical: SPACING.sectionGap,
     gap: 8,
   },
