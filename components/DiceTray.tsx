@@ -39,9 +39,10 @@ const GameEndOverlay = () => {
 
 interface DiceTrayProps {
   containerHeight: number;
+  containerWidth: number;
 }
 
-export const DiceTray = ({ containerHeight }: DiceTrayProps) => {
+export const DiceTray = ({ containerHeight, containerWidth }: DiceTrayProps) => {
   // Subscribe only to what we need for triggering rolls
   const rollTrigger = useGameStore((state) => state.rollTrigger);
   const selectedDice = useGameStore((state) => state.selectedDice);
@@ -52,20 +53,27 @@ export const DiceTray = ({ containerHeight }: DiceTrayProps) => {
 
   // Calculate scene scaling based on container height
   const BASE_HEIGHT = 180;
-  const sceneScale = containerHeight / BASE_HEIGHT;
+  const BASE_WIDTH = 360;
+  const widthScale = containerWidth / BASE_WIDTH;
+  const aspect = containerWidth / containerHeight;
 
-  // Adjust camera FOV for taller containers to maintain dice visibility
+  // Adjust camera FOV to keep the shorter tray readable
   const baseFOV = 45;
-  const fovAdjustment = (containerHeight - BASE_HEIGHT) / (BASE_HEIGHT * 2);
-  const adjustedFOV = Math.min(baseFOV * (1 + fovAdjustment), 60);
+  const fovScale = BASE_HEIGHT / containerHeight;
+  const adjustedFOV = Math.min(Math.max(baseFOV * fovScale, 35), 65);
 
-  // Scaled dimensions for 3D scene
-  // Keep width constant, only scale depth (Z-axis) to match taller container
-  const floorWidth = 10 * sceneScale; // Keep constant to fit screen width
-  const floorDepth = 6 * sceneScale; // Scale depth to match height
-  const wallXPosition = 5; // Keep constant
-  const wallZPosition = 3 * sceneScale; // Scale with depth
-  const diceSpawnY = 4 * sceneScale; // Scale spawn height
+  // Scaled dimensions for 3D scene to fit the full-width, shorter tray
+  const floorWidth = 10 * widthScale;
+  const floorDepth = floorWidth / aspect;
+  const depthScale = floorDepth / 6;
+  const wallXPosition = floorWidth / 2;
+  const wallZPosition = floorDepth / 2;
+  const diceSpawnY = 4 * depthScale;
+  const diceSpacing = floorWidth / 6;
+  const halfFovTan = Math.tan((adjustedFOV * Math.PI) / 360);
+  const fitHeight = (floorDepth / 2) / halfFovTan;
+  const fitWidth = (floorWidth / 2) / (halfFovTan * aspect);
+  const cameraHeight = Math.max(fitHeight, fitWidth) + 0.4;
 
   // Track settled values and sleep state
   const settledValuesRef = useRef<number[]>([...diceValues]);
@@ -127,7 +135,11 @@ export const DiceTray = ({ containerHeight }: DiceTrayProps) => {
         shadows
         style={styles.canvas}
         frameloop="always"
-        camera={{ position: [0, 10, 0], fov: adjustedFOV, up: [0, 0, -1] }}
+        camera={{
+          position: [0, cameraHeight, 0],
+          fov: adjustedFOV,
+          up: [0, 0, -1],
+        }}
       >
         <ambientLight intensity={0.5} />
         <spotLight position={[5, 10, 5]} angle={0.3} penumbra={1} castShadow />
@@ -167,7 +179,7 @@ export const DiceTray = ({ containerHeight }: DiceTrayProps) => {
               <Die
                 key={i}
                 index={i}
-                position={[x * 1.2, diceSpawnY, 0]}
+                position={[x * diceSpacing, diceSpawnY, 0]}
                 isLocked={selectedDice[i]}
                 rollTrigger={rollTrigger}
                 onSettle={handleDieSettle}

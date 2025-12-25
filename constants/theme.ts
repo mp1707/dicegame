@@ -81,32 +81,15 @@ export const DIMENSIONS = {
 } as const;
 
 /**
- * Calculate responsive dice tray height based on available screen space
+ * Calculate responsive dice tray height based on total screen height.
  * @param screenHeight - Total screen height from useWindowDimensions
- * @param minScoringSpace - Minimum space required for scoring UI (default: 250)
  * @returns Calculated dice tray height in pixels
  */
 export const calculateDiceTrayHeight = (
-  screenHeight: number,
-  minScoringSpace: number = 250
+  screenHeight: number
 ): number => {
-  // Calculate available space after fixed UI elements
-  const fixedUISpace = DIMENSIONS.headerHeight + DIMENSIONS.footerHeight;
-  const availableSpace = screenHeight - fixedUISpace;
-
-  // Allocate 45% of available space to dice tray
-  const allocatedHeight = Math.floor(availableSpace * 0.45);
-
-  // Ensure minimum dice tray height of 220px for visibility
-  const minDiceTrayHeight = 220;
-  const clampedHeight = Math.max(allocatedHeight, minDiceTrayHeight);
-
-  // Ensure scoring section gets minimum required space
-  if (availableSpace - clampedHeight < minScoringSpace) {
-    return Math.max(availableSpace - minScoringSpace, minDiceTrayHeight);
-  }
-
-  return clampedHeight;
+  // Keep dice tray at 30% of total screen height for consistent layout
+  return Math.round(screenHeight * 0.3);
 };
 
 // Slot visual states

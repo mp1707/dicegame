@@ -13,38 +13,44 @@ const FACE_NORMALS = [
   { face: 5, normal: new THREE.Vector3(0, 0, -1) }, // Back
 ];
 
+const DIE_SIZE = 0.85;
+const DIE_HALF = DIE_SIZE / 2;
+const FACE_OFFSET = DIE_HALF + 0.01;
+const PIP_OFFSET = 0.25 * DIE_SIZE;
+const PIP_RADIUS = 0.08 * DIE_SIZE;
+
 // Pip positions for each face value
 const PIP_POSITIONS: Record<number, [number, number][]> = {
   1: [[0, 0]],
   2: [
-    [-0.25, -0.25],
-    [0.25, 0.25],
+    [-PIP_OFFSET, -PIP_OFFSET],
+    [PIP_OFFSET, PIP_OFFSET],
   ],
   3: [
-    [-0.25, -0.25],
+    [-PIP_OFFSET, -PIP_OFFSET],
     [0, 0],
-    [0.25, 0.25],
+    [PIP_OFFSET, PIP_OFFSET],
   ],
   4: [
-    [-0.25, -0.25],
-    [0.25, -0.25],
-    [-0.25, 0.25],
-    [0.25, 0.25],
+    [-PIP_OFFSET, -PIP_OFFSET],
+    [PIP_OFFSET, -PIP_OFFSET],
+    [-PIP_OFFSET, PIP_OFFSET],
+    [PIP_OFFSET, PIP_OFFSET],
   ],
   5: [
-    [-0.25, -0.25],
-    [0.25, -0.25],
+    [-PIP_OFFSET, -PIP_OFFSET],
+    [PIP_OFFSET, -PIP_OFFSET],
     [0, 0],
-    [-0.25, 0.25],
-    [0.25, 0.25],
+    [-PIP_OFFSET, PIP_OFFSET],
+    [PIP_OFFSET, PIP_OFFSET],
   ],
   6: [
-    [-0.25, -0.25],
-    [0.25, -0.25],
-    [-0.25, 0],
-    [0.25, 0],
-    [-0.25, 0.25],
-    [0.25, 0.25],
+    [-PIP_OFFSET, -PIP_OFFSET],
+    [PIP_OFFSET, -PIP_OFFSET],
+    [-PIP_OFFSET, 0],
+    [PIP_OFFSET, 0],
+    [-PIP_OFFSET, PIP_OFFSET],
+    [PIP_OFFSET, PIP_OFFSET],
   ],
 };
 
@@ -64,7 +70,7 @@ const DieFace = ({
     <group rotation={rotation} position={position}>
       {pips.map((pipPos, i) => (
         <mesh key={i} position={[pipPos[0], pipPos[1], 0.01]}>
-          <circleGeometry args={[0.08, 16]} />
+          <circleGeometry args={[PIP_RADIUS, 16]} />
           <meshBasicMaterial color="black" />
         </mesh>
       ))}
@@ -241,7 +247,7 @@ export const Die = ({
       <group onPointerDown={handlePointerDown}>
         {/* Main die body */}
         <mesh castShadow receiveShadow>
-          <boxGeometry args={[1, 1, 1]} />
+          <boxGeometry args={[DIE_SIZE, DIE_SIZE, DIE_SIZE]} />
           <meshStandardMaterial color={dieColor} />
         </mesh>
 
@@ -249,38 +255,42 @@ export const Die = ({
         <DieFace
           faceValue={1}
           rotation={[0, Math.PI / 2, 0]}
-          position={[0.501, 0, 0]}
+          position={[FACE_OFFSET, 0, 0]}
         />
 
         {/* Face 6 - Left (-X) */}
         <DieFace
           faceValue={6}
           rotation={[0, -Math.PI / 2, 0]}
-          position={[-0.501, 0, 0]}
+          position={[-FACE_OFFSET, 0, 0]}
         />
 
         {/* Face 3 - Top (+Y) */}
         <DieFace
           faceValue={3}
           rotation={[-Math.PI / 2, 0, 0]}
-          position={[0, 0.501, 0]}
+          position={[0, FACE_OFFSET, 0]}
         />
 
         {/* Face 4 - Bottom (-Y) */}
         <DieFace
           faceValue={4}
           rotation={[Math.PI / 2, 0, 0]}
-          position={[0, -0.501, 0]}
+          position={[0, -FACE_OFFSET, 0]}
         />
 
         {/* Face 2 - Front (+Z) */}
-        <DieFace faceValue={2} rotation={[0, 0, 0]} position={[0, 0, 0.501]} />
+        <DieFace
+          faceValue={2}
+          rotation={[0, 0, 0]}
+          position={[0, 0, FACE_OFFSET]}
+        />
 
         {/* Face 5 - Back (-Z) */}
         <DieFace
           faceValue={5}
           rotation={[0, Math.PI, 0]}
-          position={[0, 0, -0.501]}
+          position={[0, 0, -FACE_OFFSET]}
         />
       </group>
     </RigidBody>

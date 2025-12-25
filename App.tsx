@@ -16,7 +16,7 @@ export default function App() {
   const phase = useGameStore((s) => s.phase);
 
   // Calculate responsive dice tray height
-  const { height: screenHeight } = useWindowDimensions();
+  const { height: screenHeight, width: screenWidth } = useWindowDimensions();
   const diceTrayHeight = calculateDiceTrayHeight(screenHeight);
 
   return (
@@ -27,8 +27,13 @@ export default function App() {
         <GlassHeader />
 
         {/* 3D Dice Rolling Area (responsive sizing) */}
-        <View style={[styles.diceContainer, { height: diceTrayHeight }]}>
-          <DiceTray containerHeight={diceTrayHeight} />
+        <View
+          style={[styles.diceContainer, { height: diceTrayHeight, width: "100%" }]}
+        >
+          <DiceTray
+            containerHeight={diceTrayHeight}
+            containerWidth={screenWidth}
+          />
         </View>
 
         {/* Scoring Dashboard */}

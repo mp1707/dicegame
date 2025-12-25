@@ -127,6 +127,10 @@ All 13 category slots use 3 states defined in `theme.ts`:
 - **Filled**: Muted gold, not tappable
 - **Empty**: Grey dash, not tappable
 
+### Dice Tray Sizing
+
+To change the dice tray size in the UI and keep the 3D scene in sync, adjust the UI height in `App.tsx` via `calculateDiceTrayHeight` (in `constants/theme.ts`) and pass both `containerHeight` and `containerWidth` into `DiceTray`. Inside `components/DiceTray.tsx`, derive the 3D floor dimensions from the canvas aspect ratio (e.g., `floorDepth = floorWidth / aspect`) and compute the camera height from the floor size and FOV so the floor fills the viewport without cropping. This keeps the tray full width across devices, prevents dice from rolling out of view, and makes the 3D bounds track the UI layout.
+
 ---
 
 ## Common Issues & Solutions
