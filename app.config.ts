@@ -34,6 +34,17 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: getAppName(),
   slug: "dice-game",
+  extra: {
+    eas: {
+      projectId: "829d31d2-6ecf-43e7-bc3b-af9b4c9cd43b",
+    },
+  },
+  updates: {
+    url: "https://u.expo.dev/829d31d2-6ecf-43e7-bc3b-af9b4c9cd43b",
+  },
+  runtimeVersion: {
+    policy: "appVersion",
+  },
   version: "1.0.0",
   orientation: "portrait",
   icon: "./assets/icon.png",
