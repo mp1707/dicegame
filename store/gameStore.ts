@@ -45,6 +45,7 @@ interface GameState {
 
   // Actions
   triggerRoll: () => void;
+  completeRoll: (values: number[]) => void;
   setRolling: (isRolling: boolean) => void;
   setDiceValues: (values: number[]) => void;
   toggleDiceLock: (index: number) => void;
@@ -127,6 +128,14 @@ export const useGameStore = create<GameState>((set, get) => ({
       rollsRemaining: state.rollsRemaining - 1,
       hasRolledThisRound: true,
     }));
+  },
+
+  // Complete roll with final dice values (batch update for performance)
+  completeRoll: (values: number[]) => {
+    set({
+      diceValues: values,
+      isRolling: false,
+    });
   },
 
   setRolling: (isRolling) => set({ isRolling }),

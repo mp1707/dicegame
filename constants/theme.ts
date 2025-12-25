@@ -16,6 +16,9 @@ export const COLORS = {
   goldDark: "#B8860B",
   mutedGold: "#A08000",
 
+  // Yellow - Selected dice
+  selectedDie: "#FFD700",
+
   // Red - Scratch, zero scores
   red: "#FF4444",
   redDark: "#991B1B",
@@ -68,7 +71,7 @@ export const SPACING = {
 // Component dimensions
 export const DIMENSIONS = {
   headerHeight: 80,
-  diceAreaPercent: 0.38, // 38% of screen
+  diceTrayHeight: 180, // Fixed 16:9-ish height for compact tray
   upperSlotHeight: 80,
   lowerSlotHeight: 44,
   footerHeight: 70,

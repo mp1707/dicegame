@@ -72,11 +72,10 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   diceContainer: {
-    flex: DIMENSIONS.diceAreaPercent,
-    minHeight: 200,
+    height: DIMENSIONS.diceTrayHeight,
   },
   scoringDashboard: {
-    flex: 1 - DIMENSIONS.diceAreaPercent,
+    flex: 1,
     paddingTop: SPACING.sectionGap,
   },
   upperSection: {

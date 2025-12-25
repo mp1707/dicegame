@@ -1,7 +1,6 @@
 import React, { useRef, useEffect } from "react";
 import { RigidBody, RapierRigidBody } from "@react-three/rapier";
 import * as THREE from "three";
-import { useGameStore } from "../store/gameStore";
 import { ThreeEvent } from "@react-three/fiber";
 
 // Standard D6 Face Normals
@@ -76,23 +75,29 @@ const DieFace = ({
 interface DieProps {
   position: [number, number, number];
   index: number;
+  isLocked: boolean;
+  rollTrigger: number;
+  onSettle: (index: number, value: number) => void;
+  onTap: (index: number) => void;
 }
 
-export const Die = ({ position, index }: DieProps) => {
+export const Die = ({
+  position,
+  index,
+  isLocked,
+  rollTrigger,
+  onSettle,
+  onTap,
+}: DieProps) => {
   const rigidBody = useRef<RapierRigidBody>(null);
-  const rollTrigger = useGameStore((state) => state.rollTrigger);
-  const selectedDice = useGameStore((state) => state.selectedDice);
-  const toggleDiceLock = useGameStore((state) => state.toggleDiceLock);
   const prevRollTrigger = useRef(rollTrigger);
-
-  const isSelected = selectedDice[index];
   const initialPosition = useRef(position);
 
   // Trigger Roll Logic - only when rollTrigger changes and die is not locked
   useEffect(() => {
     if (rigidBody.current && rollTrigger > prevRollTrigger.current) {
-      // Only roll if NOT selected (locked)
-      if (!isSelected) {
+      // Only roll if NOT locked
+      if (!isLocked) {
         const pos = initialPosition.current;
 
         // Reset Position
@@ -128,10 +133,10 @@ export const Die = ({ position, index }: DieProps) => {
     }
 
     prevRollTrigger.current = rollTrigger;
-  }, [rollTrigger, isSelected]);
+  }, [rollTrigger, isLocked]);
 
-  // Face Detection Logic
-  const onSleep = () => {
+  // Face Detection Logic - report to parent via callback
+  const handleSleep = () => {
     if (!rigidBody.current) return;
 
     const rotation = rigidBody.current.rotation();
@@ -155,22 +160,18 @@ export const Die = ({ position, index }: DieProps) => {
       }
     });
 
-    // Update Global Store
-    useGameStore.setState((prev) => {
-      const newValues = [...prev.diceValues];
-      newValues[index] = resultFace;
-      return { diceValues: newValues };
-    });
+    // Report settled value to parent
+    onSettle(index, resultFace);
   };
 
   // Handle tap to toggle lock
   const handlePointerDown = (e: ThreeEvent<PointerEvent>) => {
     e.stopPropagation();
-    toggleDiceLock(index);
+    onTap(index);
   };
 
   // Die colors based on selection
-  const dieColor = isSelected ? "#888888" : "#f5f5f5"; // Grey when locked
+  const dieColor = isLocked ? "#FFD700" : "#f5f5f5"; // Yellow when locked
 
   return (
     <RigidBody
@@ -178,7 +179,7 @@ export const Die = ({ position, index }: DieProps) => {
       colliders="cuboid"
       restitution={0.3}
       friction={0.8}
-      onSleep={onSleep}
+      onSleep={handleSleep}
       position={position}
     >
       <group onPointerDown={handlePointerDown}>
