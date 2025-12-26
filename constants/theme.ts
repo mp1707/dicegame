@@ -1,119 +1,151 @@
 /**
  * Theme constants for Roguelike Yahtzee
- * Based on GAME.md design specification
+ * Based on CRT Arcade UI Direction
  */
 
-// Functional Colors
+import { Platform } from "react-native";
+
+// Color Palette
 export const COLORS = {
-  // Cyan - Active states, titles, glows
-  cyan: "#00FFFF",
-  cyanDark: "#00CCCC",
-  cyanGlow: "rgba(0, 255, 255, 0.3)",
-  cyanBorder: "rgba(0, 255, 255, 0.6)",
-
-  // Gold - Progress, scores, primary button
-  gold: "#FFD700",
-  goldDark: "#B8860B",
-  mutedGold: "#A08000",
-
-  // Yellow - Selected dice
-  selectedDie: "#FFD700",
-
-  // Red - Scratch, zero scores
-  red: "#FF4444",
-  redDark: "#991B1B",
-
-  // Green - Win state, shop button
-  green: "#22C55E",
-  blue: "#3B82F6",
-
   // Neutrals
-  darkBg: "rgba(20, 20, 25, 0.95)",
-  slotBg: "rgba(30, 30, 35, 0.9)",
-  filledBg: "rgba(15, 15, 18, 0.95)",
-  slotBorder: "#3D3D3D",
-  filledBorder: "#2A2A2F",
-  textMuted: "rgba(255, 255, 255, 0.3)",
-  textLight: "rgba(255, 255, 255, 0.7)",
-  textWhite: "#FFFFFF",
-  textBlack: "#000000",
+  bg: "#070612", // deep violet-black
+  bg2: "#0B0A1D", // slightly lighter for gradients
+  surface: "#12102A", // panels
+  surface2: "#19163A", // tiles
+  border: "#2A2457", // outlines
 
-  // Backgrounds
-  background: "#000000",
-  backgroundDark: "#111111",
-  backgroundMedium: "#1a1a1a",
+  // Text
+  text: "#F2F4FF",
+  textMuted: "#A6A8C9",
+
+  // Neon Accents
+  cyan: "#20E7FF", // possible / active
+  magenta: "#FF3CF2", // selected / jackpot
+  purple: "#7B5CFF", // secondary glow, separators
+  red: "#FF3B4D", // delete/strike only
+  green: "#00FF99", // success / shop
+  amber: "#FFC857", // money/goal/progress (warm contrast)
+
+  // Glow Helpers (Transparent)
+  cyanGlow: "rgba(32, 231, 255, 0.35)",
+  magentaGlow: "rgba(255, 60, 242, 0.28)",
+  purpleGlow: "rgba(123, 92, 255, 0.25)",
+
+  // Legacy mappings for compatibility (will refactor gradually)
+  background: "#070612",
+  backgroundDark: "#0B0A1D", // Mapping to bg2
+  gold: "#FFC857", // Mapping to amber
+  goldDark: "#D9A830",
+  textWhite: "#F2F4FF",
+  textBlack: "#070612",
 } as const;
 
-// Typography scale
+// Typography
 export const TYPOGRAPHY = {
-  // Press Start 2P equivalents (using system fonts for now)
-  largeScore: { fontSize: 24, fontWeight: "900" as const },
-  mediumScore: { fontSize: 16, fontWeight: "900" as const },
-  smallScore: { fontSize: 12, fontWeight: "900" as const },
-  tinyScore: { fontSize: 10, fontWeight: "900" as const },
+  // Headlines / Buttons (Retro pixel appeal)
+  // Fallback to PressStart2P since Silkscreen is not available
+  largeScore: {
+    fontFamily: "PressStart2P-Regular",
+    fontSize: 22,
+    color: COLORS.text,
+  },
+  mediumScore: {
+    fontFamily: "PressStart2P-Regular",
+    fontSize: 16,
+    color: COLORS.text,
+  },
 
-  // Roboto Mono equivalents
-  labels: { fontSize: 13, fontWeight: "500" as const },
-  metaInfo: { fontSize: 12, fontWeight: "400" as const },
-  microLabels: { fontSize: 8, fontWeight: "400" as const },
+  // Numbers / Scores (Clean, stable digits)
+  // Using Roboto Mono as requested
+  scoreValue: {
+    fontFamily: "RobotoMono-Regular",
+    fontSize: 18,
+    fontWeight: "500" as const,
+    color: COLORS.text,
+  },
+
+  // Labels (Tile labels)
+  label: {
+    fontFamily: "PressStart2P-Regular",
+    fontSize: 10,
+    color: COLORS.textMuted,
+  },
+
+  // Body / Meta
+  body: {
+    fontFamily: "RobotoMono-Regular",
+    fontSize: 12,
+    color: COLORS.textMuted,
+  },
+
+  // Legacy
+  tinyScore: {
+    fontFamily: "PressStart2P-Regular",
+    fontSize: 10,
+    color: COLORS.text,
+  },
+  metaInfo: {
+    fontFamily: "RobotoMono-Regular",
+    fontSize: 12,
+    color: COLORS.textMuted,
+  },
 } as const;
 
 // Spacing
 export const SPACING = {
   screenPadding: 8,
-  sectionGap: 8,
+  sectionGap: 12,
   slotGapHorizontal: 6,
-  slotGapVertical: 4,
+  slotGapVertical: 6,
   containerPaddingHorizontal: 16,
   containerPaddingVertical: 12,
   buttonPaddingVertical: 14,
 } as const;
 
-// Component dimensions
+// Dimensions
 export const DIMENSIONS = {
-  headerHeight: 80,
-  diceTrayHeight: 180, // Deprecated: use calculateDiceTrayHeight() for responsive sizing
-  upperSlotHeight: 80,
-  lowerSlotHeight: 44,
-  footerHeight: 70,
-  rollButtonHeight: 48,
-  borderRadius: 6,
-  progressBarHeight: 24,
+  headerHeight: 60, // Reduced for cleaner look
+  rollButtonHeight: 52,
+  borderRadius: 4, // More squared off for arcade feel
+  progressBarHeight: 18,
+  borderWidth: 2,
 } as const;
 
-/**
- * Calculate responsive dice tray height based on total screen height.
- * @param screenHeight - Total screen height from useWindowDimensions
- * @returns Calculated dice tray height in pixels
- */
-export const calculateDiceTrayHeight = (
-  screenHeight: number
-): number => {
-  // Keep dice tray at 30% of total screen height for consistent layout
-  return Math.round(screenHeight * 0.3);
+// Responsive Helper
+export const calculateDiceTrayHeight = (screenHeight: number): number => {
+  return Math.round(screenHeight * 0.35); // Slightly larger for CRT screen effect
 };
 
-// Slot visual states
+// Slot Visual States (Arcade Glass Style)
 export const SLOT_STATES = {
-  active: {
-    borderColor: COLORS.cyanBorder,
+  empty: {
+    backgroundColor: COLORS.surface2,
+    borderColor: COLORS.border,
     borderWidth: 2,
-    backgroundColor: COLORS.cyanGlow,
-    textColor: COLORS.cyan,
-    showCheckmark: true,
+    shadowColor: "transparent",
+  },
+  possible: {
+    backgroundColor: COLORS.surface2, // Base
+    borderColor: COLORS.cyan,
+    borderWidth: 2,
+    shadowColor: COLORS.cyan,
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 4, // Android glow approximation
+  },
+  selected: {
+    backgroundColor: "#1F1A45", // surface2 + touch of purple
+    borderColor: COLORS.magenta,
+    borderWidth: 3, // Thicker
+    shadowColor: COLORS.magenta,
+    shadowOpacity: 0.6,
+    shadowRadius: 10,
+    elevation: 6,
   },
   filled: {
-    borderColor: COLORS.filledBorder,
-    borderWidth: 1,
-    backgroundColor: COLORS.filledBg,
-    textColor: COLORS.mutedGold,
-    showCheckmark: false,
-  },
-  empty: {
-    borderColor: COLORS.slotBorder,
-    borderWidth: 1,
-    backgroundColor: COLORS.slotBg,
-    textColor: COLORS.textMuted,
-    showCheckmark: false,
+    backgroundColor: COLORS.surface, // Darker
+    borderColor: COLORS.border, // Reset border
+    borderWidth: 2,
+    shadowColor: "transparent",
   },
 } as const;

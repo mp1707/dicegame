@@ -68,14 +68,18 @@ export const FooterControls = () => {
     <View style={styles.container}>
       {/* Main roll button */}
       <TouchableOpacity
-        style={[styles.rollButton, !canRoll && styles.rollButtonDisabled]}
+        style={[
+          styles.rollButton,
+          !canRoll && styles.rollButtonDisabled,
+          // Add glow effect based on state or assume it's always glowing if active can be done with shadow
+        ]}
         onPress={triggerRoll}
         disabled={!canRoll}
         activeOpacity={0.8}
       >
         <RollPips remaining={rollsRemaining} />
         <Text style={styles.buttonText}>
-          {isRolling ? "WÜRFELT..." : "WURF"}
+          {isRolling ? "ROLLING..." : "WURF"}
         </Text>
       </TouchableOpacity>
     </View>
@@ -90,45 +94,59 @@ const styles = StyleSheet.create({
   },
   rollButton: {
     height: DIMENSIONS.rollButtonHeight,
-    backgroundColor: COLORS.gold,
+    backgroundColor: COLORS.bg2, // Dark fill
     borderRadius: DIMENSIONS.borderRadius,
-    borderWidth: 3,
-    borderColor: COLORS.goldDark,
-    borderBottomWidth: 5,
+    borderWidth: 2,
+    borderColor: COLORS.cyan, // Cyan border
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 12,
+    shadowColor: COLORS.cyan,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 10,
+    elevation: 6,
   },
   rollButtonDisabled: {
     opacity: 0.5,
+    borderColor: COLORS.border,
+    shadowOpacity: 0,
   },
   shopButton: {
-    backgroundColor: COLORS.green,
-    borderColor: "#166534",
+    backgroundColor: COLORS.surface,
+    borderColor: COLORS.green,
+    shadowColor: COLORS.green,
   },
   retryButton: {
-    backgroundColor: COLORS.red,
-    borderColor: COLORS.redDark,
+    backgroundColor: COLORS.surface,
+    borderColor: COLORS.red,
+    shadowColor: COLORS.red,
   },
   buttonText: {
-    color: COLORS.textBlack,
-    ...TYPOGRAPHY.mediumScore,
-    letterSpacing: 1,
+    color: COLORS.cyan, // Cyan text on dark bg
+    fontSize: 20,
+    fontFamily: "PressStart2P-Regular",
+    letterSpacing: 2,
   },
   pipsContainer: {
     flexDirection: "row",
     gap: 6,
   },
   pip: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 8,
+    height: 8,
+    borderRadius: 1, // Pixel square pips
   },
   pipActive: {
-    backgroundColor: COLORS.textBlack,
+    backgroundColor: COLORS.cyan,
+    shadowColor: COLORS.cyan,
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
   },
   pipUsed: {
-    backgroundColor: "rgba(0, 0, 0, 0.3)",
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
 });

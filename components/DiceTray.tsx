@@ -42,7 +42,10 @@ interface DiceTrayProps {
   containerWidth: number;
 }
 
-export const DiceTray = ({ containerHeight, containerWidth }: DiceTrayProps) => {
+export const DiceTray = ({
+  containerHeight,
+  containerWidth,
+}: DiceTrayProps) => {
   // Subscribe only to what we need for triggering rolls
   const rollTrigger = useGameStore((state) => state.rollTrigger);
   const selectedDice = useGameStore((state) => state.selectedDice);
@@ -74,8 +77,8 @@ export const DiceTray = ({ containerHeight, containerWidth }: DiceTrayProps) => 
   const diceSpawnY = 4 * depthScale;
   const diceSpacing = floorWidth / 6;
   const halfFovTan = Math.tan((adjustedFOV * Math.PI) / 360);
-  const fitHeight = (floorDepth / 2) / halfFovTan;
-  const fitWidth = (floorWidth / 2) / (halfFovTan * aspect);
+  const fitHeight = floorDepth / 2 / halfFovTan;
+  const fitWidth = floorWidth / 2 / (halfFovTan * aspect);
   const cameraHeight = Math.max(fitHeight, fitWidth) + 0.4;
 
   // Track settled values and sleep state
@@ -144,8 +147,23 @@ export const DiceTray = ({ containerHeight, containerWidth }: DiceTrayProps) => 
           up: [0, 0, -1],
         }}
       >
-        <ambientLight intensity={0.5} />
-        <spotLight position={[5, 10, 5]} angle={0.3} penumbra={1} castShadow />
+        <ambientLight intensity={0.4} />
+        <spotLight
+          position={[5, 10, 5]}
+          angle={0.3}
+          penumbra={1}
+          castShadow
+          intensity={0.8}
+          color={COLORS.cyan}
+        />
+        <spotLight
+          position={[-5, 10, -5]}
+          angle={0.3}
+          penumbra={1}
+          castShadow
+          intensity={0.5}
+          color={COLORS.magenta}
+        />
 
         <Suspense fallback={null}>
           <Physics gravity={[0, -9.81, 0]}>
@@ -153,7 +171,11 @@ export const DiceTray = ({ containerHeight, containerWidth }: DiceTrayProps) => 
             <RigidBody type="fixed" restitution={0.2} friction={1}>
               <mesh position={[0, 0, 0]} receiveShadow>
                 <boxGeometry args={[floorWidth, 0.5, floorDepth]} />
-                <meshStandardMaterial color="#222" />
+                <meshStandardMaterial
+                  color={COLORS.bg2}
+                  roughness={0.4}
+                  metalness={0.6}
+                />
               </mesh>
             </RigidBody>
 
@@ -194,13 +216,13 @@ export const DiceTray = ({ containerHeight, containerWidth }: DiceTrayProps) => 
           </Physics>
 
           <ContactShadows opacity={0.6} blur={2.5} />
-          <Environment preset="studio" />
+          <Environment preset="night" />
         </Suspense>
       </Canvas>
 
       {phase === "rolling" && !hasRolledThisRound && !isRolling && (
         <View pointerEvents="none" style={styles.readyToRollOverlay}>
-          <Text style={styles.readyToRollText}>Du kannst würfeln!</Text>
+          <Text style={styles.readyToRollText}>START</Text>
         </View>
       )}
 
@@ -213,7 +235,7 @@ export const DiceTray = ({ containerHeight, containerWidth }: DiceTrayProps) => 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.backgroundDark,
+    backgroundColor: "transparent", // Let parent bg show through
   },
   canvas: {
     flex: 1,
@@ -222,25 +244,28 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: COLORS.backgroundDark,
+    backgroundColor: COLORS.bg2,
   },
   loadingText: {
-    color: COLORS.textWhite,
+    color: COLORS.text,
     marginTop: 10,
     fontSize: 14,
+    fontFamily: "RobotoMono-Regular",
   },
   gameEndOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0, 0, 0, 0.7)",
     justifyContent: "center",
     alignItems: "center",
+    zIndex: 100,
   },
   gameEndText: {
     fontSize: 32,
-    fontWeight: "900",
-    textShadowColor: "rgba(0, 0, 0, 0.5)",
-    textShadowOffset: { width: 0, height: 2 },
+    fontFamily: "PressStart2P-Regular",
+    textShadowColor: COLORS.cyanGlow,
+    textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 10,
+    textAlign: "center",
   },
   readyToRollOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -248,11 +273,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   readyToRollText: {
-    color: COLORS.textWhite,
-    fontSize: 18,
-    fontWeight: "700",
-    textShadowColor: "rgba(0, 0, 0, 0.6)",
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 6,
+    color: "rgba(255, 255, 255, 0.15)", // Very subtle watermark style
+    fontSize: 40,
+    fontFamily: "PressStart2P-Regular",
+    letterSpacing: 4,
   },
 });

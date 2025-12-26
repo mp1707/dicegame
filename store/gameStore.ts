@@ -43,6 +43,7 @@ interface GameState {
 
   // Game phase
   phase: GamePhase;
+  overviewVisible: boolean;
 
   // Actions
   triggerRoll: () => void;
@@ -56,6 +57,7 @@ interface GameState {
   startNextRun: () => void;
   retryRun: () => void;
   resetForNewRound: () => void;
+  toggleOverview: () => void;
 }
 
 // Initial categories state
@@ -118,6 +120,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   targetScore: INITIAL_TARGET,
   money: 0,
   phase: "rolling",
+  overviewVisible: false,
 
   // Roll dice
   triggerRoll: () => {
@@ -157,6 +160,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       return { selectedDice: newSelected };
     });
   },
+
+  toggleOverview: () => set((s) => ({ overviewVisible: !s.overviewVisible })),
 
   // Submit score to a category
   submitCategory: (categoryId) => {
