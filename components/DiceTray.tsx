@@ -6,10 +6,7 @@ import { Environment } from "@react-three/drei";
 import { Die } from "./Die";
 import { useGameStore } from "../store/gameStore";
 import { COLORS } from "../constants/theme";
-import {
-  triggerLightImpact,
-  triggerSelectionHaptic,
-} from "../utils/haptics";
+import { triggerLightImpact, triggerSelectionHaptic } from "../utils/haptics";
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -203,9 +200,9 @@ export const DiceTray = ({
 
         <Suspense fallback={null}>
           <RenderWarmup rollTrigger={rollTrigger} />
-          <Physics gravity={[0, -9.81, 0]} updateLoop="independent">
+          <Physics gravity={[0, -18, 0]} updateLoop="independent">
             {/* Floor - scaled based on container height */}
-            <RigidBody type="fixed" restitution={0.2} friction={1}>
+            <RigidBody type="fixed" restitution={0.05} friction={1}>
               <mesh position={[0, 0, 0]}>
                 <boxGeometry args={[floorWidth, 0.5, floorDepth]} />
                 <meshStandardMaterial
@@ -219,20 +216,20 @@ export const DiceTray = ({
             {/* Walls (Invisible colliders) - scaled to match floor */}
             <RigidBody type="fixed">
               <CuboidCollider
-                args={[floorWidth / 2, 2, 0.3]}
-                position={[0, 1.5, wallZPosition]}
+                args={[floorWidth / 2, 3, 0.3]}
+                position={[0, 2.5, wallZPosition]}
               />
               <CuboidCollider
-                args={[floorWidth / 2, 2, 0.3]}
-                position={[0, 1.5, -wallZPosition]}
+                args={[floorWidth / 2, 3, 0.3]}
+                position={[0, 2.5, -wallZPosition]}
               />
               <CuboidCollider
-                args={[0.3, 2, floorDepth / 2]}
-                position={[wallXPosition, 1.5, 0]}
+                args={[0.3, 3, floorDepth / 2]}
+                position={[wallXPosition, 2.5, 0]}
               />
               <CuboidCollider
-                args={[0.3, 2, floorDepth / 2]}
-                position={[-wallXPosition, 1.5, 0]}
+                args={[0.3, 3, floorDepth / 2]}
+                position={[-wallXPosition, 2.5, 0]}
               />
             </RigidBody>
 

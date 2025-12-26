@@ -13,7 +13,7 @@ const FACE_NORMALS = [
   { face: 5, normal: new THREE.Vector3(0, 0, -1) }, // Back
 ];
 
-const DIE_SIZE = 0.85;
+const DIE_SIZE = 0.6;
 const DIE_HALF = DIE_SIZE / 2;
 const FACE_OFFSET = DIE_HALF + 0.01;
 const PIP_OFFSET = 0.25 * DIE_SIZE;
@@ -130,7 +130,7 @@ export const Die = ({
 
           // Reset Position
           rigidBody.current.setTranslation(
-            { x: pos[0] * 0.7, y: 3, z: pos[2] },
+            { x: pos[0] * 0.7, y: pos[1], z: pos[2] },
             true
           );
           rigidBody.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
@@ -142,18 +142,18 @@ export const Die = ({
 
           rigidBody.current.applyImpulse(
             {
-              x: rand(-0.5, 0.5),
-              y: rand(-2, -4),
-              z: rand(-0.5, 0.5),
+              x: rand(-0.35, 0.35),
+              y: rand(-1.2, -2),
+              z: rand(-0.35, 0.35),
             },
             true
           );
 
           rigidBody.current.applyTorqueImpulse(
             {
-              x: rand(-2, 2),
-              y: rand(-2, 2),
-              z: rand(-2, 2),
+              x: rand(-1.2, 1.2),
+              y: rand(-1.2, 1.2),
+              z: rand(-1.2, 1.2),
             },
             true
           );
@@ -241,8 +241,10 @@ export const Die = ({
     <RigidBody
       ref={rigidBody}
       colliders="cuboid"
-      restitution={0.3}
-      friction={0.8}
+      restitution={0.08}
+      friction={0.9}
+      linearDamping={0.35}
+      angularDamping={0.6}
       // Fixed type for locked dice prevents any movement/drift
       type={isLocked ? "fixed" : "dynamic"}
       onSleep={reportSettle}
