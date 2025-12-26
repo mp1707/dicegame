@@ -28,6 +28,9 @@ interface UpperSlotProps {
 const UpperSlot = ({ categoryId }: UpperSlotProps) => {
   const categories = useGameStore((s) => s.categories);
   const submitCategory = useGameStore((s) => s.submitCategory);
+  const scratchCategory = useGameStore((s) => s.scratchCategory);
+  const scratchMode = useGameStore((s) => s.scratchMode);
+  const phase = useGameStore((s) => s.phase);
   const validCategories = useValidCategories();
 
   // Get category metadata (label)
@@ -36,11 +39,15 @@ const UpperSlot = ({ categoryId }: UpperSlotProps) => {
 
   const slot = categories[categoryId];
   const isFilled = slot.score !== null;
-  const isPossible = !isFilled && validCategories.includes(categoryId);
+  const canScratch = phase === "scoring";
+  const isScratchable = canScratch && scratchMode && !isFilled;
+  const isPossible =
+    !scratchMode && !isFilled && validCategories.includes(categoryId);
 
   // Determine visual state
   let state: keyof typeof SLOT_STATES = "empty";
   if (isFilled) state = "filled";
+  else if (isScratchable) state = "scratch";
   else if (isPossible) state = "possible";
 
   const stateStyle = SLOT_STATES[state];
@@ -48,18 +55,25 @@ const UpperSlot = ({ categoryId }: UpperSlotProps) => {
   // Derive colors that were previously in SLOT_STATES
   const iconColor = isFilled
     ? COLORS.amber
+    : isScratchable
+    ? COLORS.red
     : isPossible
     ? COLORS.cyan
     : COLORS.textMuted;
 
   const labelColor = isFilled
     ? COLORS.amber
+    : isScratchable
+    ? COLORS.red
     : isPossible
     ? COLORS.text
     : COLORS.textMuted;
 
   const handlePress = () => {
-    if (isPossible) {
+    if (isScratchable) {
+      triggerSelectionHaptic();
+      scratchCategory(categoryId);
+    } else if (isPossible) {
       triggerSelectionHaptic();
       submitCategory(categoryId);
     }
@@ -77,10 +91,10 @@ const UpperSlot = ({ categoryId }: UpperSlotProps) => {
           shadowColor: stateStyle.shadowColor,
           elevation: (stateStyle as any).elevation,
         },
-        isPossible && styles.possibleGlow,
+        (isPossible || isScratchable) && styles.possibleGlow,
       ]}
       onPress={handlePress}
-      disabled={!isPossible}
+      disabled={!isPossible && !isScratchable}
       activeOpacity={0.7}
     >
       <View style={styles.contentContainer}>

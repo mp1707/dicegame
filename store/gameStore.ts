@@ -44,6 +44,7 @@ interface GameState {
   // Game phase
   phase: GamePhase;
   overviewVisible: boolean;
+  scratchMode: boolean;
 
   // Actions
   triggerRoll: () => void;
@@ -58,6 +59,7 @@ interface GameState {
   retryRun: () => void;
   resetForNewRound: () => void;
   toggleOverview: () => void;
+  toggleScratchMode: () => void;
 }
 
 // Initial categories state
@@ -121,11 +123,13 @@ export const useGameStore = create<GameState>((set, get) => ({
   money: 0,
   phase: "rolling",
   overviewVisible: false,
+  scratchMode: false,
 
   // Roll dice
   triggerRoll: () => {
     const { rollsRemaining, phase } = get();
-    if (rollsRemaining <= 0 || phase !== "rolling") return;
+    const canRollPhase = phase === "rolling" || phase === "scoring";
+    if (rollsRemaining <= 0 || !canRollPhase) return;
 
     set((state) => ({
       rollTrigger: state.rollTrigger + 1,
@@ -133,14 +137,22 @@ export const useGameStore = create<GameState>((set, get) => ({
       rollsRemaining: state.rollsRemaining - 1,
       hasRolledThisRound: true,
       diceVisible: true,
+      phase: "rolling",
+      scratchMode: false,
     }));
   },
 
   // Complete roll with final dice values (batch update for performance)
   completeRoll: (values: number[]) => {
+    const { phase } = get();
+    const nextPhase =
+      phase === "rolling" || phase === "scoring" ? "scoring" : phase;
+
     set({
       diceValues: values,
       isRolling: false,
+      phase: nextPhase,
+      scratchMode: false,
     });
   },
 
@@ -162,6 +174,13 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   toggleOverview: () => set((s) => ({ overviewVisible: !s.overviewVisible })),
+  toggleScratchMode: () =>
+    set((s) => {
+      if (s.phase !== "scoring") {
+        return { scratchMode: false };
+      }
+      return { scratchMode: !s.scratchMode };
+    }),
 
   // Submit score to a category
   submitCategory: (categoryId) => {
@@ -200,6 +219,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         money: get().money + bonusMoney,
         selectedDice: [false, false, false, false, false],
         diceVisible: false,
+        scratchMode: false,
       });
     } else {
       // Next round
@@ -212,13 +232,16 @@ export const useGameStore = create<GameState>((set, get) => ({
         selectedDice: [false, false, false, false, false],
         phase: "rolling",
         diceVisible: false,
+        scratchMode: false,
       });
     }
   },
 
   // Scratch a category (enter 0)
   scratchCategory: (categoryId) => {
-    const { categories, round, rollsRemaining } = get();
+    const { categories, round, rollsRemaining, phase } = get();
+
+    if (phase !== "scoring") return;
 
     if (categories[categoryId].score !== null) return;
 
@@ -242,6 +265,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         money: get().money + bonusMoney,
         selectedDice: [false, false, false, false, false],
         diceVisible: false,
+        scratchMode: false,
       });
     } else {
       set({
@@ -253,6 +277,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         selectedDice: [false, false, false, false, false],
         phase: "rolling",
         diceVisible: false,
+        scratchMode: false,
       });
     }
   },
@@ -277,6 +302,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       currentScore: 0,
       targetScore: Math.round(targetScore * TARGET_MULTIPLIER),
       phase: "rolling",
+      scratchMode: false,
       // Keep money
     });
   },
@@ -296,6 +322,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       targetScore: INITIAL_TARGET,
       money: 0, // Reset money on loss
       phase: "rolling",
+      scratchMode: false,
     });
   },
 
@@ -305,6 +332,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       rollsRemaining: 3,
       hasRolledThisRound: false,
       selectedDice: [false, false, false, false, false],
+      scratchMode: false,
     });
   },
 }));

@@ -21,6 +21,9 @@ interface LowerSlotProps {
 const LowerSlot = ({ categoryId }: LowerSlotProps) => {
   const categories = useGameStore((s) => s.categories);
   const submitCategory = useGameStore((s) => s.submitCategory);
+  const scratchCategory = useGameStore((s) => s.scratchCategory);
+  const scratchMode = useGameStore((s) => s.scratchMode);
+  const phase = useGameStore((s) => s.phase);
   const validCategories = useValidCategories();
 
   // Get category metadata (label)
@@ -36,11 +39,15 @@ const LowerSlot = ({ categoryId }: LowerSlotProps) => {
 
   const slot = categories[categoryId];
   const isFilled = slot.score !== null;
-  const isPossible = !isFilled && validCategories.includes(categoryId);
+  const canScratch = phase === "scoring";
+  const isScratchable = canScratch && scratchMode && !isFilled;
+  const isPossible =
+    !scratchMode && !isFilled && validCategories.includes(categoryId);
 
   // Determine visual state
   let state: keyof typeof SLOT_STATES = "empty";
   if (isFilled) state = "filled";
+  else if (isScratchable) state = "scratch";
   else if (isPossible) state = "possible";
 
   const stateStyle = SLOT_STATES[state];
@@ -48,18 +55,25 @@ const LowerSlot = ({ categoryId }: LowerSlotProps) => {
   // Derive colors
   const iconColor = isFilled
     ? COLORS.amber
+    : isScratchable
+    ? COLORS.red
     : isPossible
     ? COLORS.cyan
     : COLORS.textMuted;
 
   const labelColor = isFilled
     ? COLORS.amber
+    : isScratchable
+    ? COLORS.red
     : isPossible
     ? COLORS.text
     : COLORS.textMuted;
 
   const handlePress = () => {
-    if (isPossible) {
+    if (isScratchable) {
+      triggerSelectionHaptic();
+      scratchCategory(categoryId);
+    } else if (isPossible) {
       triggerSelectionHaptic();
       submitCategory(categoryId);
     }
@@ -76,10 +90,10 @@ const LowerSlot = ({ categoryId }: LowerSlotProps) => {
           shadowColor: stateStyle.shadowColor,
           elevation: (stateStyle as any).elevation,
         },
-        isPossible && styles.possibleGlow,
+        (isPossible || isScratchable) && styles.possibleGlow,
       ]}
       onPress={handlePress}
-      disabled={!isPossible}
+      disabled={!isPossible && !isScratchable}
       activeOpacity={0.7}
     >
       <View style={styles.contentContainer}>
@@ -130,14 +144,14 @@ const OverviewButton = () => {
   );
 };
 
-interface ScratchButtonProps {
-  canScratch: boolean;
-  onPress: () => void;
-}
-
-const ScratchButton = ({ canScratch, onPress }: ScratchButtonProps) => {
+const ScratchButton = () => {
+  const scratchMode = useGameStore((s) => s.scratchMode);
+  const phase = useGameStore((s) => s.phase);
+  const toggleScratchMode = useGameStore((s) => s.toggleScratchMode);
+  const canScratch = phase === "scoring";
   const iconColor = COLORS.textMuted;
   const labelColor = COLORS.textMuted;
+  const label = canScratch && scratchMode ? "Abbrechen" : "Streichen";
 
   return (
     <TouchableOpacity
@@ -146,27 +160,22 @@ const ScratchButton = ({ canScratch, onPress }: ScratchButtonProps) => {
         styles.scratchSlot,
         !canScratch && styles.scratchSlotDisabled,
       ]}
-      onPress={onPress}
+      onPress={() => {
+        triggerSelectionHaptic();
+        toggleScratchMode();
+      }}
       disabled={!canScratch}
       activeOpacity={0.7}
     >
       <View style={styles.contentContainer}>
         <X size={20} color={iconColor} strokeWidth={3} />
-        <Text style={[styles.label, { color: labelColor }]}>Streichen</Text>
+        <Text style={[styles.label, { color: labelColor }]}>{label}</Text>
       </View>
     </TouchableOpacity>
   );
 };
 
-interface LowerSectionProps {
-  canScratch: boolean;
-  onScratchPress: () => void;
-}
-
-export const LowerSection = ({
-  canScratch,
-  onScratchPress,
-}: LowerSectionProps) => {
+export const LowerSection = () => {
   // Use a simple flex-wrap container instead of calculating rows manually for max flexibility with 4 columns
   // We need 3 empty spacers between Chance (index 0 of last row) and Scratch/Overview (index 4/5).
   // Lower categories: 3kind, 4kind, FH, SmStr, LgStr, Yahtzee (6 items - Row 1)
@@ -188,7 +197,7 @@ export const LowerSection = ({
 
       {/* Scratch + Overview buttons at the end */}
       <View style={styles.slotWrapper}>
-        <ScratchButton canScratch={canScratch} onPress={onScratchPress} />
+        <ScratchButton />
       </View>
       <View style={styles.slotWrapper}>
         <OverviewButton />
@@ -237,6 +246,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   scratchSlotDisabled: {
-    opacity: 0.6,
+    opacity: 0.5,
   },
 });

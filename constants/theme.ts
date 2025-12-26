@@ -134,6 +134,15 @@ export const SLOT_STATES = {
     shadowRadius: 8,
     elevation: 4, // Android glow approximation
   },
+  scratch: {
+    backgroundColor: COLORS.surface2,
+    borderColor: COLORS.red,
+    borderWidth: 2,
+    shadowColor: COLORS.red,
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 4,
+  },
   selected: {
     backgroundColor: "#1F1A45", // surface2 + touch of purple
     borderColor: COLORS.magenta,

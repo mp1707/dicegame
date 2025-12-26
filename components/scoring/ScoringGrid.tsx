@@ -4,19 +4,11 @@ import { UpperSection } from "./UpperSection";
 import { LowerSection } from "./LowerSection";
 import { SPACING } from "../../constants/theme";
 
-interface ScoringGridProps {
-  canScratch: boolean;
-  onScratchPress: () => void;
-}
-
-export const ScoringGrid = ({
-  canScratch,
-  onScratchPress,
-}: ScoringGridProps) => {
+export const ScoringGrid = () => {
   return (
     <View style={styles.container}>
       <UpperSection />
-      <LowerSection canScratch={canScratch} onScratchPress={onScratchPress} />
+      <LowerSection />
     </View>
   );
 };

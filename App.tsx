@@ -12,12 +12,10 @@ import { DiceTray } from "./components/DiceTray";
 import { GlassHeader } from "./components/ui/GlassHeader";
 import { ScoringGrid } from "./components/scoring/ScoringGrid";
 import { FooterControls } from "./components/ui/FooterControls";
-import { ScratchModal } from "./components/modals/ScratchModal";
 import { ShopModal } from "./components/modals/ShopModal";
 import { OverviewModal } from "./components/modals/OverviewModal";
 import { useGameStore } from "./store/gameStore";
 import { COLORS, calculateDiceTrayHeight } from "./constants/theme";
-import { triggerSelectionHaptic } from "./utils/haptics";
 
 export default function App() {
   // Game states
@@ -26,7 +24,6 @@ export default function App() {
   const toggleOverview = useGameStore((s) => s.toggleOverview);
 
   // Modals
-  const [scratchVisible, setScratchVisible] = useState(false);
   const [shopVisible, setShopVisible] = useState(false);
 
   // Sync shop visibility with game phase
@@ -41,27 +38,11 @@ export default function App() {
   const { height: screenHeight, width: screenWidth } = useWindowDimensions();
   const diceTrayHeight = calculateDiceTrayHeight(screenHeight);
 
-  const canScratch = true;
-  const handleScratchPress = () => {
-    if (!canScratch) return;
-    triggerSelectionHaptic();
-    setScratchVisible(true);
-  };
-
   return (
     <SafeAreaProvider>
       <View style={styles.mainContainer}>
         <StatusBar barStyle="light-content" backgroundColor={COLORS.bg} />
 
-        {/* Global UI Overlays */}
-        <View style={StyleSheet.absoluteFill} pointerEvents="none">
-          <ImageBackground
-            source={require("./assets/scanline.png")}
-            style={StyleSheet.absoluteFill}
-            resizeMode="repeat"
-            imageStyle={{ opacity: 0.12 }}
-          />
-        </View>
         <View style={styles.noiseOverlay} pointerEvents="none" />
 
         <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
@@ -85,23 +66,25 @@ export default function App() {
 
           {/* Scoring Dashboard */}
           <View style={styles.scoringDashboard}>
-            <ScoringGrid
-              canScratch={canScratch}
-              onScratchPress={handleScratchPress}
-            />
+            <ScoringGrid />
           </View>
 
           {/* Footer Controls */}
           <FooterControls />
 
           {/* Modals */}
-          <ScratchModal
-            visible={scratchVisible}
-            onClose={() => setScratchVisible(false)}
-          />
           <OverviewModal visible={overviewVisible} onClose={toggleOverview} />
           <ShopModal visible={shopVisible} />
         </SafeAreaView>
+      </View>
+      {/* Global UI Overlays */}
+      <View style={StyleSheet.absoluteFill} pointerEvents="none">
+        <ImageBackground
+          source={require("./assets/scanline.png")}
+          style={StyleSheet.absoluteFill}
+          resizeMode="repeat"
+          imageStyle={{ opacity: 0.3 }}
+        />
       </View>
     </SafeAreaProvider>
   );
