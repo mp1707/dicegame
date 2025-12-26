@@ -14,7 +14,7 @@ const FACE_NORMALS = [
   { face: 5, normal: new THREE.Vector3(0, 0, -1) }, // Back
 ];
 
-const DIE_SIZE = 0.6;
+const DIE_SIZE = 0.7;
 const DIE_HALF = DIE_SIZE / 2;
 const FACE_OFFSET = DIE_HALF + 0.01;
 const PIP_OFFSET = 0.25 * DIE_SIZE;

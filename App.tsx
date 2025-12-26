@@ -37,6 +37,14 @@ export default function App() {
 
   const { height: screenHeight, width: screenWidth } = useWindowDimensions();
   const diceTrayHeight = calculateDiceTrayHeight(screenHeight);
+  const scanlineOverlayStyle = {
+    position: "absolute" as const,
+    width: screenHeight,
+    height: screenWidth,
+    left: (screenWidth - screenHeight) / 2,
+    top: (screenHeight - screenWidth) / 2,
+    transform: [{ rotate: "90deg" }],
+  };
 
   return (
     <SafeAreaProvider>
@@ -80,10 +88,10 @@ export default function App() {
       {/* Global UI Overlays */}
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
         <ImageBackground
-          source={require("./assets/scanline.png")}
-          style={StyleSheet.absoluteFill}
+          source={require("./assets/scanline3.png")}
+          style={scanlineOverlayStyle}
           resizeMode="repeat"
-          imageStyle={{ opacity: 0.3 }}
+          imageStyle={{ opacity: 0.12 }}
         />
       </View>
     </SafeAreaProvider>
