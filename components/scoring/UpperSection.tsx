@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
-import { View, StyleSheet, TouchableOpacity, Text } from "react-native";
+import { View, StyleSheet, Text } from "react-native";
 import { Check, X } from "lucide-react-native";
+import { BasePressableAnimated } from "../ui/BasePressableAnimated";
 import {
   COLORS,
   SPACING,
@@ -153,11 +154,11 @@ const UpperSlot = ({ categoryId }: UpperSlotProps) => {
   };
 
   return (
-    <TouchableOpacity
+    <BasePressableAnimated
       style={containerStyle}
       onPress={handlePress}
       disabled={!isPressable}
-      activeOpacity={0.7}
+      scaleActive={0.94}
     >
       <View style={styles.contentContainer}>
         {/* Top: Icon + Label */}
@@ -201,7 +202,7 @@ const UpperSlot = ({ categoryId }: UpperSlotProps) => {
           </View>
         )}
       </View>
-    </TouchableOpacity>
+    </BasePressableAnimated>
   );
 };
 

@@ -1,17 +1,12 @@
 import React from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Modal,
-  ScrollView,
-} from "react-native";
-import { COLORS, TYPOGRAPHY, DIMENSIONS } from "../../constants/theme";
+import { View, Text, StyleSheet, ScrollView } from "react-native";
+import { COLORS, TYPOGRAPHY, DIMENSIONS, SPACING } from "../../constants/theme";
 import { useGameStore } from "../../store/gameStore";
 import { CATEGORIES } from "../../utils/yahtzeeScoring";
 import { CategoryIcon } from "../ui/CategoryIcon";
 import { triggerSelectionHaptic } from "../../utils/haptics";
+import { ModalShell } from "../ui/ModalShell";
+import { PrimaryCTAButton } from "../ui/ButtonVariants";
 
 interface OverviewModalProps {
   visible: boolean;
@@ -21,126 +16,113 @@ interface OverviewModalProps {
 export const OverviewModal = ({ visible, onClose }: OverviewModalProps) => {
   const categories = useGameStore((s) => s.categories);
   const handleClose = () => {
-    triggerSelectionHaptic();
+    // triggerSelectionHaptic(); // ModalShell close button (X) handles haptics. BUT bottom button should too.
+    // PrimaryCTAButton handles haptics automatically.
     onClose();
   };
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={handleClose}
-    >
-      <View style={styles.overlay}>
-        <View style={styles.content}>
-          <Text style={styles.title}>Übersicht</Text>
-
-          <View style={styles.listWrapper}>
-            <ScrollView
-              style={styles.list}
-              contentContainerStyle={styles.listContent}
-              showsVerticalScrollIndicator={false}
-            >
-              {CATEGORIES.map((cat) => {
-                const slot = categories[cat.id];
-                const score = slot.score === null ? "-" : String(slot.score);
-
-                return (
-                  <View key={cat.id} style={styles.row}>
-                    <View style={styles.leftSide}>
-                      <CategoryIcon
-                        categoryId={cat.id}
-                        size={18}
-                        strokeWidth={2}
-                        color={COLORS.cyan}
-                      />
-                      <Text style={styles.label}>{cat.labelDe}</Text>
-                    </View>
-                    <Text style={styles.score}>{score}</Text>
-                  </View>
-                );
-              })}
-            </ScrollView>
-          </View>
-
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={handleClose}
-            activeOpacity={0.8}
+    <ModalShell visible={visible} onClose={handleClose} title="Übersicht">
+      <View style={styles.container}>
+        <View style={styles.listWrapper}>
+          <ScrollView
+            style={styles.list}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
           >
-            <Text style={styles.closeText}>Schließen</Text>
-          </TouchableOpacity>
+            {CATEGORIES.map((cat) => {
+              const slot = categories[cat.id];
+              const score = slot.score === null ? "-" : String(slot.score);
+              const isFilled = slot.score !== null;
+
+              return (
+                <View key={cat.id} style={styles.row}>
+                  <View style={styles.leftSide}>
+                    <CategoryIcon
+                      categoryId={cat.id}
+                      size={18}
+                      strokeWidth={2}
+                      color={isFilled ? COLORS.gold : COLORS.textMuted}
+                    />
+                    <Text
+                      style={[styles.label, isFilled && { color: COLORS.gold }]}
+                    >
+                      {cat.labelDe}
+                    </Text>
+                  </View>
+                  <Text
+                    style={[
+                      styles.score,
+                      isFilled
+                        ? { color: COLORS.text }
+                        : { color: COLORS.textMuted },
+                    ]}
+                  >
+                    {score}
+                  </Text>
+                </View>
+              );
+            })}
+          </ScrollView>
         </View>
+
+        <PrimaryCTAButton
+          onPress={handleClose}
+          label="SCHLIEßEN"
+          colors={[COLORS.surfaceHighlight, COLORS.surface]}
+          style={styles.closeButton}
+        />
       </View>
-    </Modal>
+    </ModalShell>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.95)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  content: {
-    width: "90%",
-    height: "85%",
-    backgroundColor: COLORS.surface,
-    borderRadius: DIMENSIONS.borderRadius * 2,
-    padding: 20,
-    borderWidth: 2,
-    borderColor: COLORS.border,
-  },
-  title: {
-    ...TYPOGRAPHY.displayLarge,
-    color: COLORS.text,
-    textAlign: "center",
-    marginBottom: 16,
+  container: {
+    width: "100%",
+    // flexShrink: 1, // Container just wraps. Children shrink.
   },
   listWrapper: {
-    flex: 1,
+    // flex: 1, // REMOVED: Caused collapse in auto-height container
+    flexShrink: 1, // Allow shrinking when parent hits max height
+    marginBottom: SPACING.sectionGap,
+    backgroundColor: "rgba(0,0,0,0.1)",
+    borderRadius: DIMENSIONS.borderRadiusSmall,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.05)",
+    minHeight: 100,
+    overflow: "hidden",
   },
   list: {
-    flex: 1,
+    flexGrow: 0, // Render full content height naturally
   },
   listContent: {
-    paddingBottom: 8,
+    padding: 12,
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
+    borderColor: "rgba(255, 255, 255, 0.05)",
   },
   leftSide: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 12,
   },
   label: {
-    ...TYPOGRAPHY.label,
-    color: COLORS.cyan,
+    ...TYPOGRAPHY.body,
+    color: COLORS.textMuted,
+    fontSize: 14,
   },
   score: {
-    ...TYPOGRAPHY.scoreValue,
-    color: COLORS.gold,
+    ...TYPOGRAPHY.scoreValue, // Tabular numbers
+    fontSize: 16,
   },
   closeButton: {
-    marginTop: 16,
-    paddingVertical: 14,
-    backgroundColor: COLORS.surfaceHighlight,
-    borderRadius: DIMENSIONS.borderRadius,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: COLORS.cyan,
-  },
-  closeText: {
-    ...TYPOGRAPHY.button,
-    color: COLORS.text,
+    shadowColor: COLORS.shadow,
+    shadowOpacity: 0.3,
   },
 });

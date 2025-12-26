@@ -17,6 +17,7 @@ import {
   calculateScore,
 } from "../../utils/yahtzeeScoring";
 import { triggerSelectionHaptic } from "../../utils/haptics";
+import { ModalShell } from "./ModalShell";
 
 const UPPER_TARGETS: Record<string, number> = {
   ones: 1,
@@ -120,100 +121,68 @@ export const ScoreConfirmOverlay = () => {
   };
 
   return (
-    <View style={styles.overlay} pointerEvents="box-none">
-      <View style={styles.card}>
-        <TouchableOpacity
-          style={styles.closeButton}
-          onPress={handleCancel}
-          activeOpacity={0.7}
-        >
-          <X size={16} color={COLORS.textMuted} strokeWidth={3} />
-        </TouchableOpacity>
-
+    <ModalShell
+      visible={!!pendingCategoryId}
+      onClose={handleCancel}
+      title={label}
+    >
+      <View style={styles.contentContainer}>
         <View style={styles.diceRow}>
           {displayDice.map((value, index) => {
             const Icon = diceIcons[Math.max(1, Math.min(6, value)) - 1];
             return (
               <Icon
                 key={`${value}-${index}`}
-                size={22}
-                color={COLORS.textWhite}
+                size={32}
+                color={COLORS.text}
                 strokeWidth={2}
                 style={styles.diceIcon}
               />
             );
           })}
         </View>
-        <Text style={styles.title}>{label}</Text>
-        <Text style={styles.subtitle}>+{score} PUNKTE</Text>
+        <Text style={styles.scoreValue}>+{score} PUNKTE</Text>
+
+        {/* Helper text or additional info could go here */}
+        <Text style={styles.helperText}>
+          Wähle ANNEHMEN oder tippe zum Abbrechen
+        </Text>
       </View>
-    </View>
+    </ModalShell>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "transparent", // Non-blocking background
-    justifyContent: "center",
+  contentContainer: {
     alignItems: "center",
-    zIndex: 90,
-  },
-  card: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 20,
-    paddingHorizontal: 32,
-    borderRadius: DIMENSIONS.borderRadius,
-    backgroundColor: COLORS.surface,
-    borderColor: COLORS.cyan, // Highlight border
-    borderWidth: 2,
-    gap: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.5,
-    shadowRadius: 16,
-    elevation: 20,
-    minWidth: 220,
-  },
-  closeButton: {
-    position: "absolute",
-    top: -12,
-    right: -12,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: COLORS.surface2,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: COLORS.border,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
+    gap: SPACING.sectionGap,
+    paddingVertical: 12,
   },
   diceRow: {
     flexDirection: "row",
-    gap: 6,
+    gap: 8,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 4,
   },
   diceIcon: {
-    opacity: 1,
+    shadowColor: COLORS.cyan,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
   },
-  title: {
-    color: COLORS.text,
+  scoreValue: {
     fontFamily: "Bungee-Regular",
-    fontSize: 20,
-    textAlign: "center",
-  },
-  subtitle: {
+    fontSize: 32,
     color: COLORS.cyan,
-    fontFamily: "Bungee-Regular",
-    fontSize: 16,
+    textAlign: "center",
+    textShadowColor: "rgba(77, 238, 234, 0.5)",
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 10,
+  },
+  helperText: {
+    fontFamily: "Inter-Medium",
+    fontSize: 12,
+    color: COLORS.textMuted,
     textAlign: "center",
   },
 });

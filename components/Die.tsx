@@ -115,9 +115,6 @@ export const Die = ({
 
       if (isLocked) {
         // LOCKED DICE: Immediate settle, no physics action
-        // We report settle immediately so the parent knows this die is "done"
-        // We use the current face value logic or we could store the last value.
-        // Re-evaluating the face is safer to ensure sync.
         reportSettle();
       } else {
         // UNLOCKED DICE: Wake up and roll
@@ -235,10 +232,14 @@ export const Die = ({
   };
 
   // Die colors based on selection
-  const dieColor = isLocked ? COLORS.cyan : "#f5f5f5"; // Cyan when locked
+  const dieColor = isLocked ? COLORS.gold : "#f5f5f5";
   const dieOpacity = isVisible ? 1 : 0;
-  const dieEmissive = isLocked ? COLORS.cyan : "#000000";
-  const dieEmissiveIntensity = isLocked ? 0.65 : 0;
+
+  // Metal/Roughness for Gold effect
+  const metalness = isLocked ? 0.6 : 0.1;
+  const roughness = isLocked ? 0.2 : 0.4;
+
+  const dieScale = isLocked ? 1.1 : 1.0;
 
   return (
     <RigidBody
@@ -254,28 +255,17 @@ export const Die = ({
       onWake={handleWake}
       position={position}
     >
-      <group onPointerDown={handlePointerDown}>
-        {isLocked && (
-          <mesh scale={[1.08, 1.08, 1.08]}>
-            <boxGeometry args={[DIE_SIZE, DIE_SIZE, DIE_SIZE]} />
-            <meshBasicMaterial
-              color={COLORS.cyan}
-              transparent
-              opacity={isVisible ? 0.25 : 0}
-              blending={THREE.AdditiveBlending}
-              depthWrite={false}
-              toneMapped={false}
-            />
-          </mesh>
-        )}
-
+      <group
+        onPointerDown={handlePointerDown}
+        scale={[dieScale, dieScale, dieScale]}
+      >
         {/* Main die body */}
         <mesh castShadow receiveShadow>
           <boxGeometry args={[DIE_SIZE, DIE_SIZE, DIE_SIZE]} />
           <meshStandardMaterial
             color={dieColor}
-            emissive={dieEmissive}
-            emissiveIntensity={dieEmissiveIntensity}
+            metalness={metalness}
+            roughness={roughness}
             transparent
             opacity={dieOpacity}
           />

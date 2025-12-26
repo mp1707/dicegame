@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
-import { View, StyleSheet, TouchableOpacity, Text } from "react-native";
+import { View, StyleSheet, Text } from "react-native";
 import { ScrollText, Check, X } from "lucide-react-native";
+import { BasePressableAnimated } from "../ui/BasePressableAnimated";
 import {
   COLORS,
   SPACING,
@@ -152,11 +153,11 @@ const LowerSlot = ({ categoryId }: LowerSlotProps) => {
   };
 
   return (
-    <TouchableOpacity
+    <BasePressableAnimated
       style={containerStyle}
       onPress={handlePress}
       disabled={!isPressable}
-      activeOpacity={0.7}
+      scaleActive={0.94}
     >
       <View style={styles.contentContainer}>
         {/* Top: Icon + Label */}
@@ -199,7 +200,7 @@ const LowerSlot = ({ categoryId }: LowerSlotProps) => {
           </View>
         )}
       </View>
-    </TouchableOpacity>
+    </BasePressableAnimated>
   );
 };
 
@@ -207,7 +208,7 @@ const OverviewButton = () => {
   const toggleOverview = useGameStore((s) => s.toggleOverview);
 
   return (
-    <TouchableOpacity
+    <BasePressableAnimated
       style={[
         styles.lowerSlot,
         {
@@ -226,7 +227,7 @@ const OverviewButton = () => {
         triggerSelectionHaptic();
         toggleOverview();
       }}
-      activeOpacity={0.7}
+      scaleActive={0.9}
     >
       <View style={[styles.contentContainer, { justifyContent: "center" }]}>
         <ScrollText size={20} color={COLORS.cyan} strokeWidth={2} />
@@ -234,7 +235,7 @@ const OverviewButton = () => {
           ÜBER
         </Text>
       </View>
-    </TouchableOpacity>
+    </BasePressableAnimated>
   );
 };
 
@@ -296,14 +297,14 @@ const ScratchButton = () => {
   const label = isActive ? "ZURÜCK" : "STREICH";
 
   return (
-    <TouchableOpacity
+    <BasePressableAnimated
       style={containerStyle}
       onPress={() => {
         triggerSelectionHaptic();
         toggleScratchMode();
       }}
       disabled={!canScratch}
-      activeOpacity={0.7}
+      scaleActive={0.94}
     >
       <View style={[styles.contentContainer, { justifyContent: "center" }]}>
         <X size={20} color={iconColor} strokeWidth={3} />
@@ -311,7 +312,7 @@ const ScratchButton = () => {
           {label}
         </Text>
       </View>
-    </TouchableOpacity>
+    </BasePressableAnimated>
   );
 };
 

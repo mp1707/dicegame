@@ -15,3 +15,19 @@ export const triggerSelectionHaptic = () => {
 export const triggerLightImpact = () => {
   runHaptic(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light));
 };
+
+export const triggerImpactMedium = () => {
+  runHaptic(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium));
+};
+
+export const triggerNotificationSuccess = () => {
+  runHaptic(() =>
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+  );
+};
+
+export const triggerNotificationWarning = () => {
+  runHaptic(() =>
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)
+  );
+};
