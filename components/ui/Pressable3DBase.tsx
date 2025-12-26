@@ -44,6 +44,7 @@ interface Pressable3DBaseProps {
 
   // Logic
   selected?: boolean; // If selected, we might want different behavior or just pass it through
+  showLighting?: boolean; // Whether to show default gloss/shadow overlays
 }
 
 export const Pressable3DBase = ({
@@ -58,6 +59,7 @@ export const Pressable3DBase = ({
   base,
   hapticOnPressIn = "light",
   hapticOnPress = "medium",
+  showLighting = true,
 }: Pressable3DBaseProps) => {
   // Shared value p: 0 (up/unpressed) -> 1 (down/pressed)
   const p = useSharedValue(0);
@@ -161,18 +163,22 @@ export const Pressable3DBase = ({
           {/* LIGHTING OVERLAYS (Inside Face) */}
 
           {/* Top Highlight (Gloss) */}
-          <Animated.View
-            style={[styles.lightingOverlay, styles.highlight, highlightStyle]}
-          />
+          {showLighting && (
+            <Animated.View
+              style={[styles.lightingOverlay, styles.highlight, highlightStyle]}
+            />
+          )}
 
           {/* Inner Shadow (Inset) */}
-          <Animated.View
-            style={[
-              styles.lightingOverlay,
-              styles.innerShadow,
-              innerShadowStyle,
-            ]}
-          />
+          {showLighting && (
+            <Animated.View
+              style={[
+                styles.lightingOverlay,
+                styles.innerShadow,
+                innerShadowStyle,
+              ]}
+            />
+          )}
 
           {/* CONTENT */}
           <Animated.View

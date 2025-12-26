@@ -365,6 +365,9 @@ const ScratchButton = () => {
 };
 
 export const LowerSection = () => {
+  const scratchMode = useGameStore((s) => s.scratchMode);
+  const spacerCount = scratchMode ? 2 : 3;
+
   return (
     <View style={styles.container}>
       {LOWER_CATEGORIES.map((cat) => (
@@ -373,15 +376,17 @@ export const LowerSection = () => {
         </View>
       ))}
 
-      {/* 2 Spacers */}
-      {[...Array(2)].map((_, i) => (
+      {/* Spacers to keep 6-column grid aligned */}
+      {[...Array(spacerCount)].map((_, i) => (
         <View key={`spacer-${i}`} style={styles.slotWrapper} />
       ))}
 
       {/* Win + Scratch + Overview buttons at the end */}
-      <View style={styles.slotWrapper}>
-        <WinButton />
-      </View>
+      {scratchMode && (
+        <View style={styles.slotWrapper}>
+          <WinButton />
+        </View>
+      )}
       <View style={styles.slotWrapper}>
         <ScratchButton />
       </View>

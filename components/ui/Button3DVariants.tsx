@@ -26,6 +26,14 @@ export const CTA3DButton = ({
   style,
 }: CTA3DButtonProps) => {
   const DEPTH = 6;
+  const BORDER_WIDTH = 2; // Reduced border width for cleaner look
+
+  // Colors
+  // We use colors[0] for the FACE
+  // We use colors[1] (or dark variant) for the BASE (Side/Shadow)
+  const faceColor = disabled ? COLORS.surface2 : colors[0];
+  const sideColor = disabled ? COLORS.surface : colors[1];
+  const borderColor = "rgba(0,0,0,0.15)"; // Soft border for definition
 
   return (
     <Pressable3DBase
@@ -33,17 +41,46 @@ export const CTA3DButton = ({
       disabled={disabled}
       depth={DEPTH}
       borderRadius={DIMENSIONS.borderRadius}
+      showLighting={false} // We handle our own styling
       style={[styles.ctaWrapper, style, disabled && styles.ctaDisabled]}
-      // BASE: Dark "well" that shows when face moves down (same as Tile3DButton)
-      base={<View style={[styles.baseLayer, styles.ctaBase]} />}
-      // FACE: The gradient button surface
-      face={
-        <LinearGradient
-          colors={
-            disabled ? [COLORS.surface2, COLORS.surface2] : (colors as any)
-          }
-          style={styles.faceGradient}
+      // BASE: The "Side" and "Bottom". It sits behind.
+      // We give it the dark color.
+      base={
+        <View
+          style={[
+            styles.baseLayer,
+            {
+              backgroundColor: sideColor,
+              // Add a border to the base to match the face if needed, or keep it solid
+              borderColor: sideColor,
+              borderWidth: BORDER_WIDTH,
+            },
+          ]}
         />
+      }
+      // FACE: The Top Surface.
+      // We give it the margin bottom so it sits "up" initially?
+      // No, Pressable3DBase handles projection.
+      // We just need the Face to look like a "card".
+      // We add a border to the face to match the "Shop" aesthetic.
+      face={
+        <View
+          style={[
+            styles.ctaFace,
+            {
+              backgroundColor: faceColor,
+              borderColor: borderColor,
+              borderWidth: BORDER_WIDTH,
+              borderBottomWidth: BORDER_WIDTH * 2, // Thicker bottom border for "lip"
+            },
+          ]}
+        >
+          {/* Subtle gradient overlay if desired, or just solid */}
+          <LinearGradient
+            colors={["rgba(255,255,255,0.1)", "rgba(0,0,0,0.05)"]}
+            style={StyleSheet.absoluteFill}
+          />
+        </View>
       }
     >
       {/* Content */}
@@ -83,12 +120,6 @@ export const Tile3DButton = ({
 }: Tile3DButtonProps) => {
   const DEPTH = 4;
 
-  // Visual states based on selection/variant
-  // We want to preserve the existing look but add depth
-  // The existing look uses borders.
-  // Ideally, the "Face" carries the border.
-  // The "Base" is just the shadow color.
-
   return (
     <Pressable3DBase
       onPress={onPress}
@@ -98,27 +129,7 @@ export const Tile3DButton = ({
       hapticOnPressIn={selected ? "none" : "selection"}
       style={[styles.tileWrapper, style]}
       base={<View style={[styles.baseLayer, styles.tileBase]} />}
-      face={
-        // The face is transparent here because the children (ScoreSlot) usually have their own background/border.
-        // WAIT. The requested architecture says "Face + Base + Lighting".
-        // If we wrap existing children (which have borders/fills), and we move them, that's the Face.
-        // But we need the "Base" to be visible *behind* them when they move.
-        // And we need the Lighting overlay *on top*.
-
-        // So for Tile3DButton, we act as a container.
-        // The "Face" prop in Pressable3DBase expects a node.
-        // But here we might want to just render the children AS the face content?
-        // Let's pass null to face prop and let children be the content inside the face container.
-        // But Pressable3DBase puts children IN the content container.
-        // Face prop is for the BACKGROUND of the face.
-
-        // If the children are fully styled (like ScoreRow), they might cover everything.
-        // However, ScoreRow usually has `flex: 1` or specific dimensions.
-        // To make this work reusable, maybe we assume the Tile3DButton *IS* the visual container?
-        // In the current codebase, `TileButton` wraps `children`.
-        // Let's pass a View as the face background.
-        <View style={styles.tileFaceBackground} />
-      }
+      face={<View style={styles.tileFaceBackground} />}
     >
       {children}
     </Pressable3DBase>
@@ -131,8 +142,6 @@ const styles = StyleSheet.create({
     height: DIMENSIONS.rollButtonHeight,
     width: "100%",
     borderRadius: DIMENSIONS.borderRadius,
-    // We need overflow visible to not clip the base if it sticks out?
-    // Actually, Base is same size, we just reveal it by moving face.
   },
   ctaDisabled: {
     opacity: 0.8,
@@ -140,14 +149,12 @@ const styles = StyleSheet.create({
   baseLayer: {
     flex: 1,
     borderRadius: DIMENSIONS.borderRadius,
-    backgroundColor: COLORS.shadow, // Default deep shadow color
+    // Background color set inline
   },
-  ctaBase: {
-    backgroundColor: "rgba(0, 0, 0, 0.5)", // Dark well matching Tile3DButton style
-  },
-  faceGradient: {
-    ...StyleSheet.absoluteFillObject,
+  ctaFace: {
+    flex: 1,
     borderRadius: DIMENSIONS.borderRadius,
+    // Colors set inline
   },
   contentRow: {
     flexDirection: "row",
@@ -175,12 +182,10 @@ const styles = StyleSheet.create({
 
   // Tile Styles
   tileWrapper: {
-    // Tiles often define their own height in the parent grid
     borderRadius: DIMENSIONS.borderRadiusSmall,
   },
   tileBase: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.4)", // Darker well for tiles
     borderRadius: DIMENSIONS.borderRadiusSmall,
   },
   tileFaceBackground: {
