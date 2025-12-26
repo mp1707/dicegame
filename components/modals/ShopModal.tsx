@@ -1,9 +1,10 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Modal } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { COLORS, TYPOGRAPHY, DIMENSIONS } from "../../constants/theme";
 import { useGameStore } from "../../store/gameStore";
 import { formatNumber } from "../../utils/yahtzeeScoring";
 import { triggerSelectionHaptic } from "../../utils/haptics";
+import { ModalShell } from "../ui/ModalShell";
 
 interface ShopModalProps {
   visible: boolean;
@@ -18,56 +19,50 @@ export const ShopModal = ({ visible }: ShopModalProps) => {
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade">
-      <View style={styles.overlay}>
-        <View style={styles.content}>
-          {/* Title */}
-          <Text style={styles.title}>SHOP</Text>
+    <ModalShell
+      visible={visible}
+      title="SHOP"
+      titleStyle={styles.title}
+      cardStyle={{
+        borderColor: COLORS.mint,
+        borderWidth: 2,
+        borderRadius: DIMENSIONS.borderRadius * 2,
+      }}
+    >
+      <View style={{ alignItems: "center", width: "100%" }}>
+        {/* Money display */}
+        <Text style={styles.moneyDisplay}>${formatNumber(money)}</Text>
 
-          {/* Money display */}
-          <Text style={styles.moneyDisplay}>${formatNumber(money)}</Text>
-
-          {/* Placeholder content */}
-          <View style={styles.shopContent}>
-            <Text style={styles.emptyText}>Shop ist leer</Text>
-            <Text style={styles.futureText}>Upgrades kommen bald...</Text>
-          </View>
-
-          {/* Next round button */}
-          <TouchableOpacity
-            style={styles.nextButton}
-            onPress={handleStartNextRun}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.nextButtonText}>NÄCHSTE RUNDE</Text>
-          </TouchableOpacity>
+        {/* Placeholder content */}
+        <View style={styles.shopContent}>
+          <Text style={styles.emptyText}>Shop ist leer</Text>
+          <Text style={styles.futureText}>Upgrades kommen bald...</Text>
         </View>
+
+        {/* Next round button */}
+        <TouchableOpacity
+          style={styles.nextButton}
+          onPress={handleStartNextRun}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.nextButtonText}>NÄCHSTE RUNDE</Text>
+        </TouchableOpacity>
       </View>
-    </Modal>
+    </ModalShell>
   );
 };
 
 const styles = StyleSheet.create({
   overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.95)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
+    // Moved to ModalShell
   },
   content: {
-    width: "90%",
-    backgroundColor: COLORS.surface,
-    borderRadius: DIMENSIONS.borderRadius * 2,
-    padding: 24,
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: COLORS.mint,
+    // Moved to ModalShell
   },
   title: {
     ...TYPOGRAPHY.displayLarge,
     color: COLORS.mint,
-    marginBottom: 16,
+    marginBottom: 0, // Managed by header in ModalShell, but we override
     textShadowColor: COLORS.mint,
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 10,
@@ -77,6 +72,8 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: "900",
     marginBottom: 32,
+    marginTop: 16, // Added spacing since title is in header now
+    textAlign: "center",
     textShadowColor: "#FF8C00",
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 15,

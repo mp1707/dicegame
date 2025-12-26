@@ -1,11 +1,6 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableWithoutFeedback } from "react-native";
-import Animated, {
-  FadeIn,
-  FadeOut,
-  ZoomIn,
-  ZoomOut,
-} from "react-native-reanimated";
+import Animated, { FadeIn, SlideInUp } from "react-native-reanimated";
 import { COLORS, DIMENSIONS, SPACING } from "../../constants/theme";
 import { IconButton } from "./ButtonVariants";
 import { X } from "lucide-react-native";
@@ -16,6 +11,8 @@ interface ModalShellProps {
   onClose?: () => void;
   title?: string;
   children: React.ReactNode;
+  cardStyle?: any; // Using any for simplicity in ViewStyle
+  titleStyle?: any; // Using any for simplicity in TextStyle
 }
 
 export const ModalShell = ({
@@ -23,6 +20,8 @@ export const ModalShell = ({
   onClose,
   title,
   children,
+  cardStyle,
+  titleStyle,
 }: ModalShellProps) => {
   if (!visible) return null;
 
@@ -31,7 +30,7 @@ export const ModalShell = ({
       {/* Scrim */}
       <Animated.View
         entering={FadeIn.duration(100)}
-        exiting={FadeOut.duration(100)}
+        // No exiting animation for instant dismissal
         style={styles.scrim}
       >
         <TouchableWithoutFeedback onPress={onClose}>
@@ -42,17 +41,17 @@ export const ModalShell = ({
       {/* Content Container */}
       <View style={styles.centerContainer} pointerEvents="box-none">
         <Animated.View
-          entering={ZoomIn.duration(150)
-            .springify()
-            .damping(30)
+          entering={SlideInUp.springify()
+            .damping(25)
+            .stiffness(400)
             .mass(0.8)
-            .stiffness(300)}
-          exiting={ZoomOut.duration(150)}
-          style={styles.card}
+            .damping(35)} // Ensuring it's snappy but not too bouncy
+          // No exiting animation
+          style={[styles.card, cardStyle]}
         >
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>{title || ""}</Text>
+            <Text style={[styles.title, titleStyle]}>{title || ""}</Text>
             {onClose && (
               <IconButton
                 onPress={() => {
