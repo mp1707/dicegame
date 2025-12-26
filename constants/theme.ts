@@ -128,78 +128,80 @@ export const calculateDiceTrayHeight = (screenHeight: number): number => {
 };
 
 // Slot Visual States - Solid, Tactile, No excessive glow
+// Slot Visual States - Continuous rounded stroke, "Toy" bevels, No brackets
 export const SLOT_STATES = {
   empty: {
     backgroundColor: COLORS.surface2,
-    borderColor: "transparent",
-    borderWidth: 0,
+    borderColor: "rgba(255,255,255,0.1)",
+    borderWidth: 1,
     borderStyle: "solid",
-    // Bevel effect (fake)
-    borderTopWidth: 2,
-    borderTopColor: "rgba(255,255,255,0.1)",
-    borderBottomWidth: 4,
-    borderBottomColor: "rgba(0,0,0,0.2)",
+    // Bevel effect
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.15)",
+    borderBottomWidth: 3,
+    borderBottomColor: "rgba(0,0,0,0.3)",
     shadowColor: "transparent",
     shadowOpacity: 0,
     elevation: 0,
     shadowRadius: 0,
   },
   possible: {
-    backgroundColor: COLORS.surfaceHighlight,
-    borderColor: COLORS.cyan,
-    borderWidth: 0, // Filled look is cleaner, maybe small side accent
+    // Same as empty but allows for preview text updates in component
+    backgroundColor: COLORS.surface2,
+    borderColor: "rgba(255,255,255,0.1)",
+    borderWidth: 1,
     borderStyle: "solid",
     // Bevel
-    borderTopWidth: 2,
-    borderTopColor: "rgba(255,255,255,0.2)",
-    borderBottomWidth: 4,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.15)",
+    borderBottomWidth: 3,
     borderBottomColor: "rgba(0,0,0,0.3)",
-    // Small glow? No, "Everything else is calm"
     shadowColor: "transparent",
     shadowOpacity: 0,
     elevation: 0,
     shadowRadius: 0,
   },
   scratch: {
-    backgroundColor: COLORS.surface,
+    // Eligible tiles in scratch mode: Coral tint + Border
+    backgroundColor: "rgba(255, 90, 122, 0.15)",
     borderColor: COLORS.coral,
     borderWidth: 2,
-    borderStyle: "dashed",
+    borderStyle: "solid",
+    // Bevel
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255, 90, 122, 0.3)",
+    borderBottomWidth: 3,
+    borderBottomColor: "rgba(0,0,0,0.2)",
     shadowColor: "transparent",
-    // default/empty bevel props to satisfy union
-    borderTopWidth: 0,
-    borderTopColor: "transparent",
-    borderBottomWidth: 0,
-    borderBottomColor: "transparent",
     shadowOpacity: 0,
     elevation: 0,
     shadowRadius: 0,
   },
   selected: {
-    // ONLY here we glow
-    backgroundColor: COLORS.surfaceHighlight, // Brighter
+    // Selection: Cyan border + Soft Glow, No brackets
+    backgroundColor: COLORS.surfaceHighlight, // Slightly brighter
     borderColor: COLORS.cyan,
     borderWidth: 3,
-    borderStyle: "solid",
+    borderStyle: "solid", // Continuous stroke
     shadowColor: COLORS.cyan,
-    shadowOpacity: 0.6,
-    shadowRadius: 16,
-    elevation: 10,
-    // default/empty bevel props to satisfy union
-    borderTopWidth: 0,
-    borderTopColor: "transparent",
-    borderBottomWidth: 0,
-    borderBottomColor: "transparent",
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+    elevation: 6,
+    // Bevel (subtle lift)
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.4)",
+    borderBottomWidth: 3,
+    borderBottomColor: "rgba(0,0,0,0.4)",
   },
   filled: {
-    // "Polished stone" look
-    backgroundColor: COLORS.bg, // Darker recessed
-    borderColor: COLORS.gold, // Subtle gold rim if high score, else muted
+    // Committed: Dim fill, Flat-ish
+    backgroundColor: COLORS.bg, // Recessed look
+    borderColor: "rgba(255,255,255,0.05)",
     borderWidth: 1,
     borderStyle: "solid",
     opacity: 0.8,
     shadowColor: "transparent",
-    // default/empty bevel props to satisfy union
+    // Minimal bevel
     borderTopWidth: 0,
     borderTopColor: "transparent",
     borderBottomWidth: 0,

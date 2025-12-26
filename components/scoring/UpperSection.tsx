@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { View, StyleSheet, TouchableOpacity, Text } from "react-native";
-import { Check } from "lucide-react-native";
+import { Check, X } from "lucide-react-native";
 import {
   COLORS,
   SPACING,
@@ -28,10 +28,9 @@ const UPPER_CATEGORIES: CategoryId[] = [
 
 interface UpperSlotProps {
   categoryId: CategoryId;
-  isBestOption?: boolean;
 }
 
-const UpperSlot = ({ categoryId, isBestOption }: UpperSlotProps) => {
+const UpperSlot = ({ categoryId }: UpperSlotProps) => {
   const categories = useGameStore((s) => s.categories);
   const setPendingCategory = useGameStore((s) => s.setPendingCategory);
   const scratchCategory = useGameStore((s) => s.scratchCategory);
@@ -55,22 +54,26 @@ const UpperSlot = ({ categoryId, isBestOption }: UpperSlotProps) => {
     !isRolling;
   const hasPendingSelection = pendingCategoryId !== null;
   const isScratchable = canScore && scratchMode && !isFilled;
+  // const isPossibleBase = validCategories.includes(categoryId); // Not used logic in scratch mode per se
+
+  // Logic from before:
   const isPossibleBase =
     canScore &&
     !scratchMode &&
     !isFilled &&
     validCategories.includes(categoryId);
+
   const isPossible = isPossibleBase && !hasPendingSelection;
   const isSelected = pendingCategoryId === categoryId;
   const isPressable = isScratchable || (isPossibleBase && !hasPendingSelection);
 
   // Calculate predicted score if possible
   const predictedScore = useMemo(() => {
-    if (isPossible || isSelected) {
+    if ((isPossible || isSelected) && !scratchMode) {
       return calculateScore(diceValues, categoryId);
     }
     return 0;
-  }, [diceValues, categoryId, isPossible, isSelected]);
+  }, [diceValues, categoryId, isPossible, isSelected, scratchMode]);
 
   // Determine visual state
   let state: keyof typeof SLOT_STATES = "empty";
@@ -101,13 +104,14 @@ const UpperSlot = ({ categoryId, isBestOption }: UpperSlotProps) => {
       borderBottomWidth: stateStyle.borderBottomWidth,
       borderBottomColor: stateStyle.borderBottomColor,
     },
-    // Best option highlight (Gold Edge)
-    (isPossible || isSelected) &&
-      isBestOption &&
-      !isFilled && {
-        borderColor: COLORS.gold,
-        borderWidth: 2,
+    // Scratch Selection Override (Coral Glow)
+    isSelected &&
+      scratchMode && {
+        borderColor: COLORS.coral,
+        shadowColor: COLORS.coral,
       },
+    // Dim ineligible tiles in scratch mode
+    scratchMode && !isScratchable && { opacity: 0.4 },
   ];
 
   // Content Colors
@@ -151,16 +155,12 @@ const UpperSlot = ({ categoryId, isBestOption }: UpperSlotProps) => {
       <View style={styles.contentContainer}>
         {/* Top: Icon + Label */}
         <View style={styles.topRow}>
-          {isFilled ? (
-            <Check size={16} color={COLORS.gold} strokeWidth={4} />
-          ) : (
-            <CategoryIcon
-              categoryId={categoryId}
-              size={16}
-              strokeWidth={2.5}
-              color={iconColor}
-            />
-          )}
+          <CategoryIcon
+            categoryId={categoryId}
+            size={16}
+            strokeWidth={2.5}
+            color={iconColor}
+          />
           <Text style={[styles.label, { color: labelColor }]} numberOfLines={1}>
             {label}
           </Text>
@@ -170,79 +170,58 @@ const UpperSlot = ({ categoryId, isBestOption }: UpperSlotProps) => {
         <View style={styles.scoreRow}>
           {isFilled ? (
             <Text style={styles.scoreFilled}>{slot.score}</Text>
-          ) : isPossible || isSelected ? (
+          ) : isPossible || (isSelected && !scratchMode) ? (
             <Text style={styles.scorePredicted}>+{predictedScore}</Text>
           ) : (
-            <Text style={styles.scoreEmpty}>-</Text>
+            // Show dash or empty
+            <Text
+              style={[styles.scoreEmpty, isScratchable && { opacity: 0.1 }]}
+            >
+              -
+            </Text>
           )}
         </View>
+
+        {/* Badges (Absolute Top Right) */}
+        {isFilled && (
+          <View style={styles.badge}>
+            <Check size={10} color={COLORS.bg} strokeWidth={4} />
+          </View>
+        )}
+        {isScratchable && !isSelected && (
+          <View style={[styles.badge, styles.badgeScratch]}>
+            <X size={10} color={COLORS.bg} strokeWidth={4} />
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
 };
 
 export const UpperSection = () => {
-  const diceValues = useGameStore((s) => s.diceValues);
-  const categories = useGameStore((s) => s.categories);
-
-  // Find which category yields the highest score currently
-  const bestOptionId = useMemo(() => {
-    let max = -1;
-    let bestId: CategoryId | null = null;
-
-    // Only check unfilled categories
-    UPPER_CATEGORIES.forEach((id) => {
-      if (categories[id].score === null) {
-        const score = calculateScore(diceValues, id);
-        if (score > max && score > 0) {
-          max = score;
-          bestId = id;
-        }
-      }
-    });
-
-    // Also check lower categories? Usually "Best" implies global best.
-    // Ideally we pass this down or calculate it globally, but for now local best in section is okay?
-    // User requirement: "The best scoring option gets a gold edge".
-    // We should probably check ALL categories.
-    // But since this component only renders Upper, we need to know if an Upper slot is THE best.
-    // Let's implement a global best check helper or logic here for now.
-
-    // Actually, let's just highlight the best logic within available options.
-    // We can do a quick global check here.
-    let globalMax = -1;
-    let globalBestId: CategoryId | null = null;
-
-    CATEGORIES.forEach((cat) => {
-      if (categories[cat.id].score === null) {
-        const score = calculateScore(diceValues, cat.id);
-        if (score > globalMax && score > 0) {
-          globalMax = score;
-          globalBestId = cat.id;
-        }
-      }
-    });
-
-    return globalBestId;
-  }, [diceValues, categories]);
-
   return (
-    <View style={styles.container}>
-      {UPPER_CATEGORIES.map((id) => (
-        <View key={id} style={styles.slotWrapper}>
-          <UpperSlot categoryId={id} isBestOption={id === bestOptionId} />
-        </View>
-      ))}
+    <View style={styles.wrapper}>
+      <View style={styles.container}>
+        {UPPER_CATEGORIES.map((id) => (
+          <View key={id} style={styles.slotWrapper}>
+            <UpperSlot categoryId={id} />
+          </View>
+        ))}
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  wrapper: {
+    width: "100%",
+    gap: 8,
+    marginBottom: SPACING.slotGapHorizontal,
+  },
   container: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: SPACING.slotGapHorizontal,
-    marginBottom: SPACING.slotGapHorizontal, // Space between sections
   },
   slotWrapper: {
     // 6 Columns.
@@ -255,7 +234,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 4,
-    overflow: "hidden",
+    overflow: "hidden", // Important for overflow badge
   },
   contentContainer: {
     flex: 1,
@@ -296,5 +275,19 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
     fontSize: 12,
     opacity: 0.3,
+  },
+  badge: {
+    position: "absolute",
+    top: 2,
+    right: 2,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: COLORS.gold,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  badgeScratch: {
+    backgroundColor: COLORS.coral,
   },
 });

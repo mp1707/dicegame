@@ -3,7 +3,11 @@ import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6 } from "lucide-react-native";
 import { COLORS, DIMENSIONS, SPACING } from "../../constants/theme";
 import { useGameStore } from "../../store/gameStore";
-import { CategoryId, CATEGORIES } from "../../utils/yahtzeeScoring";
+import {
+  CategoryId,
+  CATEGORIES,
+  calculateScore,
+} from "../../utils/yahtzeeScoring";
 import { triggerSelectionHaptic } from "../../utils/haptics";
 
 const UPPER_TARGETS: Record<string, number> = {
@@ -101,6 +105,7 @@ export const ScoreConfirmOverlay = () => {
   const diceIcons = [Dice1, Dice2, Dice3, Dice4, Dice5, Dice6];
   const scoringDice = getScoringDice(diceValues, pendingCategoryId);
   const displayDice = scoringDice.length > 0 ? scoringDice : diceValues;
+  const score = calculateScore(diceValues, pendingCategoryId);
 
   const handleConfirm = () => {
     triggerSelectionHaptic();
@@ -130,7 +135,7 @@ export const ScoreConfirmOverlay = () => {
           })}
         </View>
         <Text style={styles.title}>{label}</Text>
-        <Text style={styles.subtitle}>eintragen?</Text>
+        <Text style={styles.subtitle}>eintragen ( +{score} )?</Text>
         <View style={styles.buttonRow}>
           <TouchableOpacity
             style={[styles.button, styles.cancelButton]}
@@ -164,70 +169,78 @@ const styles = StyleSheet.create({
   card: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 18,
-    paddingHorizontal: 20,
+    paddingVertical: 24,
+    paddingHorizontal: 24,
     borderRadius: DIMENSIONS.borderRadius,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    borderColor: "rgba(255, 255, 255, 0.2)",
-    borderWidth: 1,
-    gap: 10,
+    backgroundColor: COLORS.surface, // Use theme surface
+    borderColor: COLORS.border,
+    borderWidth: 2,
+    gap: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    elevation: 20,
   },
   diceRow: {
     flexDirection: "row",
     gap: 6,
     alignItems: "center",
     justifyContent: "center",
+    marginBottom: 4,
   },
   diceIcon: {
-    opacity: 0.9,
+    opacity: 1,
   },
   title: {
-    color: COLORS.textWhite,
-    fontFamily: "PressStart2P-Regular",
-    fontSize: 16,
+    color: COLORS.text,
+    fontFamily: "Bungee-Regular",
+    fontSize: 20,
     textAlign: "center",
   },
   subtitle: {
-    color: COLORS.textWhite,
-    fontFamily: "PressStart2P-Regular",
-    fontSize: 12,
+    color: COLORS.cyan,
+    fontFamily: "Bungee-Regular",
+    fontSize: 16,
     textAlign: "center",
+    marginBottom: 8,
   },
   buttonRow: {
     flexDirection: "row",
-    gap: 12,
-    marginTop: 6,
+    gap: 16,
+    marginTop: 8,
   },
   button: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: DIMENSIONS.borderRadius,
-    minWidth: 90,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: DIMENSIONS.borderRadiusSmall,
+    minWidth: 100,
     alignItems: "center",
-    borderWidth: 2,
+    justifyContent: "center",
   },
   confirmButton: {
-    borderColor: COLORS.cyan,
+    backgroundColor: COLORS.cyan,
     shadowColor: COLORS.cyan,
-    shadowOpacity: 0.7,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 8,
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 4,
   },
   cancelButton: {
     backgroundColor: "transparent",
-    borderColor: "rgba(255, 255, 255, 0.9)",
+    borderColor: COLORS.textMuted,
+    borderWidth: 2,
+    opacity: 0.8,
   },
   buttonText: {
-    color: COLORS.textWhite,
-    fontFamily: "PressStart2P-Regular",
-    fontSize: 12,
+    color: COLORS.textMuted,
+    fontFamily: "Bungee-Regular",
+    fontSize: 14,
     textAlign: "center",
   },
   acceptButtonText: {
-    color: COLORS.cyan,
-    fontFamily: "PressStart2P-Regular",
-    fontSize: 12,
+    color: COLORS.textDark,
+    fontFamily: "Bungee-Regular",
+    fontSize: 14,
     textAlign: "center",
   },
 });

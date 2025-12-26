@@ -21,10 +21,9 @@ const LOWER_CATEGORIES = CATEGORIES.filter((c) => c.section === "lower");
 
 interface LowerSlotProps {
   categoryId: CategoryId;
-  isBestOption?: boolean;
 }
 
-const LowerSlot = ({ categoryId, isBestOption }: LowerSlotProps) => {
+const LowerSlot = ({ categoryId }: LowerSlotProps) => {
   const categories = useGameStore((s) => s.categories);
   const setPendingCategory = useGameStore((s) => s.setPendingCategory);
   const scratchCategory = useGameStore((s) => s.scratchCategory);
@@ -55,22 +54,25 @@ const LowerSlot = ({ categoryId, isBestOption }: LowerSlotProps) => {
     !isRolling;
   const hasPendingSelection = pendingCategoryId !== null;
   const isScratchable = canScore && scratchMode && !isFilled;
+
+  // Logic from before
   const isPossibleBase =
     canScore &&
     !scratchMode &&
     !isFilled &&
     validCategories.includes(categoryId);
+
   const isPossible = isPossibleBase && !hasPendingSelection;
   const isSelected = pendingCategoryId === categoryId;
   const isPressable = isScratchable || (isPossibleBase && !hasPendingSelection);
 
   // Calculate predicted score if possible
   const predictedScore = useMemo(() => {
-    if (isPossible || isSelected) {
+    if ((isPossible || isSelected) && !scratchMode) {
       return calculateScore(diceValues, categoryId);
     }
     return 0;
-  }, [diceValues, categoryId, isPossible, isSelected]);
+  }, [diceValues, categoryId, isPossible, isSelected, scratchMode]);
 
   // Determine visual state
   let state: keyof typeof SLOT_STATES = "empty";
@@ -101,13 +103,14 @@ const LowerSlot = ({ categoryId, isBestOption }: LowerSlotProps) => {
       borderBottomWidth: stateStyle.borderBottomWidth,
       borderBottomColor: stateStyle.borderBottomColor,
     },
-    // Best option highlight (Gold Edge)
-    (isPossible || isSelected) &&
-      isBestOption &&
-      !isFilled && {
-        borderColor: COLORS.gold,
-        borderWidth: 2,
+    // Scratch Selection Override (Coral Glow)
+    isSelected &&
+      scratchMode && {
+        borderColor: COLORS.coral,
+        shadowColor: COLORS.coral,
       },
+    // Dim ineligible tiles in scratch mode
+    scratchMode && !isScratchable && { opacity: 0.4 },
   ];
 
   // Colors
@@ -151,16 +154,12 @@ const LowerSlot = ({ categoryId, isBestOption }: LowerSlotProps) => {
       <View style={styles.contentContainer}>
         {/* Top: Icon + Label */}
         <View style={styles.topRow}>
-          {isFilled ? (
-            <Check size={16} color={COLORS.gold} strokeWidth={4} />
-          ) : (
-            <CategoryIcon
-              categoryId={categoryId}
-              size={16}
-              strokeWidth={2.5}
-              color={iconColor}
-            />
-          )}
+          <CategoryIcon
+            categoryId={categoryId}
+            size={16}
+            strokeWidth={2.5}
+            color={iconColor}
+          />
           <Text style={[styles.label, { color: labelColor }]} numberOfLines={1}>
             {label}
           </Text>
@@ -170,12 +169,28 @@ const LowerSlot = ({ categoryId, isBestOption }: LowerSlotProps) => {
         <View style={styles.scoreRow}>
           {isFilled ? (
             <Text style={styles.scoreFilled}>{slot.score}</Text>
-          ) : isPossible || isSelected ? (
+          ) : isPossible || (isSelected && !scratchMode) ? (
             <Text style={styles.scorePredicted}>+{predictedScore}</Text>
           ) : (
-            <Text style={styles.scoreEmpty}>-</Text>
+            <Text
+              style={[styles.scoreEmpty, isScratchable && { opacity: 0.1 }]}
+            >
+              -
+            </Text>
           )}
         </View>
+
+        {/* Badges (Absolute Top Right) */}
+        {isFilled && (
+          <View style={styles.badge}>
+            <Check size={10} color={COLORS.bg} strokeWidth={4} />
+          </View>
+        )}
+        {isScratchable && !isSelected && (
+          <View style={[styles.badge, styles.badgeScratch]}>
+            <X size={10} color={COLORS.bg} strokeWidth={4} />
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -190,12 +205,14 @@ const OverviewButton = () => {
         styles.lowerSlot,
         {
           backgroundColor: COLORS.surface2,
-          borderColor: "transparent",
+          borderColor: "rgba(255,255,255,0.1)",
+          borderWidth: 1,
+          borderStyle: "solid",
           // Bevel
-          borderTopWidth: 2,
-          borderTopColor: "rgba(255,255,255,0.1)",
-          borderBottomWidth: 4,
-          borderBottomColor: "rgba(0,0,0,0.2)",
+          borderTopWidth: 1,
+          borderTopColor: "rgba(255,255,255,0.15)",
+          borderBottomWidth: 3,
+          borderBottomColor: "rgba(0,0,0,0.3)",
         },
       ]}
       onPress={() => {
@@ -226,25 +243,54 @@ const ScratchButton = () => {
     hasRolledThisRound &&
     !isRolling &&
     !pendingCategoryId;
-  const iconColor = canScratch ? COLORS.coral : COLORS.textMuted;
-  const labelColor = canScratch ? COLORS.coral : COLORS.textMuted;
-  const label = canScratch && scratchMode ? "ZURÜCK" : "STREICH";
+
+  // Visuals for Scratch Button
+  // Active: Filled Coral
+  // Inactive: Muted default
+  const isActive = scratchMode;
+
+  const containerStyle: any = [
+    styles.lowerSlot,
+    !canScratch && { opacity: 0.5 },
+  ];
+
+  if (isActive) {
+    containerStyle.push({
+      backgroundColor: COLORS.coral,
+      borderColor: COLORS.coral,
+      borderWidth: 0,
+      borderTopWidth: 0, // Flat filled ? Or keep bevel?
+      // Let's keep a slight bevel for filled button
+      borderBottomWidth: 4,
+      borderBottomColor: "rgba(0,0,0,0.2)",
+    });
+  } else {
+    containerStyle.push({
+      backgroundColor: COLORS.surface2,
+      borderColor: "transparent",
+      // Bevel
+      borderTopWidth: 1,
+      borderTopColor: "rgba(255,255,255,0.15)",
+      borderBottomWidth: 3,
+      borderBottomColor: "rgba(0,0,0,0.3)",
+    });
+  }
+
+  const iconColor = isActive
+    ? COLORS.textWhite
+    : canScratch
+    ? COLORS.coral
+    : COLORS.textMuted;
+  const labelColor = isActive
+    ? COLORS.textWhite
+    : canScratch
+    ? COLORS.coral
+    : COLORS.textMuted;
+  const label = isActive ? "ZURÜCK" : "STREICH";
 
   return (
     <TouchableOpacity
-      style={[
-        styles.lowerSlot,
-        {
-          backgroundColor: COLORS.surface2,
-          borderColor: "transparent",
-          // Bevel
-          borderTopWidth: 2,
-          borderTopColor: "rgba(255,255,255,0.1)",
-          borderBottomWidth: 4,
-          borderBottomColor: "rgba(0,0,0,0.2)",
-        },
-        !canScratch && { opacity: 0.5 },
-      ]}
+      style={containerStyle}
       onPress={() => {
         triggerSelectionHaptic();
         toggleScratchMode();
@@ -263,41 +309,11 @@ const ScratchButton = () => {
 };
 
 export const LowerSection = () => {
-  const diceValues = useGameStore((s) => s.diceValues);
-  const categories = useGameStore((s) => s.categories);
-
-  // Find which category yields the highest score currently
-  const bestOptionId = useMemo(() => {
-    let globalMax = -1;
-    let globalBestId: CategoryId | null = null;
-
-    // Check global best for consistency
-    CATEGORIES.forEach((cat) => {
-      if (categories[cat.id].score === null) {
-        const score = calculateScore(diceValues, cat.id);
-        if (score > globalMax && score > 0) {
-          globalMax = score;
-          globalBestId = cat.id;
-        }
-      }
-    });
-    return globalBestId;
-  }, [diceValues, categories]);
-
-  // Use a simple flex-wrap container instead of calculating rows manually for max flexibility with 4 columns
-  // We need 3 empty spacers between Chance (index 0 of last row) and Scratch/Overview (index 4/5).
-  // Lower categories: 3kind, 4kind, FH, SmStr, LgStr, Yahtzee (6 items - Row 1)
-  // Chance (1 item - Row 2)
-  // So Chance is the first item of the second row of THIS section.
-
   return (
     <View style={styles.container}>
       {LOWER_CATEGORIES.map((cat) => (
         <View key={cat.id} style={styles.slotWrapper}>
-          <LowerSlot
-            categoryId={cat.id}
-            isBestOption={cat.id === bestOptionId}
-          />
+          <LowerSlot categoryId={cat.id} />
         </View>
       ))}
 
@@ -375,5 +391,19 @@ const styles = StyleSheet.create({
     color: COLORS.textMuted,
     fontSize: 12,
     opacity: 0.3,
+  },
+  badge: {
+    position: "absolute",
+    top: 2,
+    right: 2,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: COLORS.gold,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  badgeScratch: {
+    backgroundColor: COLORS.coral,
   },
 });
