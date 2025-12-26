@@ -27,7 +27,9 @@ interface LowerSlotProps {
 const LowerSlot = ({ categoryId }: LowerSlotProps) => {
   const categories = useGameStore((s) => s.categories);
   const setPendingCategory = useGameStore((s) => s.setPendingCategory);
-  const scratchCategory = useGameStore((s) => s.scratchCategory);
+  const setPendingScratchCategory = useGameStore(
+    (s) => s.setPendingScratchCategory
+  );
   const scratchMode = useGameStore((s) => s.scratchMode);
   const phase = useGameStore((s) => s.phase);
   const hasRolledThisRound = useGameStore((s) => s.hasRolledThisRound);
@@ -35,7 +37,13 @@ const LowerSlot = ({ categoryId }: LowerSlotProps) => {
   const diceValues = useGameStore((s) => s.diceValues);
   const validCategories = useValidCategories();
   const pendingCategoryId = useGameStore((s) => s.pendingCategoryId);
+  const pendingScratchCategoryId = useGameStore(
+    (s) => s.pendingScratchCategoryId
+  );
   const clearPendingCategory = useGameStore((s) => s.clearPendingCategory);
+  const clearPendingScratchCategory = useGameStore(
+    (s) => s.clearPendingScratchCategory
+  );
 
   // Get category metadata (label)
   const categoryDef = CATEGORIES.find((c) => c.id === categoryId);
@@ -54,7 +62,9 @@ const LowerSlot = ({ categoryId }: LowerSlotProps) => {
     (phase === "rolling" || phase === "scoring") &&
     hasRolledThisRound &&
     !isRolling;
-  const hasPendingSelection = pendingCategoryId !== null;
+  const hasPendingSelection =
+    pendingCategoryId !== null || pendingScratchCategoryId !== null;
+  const hasPendingScratch = pendingScratchCategoryId !== null;
   const isScratchable = canScore && scratchMode && !isFilled;
 
   // Logic from before
@@ -65,17 +75,20 @@ const LowerSlot = ({ categoryId }: LowerSlotProps) => {
     validCategories.includes(categoryId);
 
   const isPossible = isPossibleBase && !hasPendingSelection;
-  const isSelected = pendingCategoryId === categoryId;
+  const isScoreSelected = pendingCategoryId === categoryId;
+  const isScratchSelected = pendingScratchCategoryId === categoryId;
+  const isSelected = scratchMode ? isScratchSelected : isScoreSelected;
   const isPressable =
-    isScratchable || (isPossibleBase && (!hasPendingSelection || isSelected));
+    (isScratchable && (!hasPendingScratch || isScratchSelected)) ||
+    (isPossibleBase && (!hasPendingSelection || isScoreSelected));
 
   // Calculate predicted score if possible
   const predictedScore = useMemo(() => {
-    if ((isPossible || isSelected) && !scratchMode) {
+    if ((isPossible || isScoreSelected) && !scratchMode) {
       return calculateScore(diceValues, categoryId);
     }
     return 0;
-  }, [diceValues, categoryId, isPossible, isSelected, scratchMode]);
+  }, [diceValues, categoryId, isPossible, isScoreSelected, scratchMode]);
 
   // Determine visual state
   let state: keyof typeof SLOT_STATES = "empty";
@@ -140,10 +153,15 @@ const LowerSlot = ({ categoryId }: LowerSlotProps) => {
 
   const handlePress = () => {
     if (isScratchable) {
-      triggerSelectionHaptic();
-      scratchCategory(categoryId);
+      if (isScratchSelected) {
+        triggerSelectionHaptic();
+        clearPendingScratchCategory();
+      } else if (!hasPendingScratch) {
+        triggerSelectionHaptic();
+        setPendingScratchCategory(categoryId);
+      }
     } else if (isPossibleBase) {
-      if (isSelected) {
+      if (isScoreSelected) {
         triggerSelectionHaptic();
         clearPendingCategory();
       } else if (!hasPendingSelection) {
@@ -250,12 +268,16 @@ const ScratchButton = () => {
   const hasRolledThisRound = useGameStore((s) => s.hasRolledThisRound);
   const isRolling = useGameStore((s) => s.isRolling);
   const pendingCategoryId = useGameStore((s) => s.pendingCategoryId);
+  const pendingScratchCategoryId = useGameStore(
+    (s) => s.pendingScratchCategoryId
+  );
   const toggleScratchMode = useGameStore((s) => s.toggleScratchMode);
   const canScratch =
     (phase === "rolling" || phase === "scoring") &&
     hasRolledThisRound &&
     !isRolling &&
-    !pendingCategoryId;
+    !pendingCategoryId &&
+    !pendingScratchCategoryId;
 
   // Visuals for Scratch Button
   // Active: Filled Coral

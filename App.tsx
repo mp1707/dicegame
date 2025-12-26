@@ -24,6 +24,7 @@ import { ShopModal } from "./components/modals/ShopModal";
 import { OverviewModal } from "./components/modals/OverviewModal";
 import { useGameStore } from "./store/gameStore";
 import { ScoreConfirmOverlay } from "./components/ui/ScoreConfirmOverlay";
+import { ScratchConfirmOverlay } from "./components/ui/ScratchConfirmOverlay";
 import { COLORS, calculateDiceTrayHeight } from "./constants/theme";
 
 export default function App() {
@@ -110,6 +111,7 @@ export default function App() {
               />
             </View>
             <ScoreConfirmOverlay />
+            <ScratchConfirmOverlay />
           </View>
 
           {/* Scoring Dashboard */}

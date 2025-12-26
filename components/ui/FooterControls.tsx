@@ -14,10 +14,14 @@ export const FooterControls = () => {
   const rollsRemaining = useGameStore((s) => s.rollsRemaining);
   const isRolling = useGameStore((s) => s.isRolling);
   const triggerRoll = useGameStore((s) => s.triggerRoll);
+  const scratchCategory = useGameStore((s) => s.scratchCategory);
   const phase = useGameStore((s) => s.phase);
   const goToShop = useGameStore((s) => s.goToShop);
   const retryRun = useGameStore((s) => s.retryRun);
   const pendingCategoryId = useGameStore((s) => s.pendingCategoryId);
+  const pendingScratchCategoryId = useGameStore(
+    (s) => s.pendingScratchCategoryId
+  );
   const submitCategory = useGameStore((s) => s.submitCategory);
   // const isRoundOver = useGameStore((s) => s.isRoundOver); // Removed if not existing
 
@@ -29,6 +33,7 @@ export const FooterControls = () => {
     !pendingCategoryId;
 
   const isConfirming = !!pendingCategoryId;
+  const isScratchConfirming = !!pendingScratchCategoryId;
 
   const handleGoToShop = () => {
     // Haptics handled by button
@@ -44,6 +49,13 @@ export const FooterControls = () => {
       submitCategory(pendingCategoryId);
       triggerSelectionHaptic();
       return;
+    }
+  };
+
+  const handleConfirmScratch = () => {
+    if (isScratchConfirming && pendingScratchCategoryId) {
+      scratchCategory(pendingScratchCategoryId);
+      triggerSelectionHaptic();
     }
   };
 
@@ -73,6 +85,24 @@ export const FooterControls = () => {
           label="NOCHMAL"
           colors={[COLORS.coral, "#C24466"] as const}
           style={styles.retryButton}
+        />
+      );
+    }
+
+    if (isScratchConfirming) {
+      return (
+        <CTA3DButton
+          onPress={handleConfirmScratch}
+          label="STREICHEN"
+          colors={[COLORS.coral, "#C24466"] as const}
+          icon={
+            <MaterialCommunityIcons
+              name="close-thick"
+              size={24}
+              color={COLORS.textDark}
+            />
+          }
+          style={styles.scratchConfirmButton}
         />
       );
     }
@@ -145,6 +175,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.6,
   },
   retryButton: {
+    shadowColor: COLORS.coral,
+    shadowOpacity: 0.6,
+  },
+  scratchConfirmButton: {
     shadowColor: COLORS.coral,
     shadowOpacity: 0.6,
   },
