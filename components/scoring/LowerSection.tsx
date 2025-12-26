@@ -319,7 +319,7 @@ const ScratchButton = () => {
     : canScratch
     ? COLORS.coral
     : COLORS.textMuted;
-  const label = isActive ? "ZURÜCK" : "STREICH";
+  const label = isActive ? "ZURÜCK" : "STREICHEN";
 
   return (
     <Tile3DButton

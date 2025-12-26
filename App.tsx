@@ -54,6 +54,7 @@ export default function App() {
 
   const { height: screenHeight, width: screenWidth } = useWindowDimensions();
   const diceTrayHeight = calculateDiceTrayHeight(screenHeight);
+  const hideStatusBar = Platform.OS === "ios";
 
   // CRT lines - Horizontal & Subtle (Rotated back to 0 or removed rotation if image is vertical, assumes image is horizontal lines)
   // Actually scanlines are usually horizontal. If the image needs rotation to be horizontal, that depends on the image.
@@ -83,7 +84,11 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <View style={styles.mainContainer}>
-        <StatusBar barStyle="light-content" backgroundColor={COLORS.bg} />
+        <StatusBar
+          hidden={hideStatusBar}
+          barStyle="light-content"
+          backgroundColor={COLORS.bg}
+        />
 
         {/* Global Background Color is in mainContainer */}
 

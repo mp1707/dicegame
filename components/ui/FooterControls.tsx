@@ -128,7 +128,7 @@ export const FooterControls = () => {
     }
 
     // Main Roll Button
-    const label = isRolling ? "ROLLING..." : "WURF";
+    const label = isRolling ? "WÜRFELT..." : "WURF";
     const buttonColors = [COLORS.cyan, "#0098B3"] as const;
 
     return (
