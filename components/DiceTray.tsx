@@ -1,6 +1,6 @@
-import React, { Suspense, useRef, useCallback } from "react";
+import React, { Suspense, useRef, useCallback, useEffect } from "react";
 import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useThree } from "@react-three/fiber";
 import { Physics, RigidBody, CuboidCollider } from "@react-three/rapier";
 import { ContactShadows, Environment } from "@react-three/drei";
 import { Die } from "./Die";
@@ -35,6 +35,39 @@ const GameEndOverlay = () => {
       </Text>
     </View>
   );
+};
+
+const RenderWarmup = ({ rollTrigger }: { rollTrigger: number }) => {
+  const { invalidate } = useThree();
+  const warmedUpRef = useRef(false);
+
+  useEffect(() => {
+    if (warmedUpRef.current) return;
+    warmedUpRef.current = true;
+
+    let framesLeft = 3;
+    let rafId = 0;
+
+    const tick = () => {
+      invalidate();
+      framesLeft -= 1;
+      if (framesLeft > 0) {
+        rafId = requestAnimationFrame(tick);
+      }
+    };
+
+    rafId = requestAnimationFrame(tick);
+
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, [invalidate]);
+
+  useEffect(() => {
+    invalidate();
+  }, [invalidate, rollTrigger]);
+
+  return null;
 };
 
 interface DiceTrayProps {
@@ -140,7 +173,7 @@ export const DiceTray = ({
       <Canvas
         shadows
         style={styles.canvas}
-        frameloop="always"
+        frameloop="demand"
         camera={{
           position: [0, cameraHeight, 0],
           fov: adjustedFOV,
@@ -166,7 +199,8 @@ export const DiceTray = ({
         />
 
         <Suspense fallback={null}>
-          <Physics gravity={[0, -9.81, 0]}>
+          <RenderWarmup rollTrigger={rollTrigger} />
+          <Physics gravity={[0, -9.81, 0]} updateLoop="independent">
             {/* Floor - scaled based on container height */}
             <RigidBody type="fixed" restitution={0.2} friction={1}>
               <mesh position={[0, 0, 0]} receiveShadow>
