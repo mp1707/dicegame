@@ -142,10 +142,8 @@ export const Pressable3DBase = ({
 
   return (
     <View style={[style, styles.outerContainer, { borderRadius }]}>
-      {/* BASE LAYER (Static background / Well) - positioned at bottom */}
-      <View style={[styles.baseContainer, { top: depth, borderRadius }]}>
-        {base}
-      </View>
+      {/* BASE LAYER (Static background / Well) - fills entire container */}
+      <View style={[styles.baseContainer, { borderRadius }]}>{base}</View>
 
       {/* FACE LAYER (Moves) */}
       <Animated.View
@@ -195,13 +193,12 @@ const styles = StyleSheet.create({
     overflow: "hidden", // Clip content at rounded corners
   },
   baseContainer: {
-    // Base is positioned absolutely, offset from top by `depth` amount
-    // It fills from that offset to the bottom, creating the "well" effect
+    // Base fills the entire container; the face covers it until pressed
     position: "absolute",
+    top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    // top is set dynamically via inline style { top: depth }
   },
   faceContainer: {
     // Face fills the entire container and moves down when pressed

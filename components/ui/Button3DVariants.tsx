@@ -28,7 +28,7 @@ export const CTA3DButton = ({
   const DEPTH = 6;
 
   // Base Color: Darker version of the main color or a generic dark well
-  const baseColor = "#005F70"; // rough darken of cyan, or we can use surface2
+  const baseColor = "#1A1528"; // rough darken of cyan, or we can use surface2
 
   return (
     <Pressable3DBase
