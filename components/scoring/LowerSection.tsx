@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { View, StyleSheet, Text } from "react-native";
 import { ScrollText, Check, X } from "lucide-react-native";
-import { BasePressableAnimated } from "../ui/BasePressableAnimated";
+import { Tile3DButton } from "../ui/Button3DVariants";
 import {
   COLORS,
   SPACING,
@@ -88,7 +88,8 @@ const LowerSlot = ({ categoryId }: LowerSlotProps) => {
 
   // Dynamic Styles
   const containerStyle = [
-    styles.lowerSlot,
+    // styles.lowerSlot, // Removed
+
     {
       backgroundColor: stateStyle.backgroundColor,
       borderColor: stateStyle.borderColor,
@@ -153,54 +154,55 @@ const LowerSlot = ({ categoryId }: LowerSlotProps) => {
   };
 
   return (
-    <BasePressableAnimated
-      style={containerStyle}
+    <Tile3DButton
+      style={styles.lowerSlotWrapper}
       onPress={handlePress}
       disabled={!isPressable}
-      scaleActive={0.94}
+      selected={isSelected}
+      variant={scratchMode ? "scratch" : "default"}
     >
-      <View style={styles.contentContainer}>
-        {/* Top: Icon + Label */}
-        <View style={styles.topRow}>
-          <CategoryIcon
-            categoryId={categoryId}
-            size={16}
-            strokeWidth={2.5}
-            color={iconColor}
-          />
-          <Text style={[styles.label, { color: labelColor }]} numberOfLines={1}>
-            {label}
-          </Text>
-        </View>
-
-        {/* Bottom: Score / Prediction */}
-        <View style={styles.scoreRow}>
-          {isFilled ? (
-            <Text style={styles.scoreFilled}>{slot.score}</Text>
-          ) : isPossible || (isSelected && !scratchMode) ? (
-            <Text style={styles.scorePredicted}>+{predictedScore}</Text>
-          ) : (
+      <View style={[styles.lowerSlotVisuals, ...containerStyle]}>
+        <View style={styles.contentContainer}>
+          {/* Top: Label + Icon */}
+          <View style={styles.topRow}>
+            <CategoryIcon categoryId={categoryId} size={14} color={iconColor} />
             <Text
-              style={[styles.scoreEmpty, isScratchable && { opacity: 0.1 }]}
+              style={[styles.label, { color: labelColor }]}
+              numberOfLines={1}
             >
-              -
+              {label}
             </Text>
+          </View>
+
+          {/* Middle/Bottom: Score */}
+          <View style={styles.scoreRow}>
+            {isFilled ? (
+              <Text style={styles.scoreFilled}>{slot.score}</Text>
+            ) : isPossible || (isSelected && !scratchMode) ? (
+              <Text style={styles.scorePredicted}>+{predictedScore}</Text>
+            ) : (
+              <Text
+                style={[styles.scoreEmpty, isScratchable && { opacity: 0.1 }]}
+              >
+                -
+              </Text>
+            )}
+          </View>
+
+          {/* Badges */}
+          {isFilled && (
+            <View style={styles.badge}>
+              <Check size={10} color={COLORS.bg} strokeWidth={4} />
+            </View>
+          )}
+          {isScratchable && !isSelected && (
+            <View style={[styles.badge, styles.badgeScratch]}>
+              <X size={10} color={COLORS.bg} strokeWidth={4} />
+            </View>
           )}
         </View>
-
-        {/* Badges (Absolute Top Right) */}
-        {isFilled && (
-          <View style={styles.badge}>
-            <Check size={10} color={COLORS.bg} strokeWidth={4} />
-          </View>
-        )}
-        {isScratchable && !isSelected && (
-          <View style={[styles.badge, styles.badgeScratch]}>
-            <X size={10} color={COLORS.bg} strokeWidth={4} />
-          </View>
-        )}
       </View>
-    </BasePressableAnimated>
+    </Tile3DButton>
   );
 };
 
@@ -208,34 +210,37 @@ const OverviewButton = () => {
   const toggleOverview = useGameStore((s) => s.toggleOverview);
 
   return (
-    <BasePressableAnimated
-      style={[
-        styles.lowerSlot,
-        {
-          backgroundColor: COLORS.surface2,
-          borderColor: "rgba(255,255,255,0.1)",
-          borderWidth: 1,
-          borderStyle: "solid",
-          // Bevel
-          borderTopWidth: 1,
-          borderTopColor: "rgba(255,255,255,0.15)",
-          borderBottomWidth: 3,
-          borderBottomColor: "rgba(0,0,0,0.3)",
-        },
-      ]}
+    <Tile3DButton
+      style={[styles.lowerSlotWrapper]}
       onPress={() => {
         triggerSelectionHaptic();
         toggleOverview();
       }}
-      scaleActive={0.9}
     >
-      <View style={[styles.contentContainer, { justifyContent: "center" }]}>
-        <ScrollText size={20} color={COLORS.cyan} strokeWidth={2} />
-        <Text style={[styles.label, { color: COLORS.cyan, marginTop: 4 }]}>
-          ÜBER
-        </Text>
+      <View
+        style={[
+          styles.lowerSlotVisuals,
+          {
+            backgroundColor: COLORS.surface2,
+            borderColor: "rgba(255,255,255,0.1)",
+            borderWidth: 1,
+            borderStyle: "solid",
+            // Bevel
+            borderTopWidth: 1,
+            borderTopColor: "rgba(255,255,255,0.15)",
+            borderBottomWidth: 3,
+            borderBottomColor: "rgba(0,0,0,0.3)",
+          },
+        ]}
+      >
+        <View style={[styles.contentContainer, { justifyContent: "center" }]}>
+          <ScrollText size={20} color={COLORS.cyan} strokeWidth={2} />
+          <Text style={[styles.label, { color: COLORS.cyan, marginTop: 4 }]}>
+            ÜBER
+          </Text>
+        </View>
       </View>
-    </BasePressableAnimated>
+    </Tile3DButton>
   );
 };
 
@@ -257,26 +262,24 @@ const ScratchButton = () => {
   // Inactive: Muted default
   const isActive = scratchMode;
 
-  const containerStyle: any = [
-    styles.lowerSlot,
+  // Visual styles for the inner View
+  const visualStyle: any = [
+    styles.lowerSlotVisuals,
     !canScratch && { opacity: 0.5 },
   ];
 
   if (isActive) {
-    containerStyle.push({
+    visualStyle.push({
       backgroundColor: COLORS.coral,
       borderColor: COLORS.coral,
       borderWidth: 0,
-      borderTopWidth: 0, // Flat filled ? Or keep bevel?
-      // Let's keep a slight bevel for filled button
       borderBottomWidth: 4,
       borderBottomColor: "rgba(0,0,0,0.2)",
     });
   } else {
-    containerStyle.push({
+    visualStyle.push({
       backgroundColor: COLORS.surface2,
       borderColor: "transparent",
-      // Bevel
       borderTopWidth: 1,
       borderTopColor: "rgba(255,255,255,0.15)",
       borderBottomWidth: 3,
@@ -297,22 +300,24 @@ const ScratchButton = () => {
   const label = isActive ? "ZURÜCK" : "STREICH";
 
   return (
-    <BasePressableAnimated
-      style={containerStyle}
+    <Tile3DButton
+      style={styles.lowerSlotWrapper}
       onPress={() => {
         triggerSelectionHaptic();
         toggleScratchMode();
       }}
       disabled={!canScratch}
-      scaleActive={0.94}
+      variant={isActive ? "scratch" : "default"}
     >
-      <View style={[styles.contentContainer, { justifyContent: "center" }]}>
-        <X size={20} color={iconColor} strokeWidth={3} />
-        <Text style={[styles.label, { color: labelColor, marginTop: 4 }]}>
-          {label}
-        </Text>
+      <View style={visualStyle}>
+        <View style={[styles.contentContainer, { justifyContent: "center" }]}>
+          <X size={20} color={iconColor} strokeWidth={3} />
+          <Text style={[styles.label, { color: labelColor, marginTop: 4 }]}>
+            {label}
+          </Text>
+        </View>
       </View>
-    </BasePressableAnimated>
+    </Tile3DButton>
   );
 };
 
@@ -350,6 +355,18 @@ const styles = StyleSheet.create({
   },
   slotWrapper: {
     width: "15%", // 6 columns
+  },
+  lowerSlotWrapper: {
+    height: 70, // Fixed height for alignment
+    width: "100%",
+    borderRadius: DIMENSIONS.borderRadiusSmall,
+  },
+  lowerSlotVisuals: {
+    width: "100%",
+    height: "100%",
+    padding: 6,
+    borderRadius: DIMENSIONS.borderRadiusSmall,
+    overflow: "hidden",
   },
   lowerSlot: {
     aspectRatio: 0.85,

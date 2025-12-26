@@ -6,7 +6,7 @@ import { CATEGORIES } from "../../utils/yahtzeeScoring";
 import { CategoryIcon } from "../ui/CategoryIcon";
 import { triggerSelectionHaptic } from "../../utils/haptics";
 import { ModalShell } from "../ui/ModalShell";
-import { PrimaryCTAButton } from "../ui/ButtonVariants";
+import { CTA3DButton } from "../ui/Button3DVariants";
 
 interface OverviewModalProps {
   visible: boolean;
@@ -66,7 +66,7 @@ export const OverviewModal = ({ visible, onClose }: OverviewModalProps) => {
           </ScrollView>
         </View>
 
-        <PrimaryCTAButton
+        <CTA3DButton
           onPress={handleClose}
           label="SCHLIEßEN"
           colors={[COLORS.surfaceHighlight, COLORS.surface]}

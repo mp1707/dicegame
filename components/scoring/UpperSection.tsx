@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { View, StyleSheet, Text } from "react-native";
 import { Check, X } from "lucide-react-native";
-import { BasePressableAnimated } from "../ui/BasePressableAnimated";
+import { Tile3DButton } from "../ui/Button3DVariants";
 import {
   COLORS,
   SPACING,
@@ -89,7 +89,8 @@ const UpperSlot = ({ categoryId }: UpperSlotProps) => {
 
   // Dynamic Styles
   const containerStyle = [
-    styles.upperSlot,
+    // styles.upperSlot, // Removed base style from array, applied to child wrapper
+
     {
       backgroundColor: stateStyle.backgroundColor,
       borderColor: stateStyle.borderColor,
@@ -154,55 +155,61 @@ const UpperSlot = ({ categoryId }: UpperSlotProps) => {
   };
 
   return (
-    <BasePressableAnimated
-      style={containerStyle}
+    <Tile3DButton
+      style={styles.upperSlotWrapper} // Layout only (width/aspect)
       onPress={handlePress}
       disabled={!isPressable}
-      scaleActive={0.94}
+      selected={isSelected}
+      variant={scratchMode ? "scratch" : "default"}
     >
-      <View style={styles.contentContainer}>
-        {/* Top: Icon + Label */}
-        <View style={styles.topRow}>
-          <CategoryIcon
-            categoryId={categoryId}
-            size={16}
-            strokeWidth={2.5}
-            color={iconColor}
-          />
-          <Text style={[styles.label, { color: labelColor }]} numberOfLines={1}>
-            {label}
-          </Text>
-        </View>
-
-        {/* Bottom: Score / Prediction */}
-        <View style={styles.scoreRow}>
-          {isFilled ? (
-            <Text style={styles.scoreFilled}>{slot.score}</Text>
-          ) : isPossible || (isSelected && !scratchMode) ? (
-            <Text style={styles.scorePredicted}>+{predictedScore}</Text>
-          ) : (
-            // Show dash or empty
+      <View style={[styles.upperSlotVisuals, ...containerStyle]}>
+        <View style={styles.contentContainer}>
+          {/* Top: Icon + Label */}
+          <View style={styles.topRow}>
+            <CategoryIcon
+              categoryId={categoryId}
+              size={16}
+              strokeWidth={2.5}
+              color={iconColor}
+            />
             <Text
-              style={[styles.scoreEmpty, isScratchable && { opacity: 0.1 }]}
+              style={[styles.label, { color: labelColor }]}
+              numberOfLines={1}
             >
-              -
+              {label}
             </Text>
+          </View>
+
+          {/* Bottom: Score / Prediction */}
+          <View style={styles.scoreRow}>
+            {isFilled ? (
+              <Text style={styles.scoreFilled}>{slot.score}</Text>
+            ) : isPossible || (isSelected && !scratchMode) ? (
+              <Text style={styles.scorePredicted}>+{predictedScore}</Text>
+            ) : (
+              // Show dash or empty
+              <Text
+                style={[styles.scoreEmpty, isScratchable && { opacity: 0.1 }]}
+              >
+                -
+              </Text>
+            )}
+          </View>
+
+          {/* Badges (Absolute Top Right) */}
+          {isFilled && (
+            <View style={styles.badge}>
+              <Check size={10} color={COLORS.bg} strokeWidth={4} />
+            </View>
+          )}
+          {isScratchable && !isSelected && (
+            <View style={[styles.badge, styles.badgeScratch]}>
+              <X size={10} color={COLORS.bg} strokeWidth={4} />
+            </View>
           )}
         </View>
-
-        {/* Badges (Absolute Top Right) */}
-        {isFilled && (
-          <View style={styles.badge}>
-            <Check size={10} color={COLORS.bg} strokeWidth={4} />
-          </View>
-        )}
-        {isScratchable && !isSelected && (
-          <View style={[styles.badge, styles.badgeScratch]}>
-            <X size={10} color={COLORS.bg} strokeWidth={4} />
-          </View>
-        )}
       </View>
-    </BasePressableAnimated>
+    </Tile3DButton>
   );
 };
 
@@ -236,14 +243,23 @@ const styles = StyleSheet.create({
     // width = (100% - 5 * gap) / 6
     width: "15%",
   },
-  upperSlot: {
-    aspectRatio: 0.85, // Taller for score
+  upperSlotWrapper: {
+    aspectRatio: 0.85,
     borderRadius: DIMENSIONS.borderRadiusSmall,
+    // No overflow hidden here if we want depth to show?
+    // But defaults usually ok.
+  },
+  upperSlotVisuals: {
+    width: "100%",
+    height: "100%",
     justifyContent: "center",
     alignItems: "center",
     padding: 4,
-    overflow: "hidden", // Important for overflow badge
+    borderRadius: DIMENSIONS.borderRadiusSmall,
+    // Ensure background covers the face area
+    overflow: "hidden",
   },
+
   contentContainer: {
     flex: 1,
     width: "100%",
