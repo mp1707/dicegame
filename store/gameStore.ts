@@ -198,6 +198,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         round: 13,
         phase: won ? "won" : "lost",
         money: get().money + bonusMoney,
+        selectedDice: [false, false, false, false, false],
         diceVisible: false,
       });
     } else {
@@ -240,6 +241,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         round: 13,
         phase: won ? "won" : "lost",
         money: get().money + bonusMoney,
+        selectedDice: [false, false, false, false, false],
         diceVisible: false,
       });
     } else {
