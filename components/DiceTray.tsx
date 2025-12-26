@@ -182,21 +182,21 @@ export const DiceTray = ({
           up: [0, 0, -1],
         }}
       >
-        <ambientLight intensity={1.15} />
-        <hemisphereLight args={[0xffffff, COLORS.bg2, 0.4]} />
+        <ambientLight intensity={1.4} />
+        <hemisphereLight args={[0xffffff, 0x1e8a63, 0.5]} />
         <spotLight
           position={[5, 10, 5]}
           angle={0.3}
           penumbra={1}
-          intensity={1.2}
-          color={COLORS.cyan}
+          intensity={1.0}
+          color={"#FFD700"}
         />
         <spotLight
           position={[-5, 10, -5]}
           angle={0.3}
           penumbra={1}
-          intensity={0.9}
-          color={COLORS.magenta}
+          intensity={0.8}
+          color={COLORS.cyan}
         />
 
         <Suspense fallback={null}>
@@ -208,8 +208,8 @@ export const DiceTray = ({
                 <boxGeometry args={[floorWidth, 0.5, floorDepth]} />
                 <meshStandardMaterial
                   color={COLORS.feltGreen}
-                  roughness={0.4}
-                  metalness={0.6}
+                  roughness={0.65}
+                  metalness={0.1}
                 />
               </mesh>
             </RigidBody>

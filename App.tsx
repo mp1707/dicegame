@@ -101,16 +101,16 @@ export default function App() {
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: COLORS.bg,
+    backgroundColor: COLORS.surface, // Warm eggplant panel background
   },
   globalBackground: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: COLORS.bg,
+    backgroundColor: COLORS.surface,
   },
   noiseOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: COLORS.bg2,
-    opacity: 0.05,
+    backgroundColor: COLORS.surface2,
+    opacity: 0.08, // Subtle grain/noise
     zIndex: 0,
   },
   safeArea: {

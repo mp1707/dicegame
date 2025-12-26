@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: 1,
-    backgroundColor: COLORS.bg,
-    opacity: 0.5,
+    backgroundColor: COLORS.surface,
+    opacity: 0.6,
   },
 });

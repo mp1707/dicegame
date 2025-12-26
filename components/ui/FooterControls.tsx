@@ -107,43 +107,43 @@ export const FooterControls = () => {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 40,
+    paddingHorizontal: 24,
     paddingVertical: SPACING.sectionGap,
     gap: 8,
   },
   rollButton: {
     height: DIMENSIONS.rollButtonHeight,
-    backgroundColor: COLORS.bg2, // Dark fill
+    // FILLED button - not outline-only (reads as primary action)
+    backgroundColor: "#0098B3", // Deep cyan base
     borderRadius: DIMENSIONS.borderRadius,
-    borderWidth: 2,
-    borderColor: COLORS.cyan, // Cyan border
+    borderWidth: 0, // No border on filled button
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 12,
+    // Cyan glow
     shadowColor: COLORS.cyan,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 10,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 12,
+    elevation: 8,
   },
   rollButtonDisabled: {
-    opacity: 0.5,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.surface,
+    opacity: 0.6,
     shadowOpacity: 0,
+    elevation: 0,
   },
   shopButton: {
-    backgroundColor: COLORS.surface,
-    borderColor: COLORS.green,
+    backgroundColor: "#00A36C", // Deep mint/green
     shadowColor: COLORS.green,
   },
   retryButton: {
-    backgroundColor: COLORS.surface,
-    borderColor: COLORS.red,
-    shadowColor: COLORS.red,
+    backgroundColor: "#C24466", // Deep coral
+    shadowColor: COLORS.coral,
   },
   buttonText: {
-    color: COLORS.cyan, // Cyan text on dark bg
+    color: COLORS.textWhite, // White on filled button
     fontSize: 20,
     fontFamily: "PressStart2P-Regular",
     letterSpacing: 2,
@@ -153,19 +153,19 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   pip: {
-    width: 8,
-    height: 8,
-    borderRadius: 1, // Pixel square pips
+    width: 10,
+    height: 10,
+    borderRadius: 5, // Round pips
   },
   pipActive: {
-    backgroundColor: COLORS.cyan,
-    shadowColor: COLORS.cyan,
+    backgroundColor: COLORS.textWhite,
+    shadowColor: COLORS.textWhite,
     shadowOpacity: 0.8,
     shadowRadius: 4,
   },
   pipUsed: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: "rgba(255,255,255,0.2)",
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: "rgba(255,255,255,0.3)",
   },
 });

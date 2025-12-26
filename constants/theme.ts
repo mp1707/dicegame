@@ -5,41 +5,42 @@
 
 import { Platform } from "react-native";
 
-// Color Palette
+// Color Palette - Bright Felt + Warm Casino Neon (Balatro-inspired)
 export const COLORS = {
-  // Neutrals
-  bg: "#070612", // deep violet-black
-  bg2: "#0B0A1D", // slightly lighter for gradients
-  surface: "#12102A", // panels
-  surface2: "#19163A", // tiles
-  border: "#2A2457", // outlines
-  slotBg: "#19163A", // alias for slot backgrounds
+  // Base - Mid-bright felt, not near-black
+  bg: "#1E8A63", // saturated felt green (shadow)
+  bg2: "#2FB67A", // primary felt green (bright)
+  surface: "#2A2242", // panels - warm eggplant
+  surface2: "#352B58", // tiles - panel highlight
+  border: "#4A3D7A", // outlines - brighter for visibility
+  slotBg: "#2A2242", // alias for slot backgrounds
 
-  // Text
-  text: "#F2F4FF",
-  textMuted: "#A6A8C9",
+  // Text - high contrast on warm backgrounds
+  text: "rgba(255,255,255,0.92)",
+  textMuted: "rgba(255,255,255,0.68)",
 
-  // Neon Accents
-  cyan: "#20E7FF", // possible / active
-  magenta: "#FF3CF2", // selected / jackpot
+  // Accent Trio (intentional usage)
+  cyan: "#38E8FF", // info/interactive
+  magenta: "#FF3CF2", // selected / jackpot (kept for special moments)
   purple: "#7B5CFF", // secondary glow, separators
-  red: "#FF3B4D", // delete/strike only
-  green: "#00FF99", // success / shop
-  feltGreen: "#0F4D2E", // casino table top
-  amber: "#FFC857", // money/goal/progress (warm contrast)
+  coral: "#FF5A7A", // error/locked/strike (replaces some red usage)
+  red: "#FF5A7A", // alias for coral
+  green: "#6CFFB8", // mint - success/confirm
+  feltGreen: "#2FB67A", // casino table top - bright!
+  amber: "#FFC857", // gold - progress/goal/reward
 
-  // Glow Helpers (Transparent)
-  cyanGlow: "rgba(32, 231, 255, 0.35)",
+  // Glow Helpers (Transparent) - used sparingly
+  cyanGlow: "rgba(56, 232, 255, 0.4)",
   magentaGlow: "rgba(255, 60, 242, 0.28)",
   purpleGlow: "rgba(123, 92, 255, 0.25)",
 
-  // Legacy mappings for compatibility (will refactor gradually)
-  background: "#070612",
-  backgroundDark: "#0B0A1D", // Mapping to bg2
-  gold: "#FFC857", // Mapping to amber
+  // Legacy mappings for compatibility
+  background: "#1E8A63",
+  backgroundDark: "#2FB67A",
+  gold: "#FFC857",
   goldDark: "#D9A830",
-  textWhite: "#F2F4FF",
-  textBlack: "#070612",
+  textWhite: "rgba(255,255,255,0.92)",
+  textBlack: "#1E8A63",
 } as const;
 
 // Typography
@@ -106,9 +107,9 @@ export const SPACING = {
 
 // Dimensions
 export const DIMENSIONS = {
-  headerHeight: 60, // Reduced for cleaner look
-  rollButtonHeight: 52,
-  borderRadius: 4, // More squared off for arcade feel
+  headerHeight: 60,
+  rollButtonHeight: 56, // Slightly taller for prominence
+  borderRadius: 14, // Softer, Balatro-style rounded corners
   progressBarHeight: 18,
   borderWidth: 2,
 } as const;
@@ -118,44 +119,48 @@ export const calculateDiceTrayHeight = (screenHeight: number): number => {
   return Math.round(screenHeight * 0.35); // Slightly larger for CRT screen effect
 };
 
-// Slot Visual States (Arcade Glass Style)
+// Slot Visual States - Punchy, minimal glow (Balatro-inspired)
+// Glow is RARE - only on selected/primary action
 export const SLOT_STATES = {
   empty: {
-    backgroundColor: COLORS.surface2,
+    backgroundColor: COLORS.surface,
     borderColor: COLORS.border,
     borderWidth: 2,
     shadowColor: "transparent",
   },
   possible: {
-    backgroundColor: COLORS.surface2, // Base
+    // NO GLOW - just highlighted border
+    backgroundColor: COLORS.surface2,
     borderColor: COLORS.cyan,
     borderWidth: 2,
-    shadowColor: COLORS.cyan,
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    elevation: 4, // Android glow approximation
+    shadowColor: "transparent", // Removed glow!
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   },
   scratch: {
+    // NO GLOW - just red border
     backgroundColor: COLORS.surface2,
-    borderColor: COLORS.red,
+    borderColor: COLORS.coral,
     borderWidth: 2,
-    shadowColor: COLORS.red,
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowColor: "transparent", // Removed glow!
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   },
   selected: {
-    backgroundColor: "#1F1A45", // surface2 + touch of purple
-    borderColor: COLORS.magenta,
-    borderWidth: 3, // Thicker
-    shadowColor: COLORS.magenta,
+    // ONLY selected gets glow - feel special
+    backgroundColor: COLORS.surface2,
+    borderColor: COLORS.cyan,
+    borderWidth: 3,
+    shadowColor: COLORS.cyan,
     shadowOpacity: 0.6,
-    shadowRadius: 10,
-    elevation: 6,
+    shadowRadius: 12,
+    elevation: 8,
   },
   filled: {
-    backgroundColor: COLORS.surface, // Darker
-    borderColor: COLORS.border, // Reset border
+    backgroundColor: COLORS.surface,
+    borderColor: COLORS.border,
     borderWidth: 2,
     shadowColor: "transparent",
   },

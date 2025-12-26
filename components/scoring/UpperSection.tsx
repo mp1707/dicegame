@@ -47,7 +47,10 @@ const UpperSlot = ({ categoryId }: UpperSlotProps) => {
     !isRolling;
   const isScratchable = canScore && scratchMode && !isFilled;
   const isPossible =
-    canScore && !scratchMode && !isFilled && validCategories.includes(categoryId);
+    canScore &&
+    !scratchMode &&
+    !isFilled &&
+    validCategories.includes(categoryId);
 
   // Determine visual state
   let state: keyof typeof SLOT_STATES = "empty";
@@ -92,11 +95,11 @@ const UpperSlot = ({ categoryId }: UpperSlotProps) => {
           backgroundColor: stateStyle.backgroundColor,
           borderColor: stateStyle.borderColor,
           borderWidth: stateStyle.borderWidth,
-          // Apply shadows/elevation manually if needed or from stateStyle if it has them (it does)
           shadowColor: stateStyle.shadowColor,
+          shadowOpacity: (stateStyle as any).shadowOpacity,
+          shadowRadius: (stateStyle as any).shadowRadius,
           elevation: (stateStyle as any).elevation,
         },
-        (isPossible || isScratchable) && styles.possibleGlow,
       ]}
       onPress={handlePress}
       disabled={!isPossible && !isScratchable}
@@ -164,10 +167,5 @@ const styles = StyleSheet.create({
     fontFamily: "PressStart2P-Regular",
     textAlign: "center",
     width: "100%",
-  },
-  possibleGlow: {
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 8,
   },
 });
