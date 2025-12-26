@@ -254,7 +254,7 @@ const OverviewButton = () => {
         <View style={[styles.contentContainer, { justifyContent: "center" }]}>
           <ScrollText size={20} color={COLORS.cyan} strokeWidth={2} />
           <Text style={[styles.label, { color: COLORS.cyan, marginTop: 4 }]}>
-            ÜBER
+            PUNKTE
           </Text>
         </View>
       </View>
