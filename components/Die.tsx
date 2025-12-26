@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from "react";
 import { RigidBody, RapierRigidBody } from "@react-three/rapier";
 import * as THREE from "three";
 import { ThreeEvent, useFrame } from "@react-three/fiber";
+import { COLORS } from "../constants/theme";
 
 // Standard D6 Face Normals
 const FACE_NORMALS = [
@@ -151,9 +152,9 @@ export const Die = ({
 
           rigidBody.current.applyTorqueImpulse(
             {
-              x: rand(-1.2, 1.2),
-              y: rand(-1.2, 1.2),
-              z: rand(-1.2, 1.2),
+              x: rand(-0.8, 0.8),
+              y: rand(-0.8, 0.8),
+              z: rand(-0.8, 0.8),
             },
             true
           );
@@ -234,8 +235,10 @@ export const Die = ({
   };
 
   // Die colors based on selection
-  const dieColor = isLocked ? "#FFD700" : "#f5f5f5"; // Yellow when locked
+  const dieColor = isLocked ? COLORS.cyan : "#f5f5f5"; // Cyan when locked
   const dieOpacity = isVisible ? 1 : 0;
+  const dieEmissive = isLocked ? COLORS.cyan : "#000000";
+  const dieEmissiveIntensity = isLocked ? 0.65 : 0;
 
   return (
     <RigidBody
@@ -252,11 +255,27 @@ export const Die = ({
       position={position}
     >
       <group onPointerDown={handlePointerDown}>
+        {isLocked && (
+          <mesh scale={[1.08, 1.08, 1.08]}>
+            <boxGeometry args={[DIE_SIZE, DIE_SIZE, DIE_SIZE]} />
+            <meshBasicMaterial
+              color={COLORS.cyan}
+              transparent
+              opacity={isVisible ? 0.25 : 0}
+              blending={THREE.AdditiveBlending}
+              depthWrite={false}
+              toneMapped={false}
+            />
+          </mesh>
+        )}
+
         {/* Main die body */}
         <mesh>
           <boxGeometry args={[DIE_SIZE, DIE_SIZE, DIE_SIZE]} />
           <meshStandardMaterial
             color={dieColor}
+            emissive={dieEmissive}
+            emissiveIntensity={dieEmissiveIntensity}
             transparent
             opacity={dieOpacity}
           />
