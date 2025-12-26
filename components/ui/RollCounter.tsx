@@ -26,14 +26,17 @@ const Lamp = ({ active, index }: { active: boolean; index: number }) => {
     if (active) {
       // Pop in
       scale.value = withSequence(
-        withTiming(0, { duration: 0 }),
-        withDelay(index * 50, withSpring(1, { damping: 12 }))
+        withTiming(0.9, { duration: 0 }),
+        withDelay(
+          index * 50,
+          withSpring(1, { damping: 24, stiffness: 160 })
+        )
       );
       opacity.value = withTiming(1, { duration: 300 });
       colorProgress.value = withTiming(1, { duration: 300 });
     } else {
       // Pop out / dim
-      scale.value = withSpring(0.8, { damping: 20 });
+      scale.value = withSpring(0.95, { damping: 26, stiffness: 180 });
       opacity.value = withTiming(0.3, { duration: 300 });
       colorProgress.value = withTiming(0, { duration: 300 });
     }
