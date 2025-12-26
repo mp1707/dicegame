@@ -124,7 +124,7 @@ export const DIMENSIONS = {
 
 // Responsive Helper
 export const calculateDiceTrayHeight = (screenHeight: number): number => {
-  return Math.round(screenHeight * 0.38); // More room for dice
+  return Math.round(screenHeight * 0.32); // Slightly tighter dice area
 };
 
 // Slot Visual States - Solid, Tactile, No excessive glow
