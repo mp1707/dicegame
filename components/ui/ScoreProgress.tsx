@@ -75,11 +75,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   labelMicro: {
-    color: COLORS.textMuted,
-    ...TYPOGRAPHY.microLabels,
+    ...TYPOGRAPHY.label,
   },
   scoreValue: {
-    color: COLORS.textLight,
-    ...TYPOGRAPHY.smallScore,
+    ...TYPOGRAPHY.scoreValue,
   },
 });

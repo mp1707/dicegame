@@ -13,6 +13,7 @@ export const COLORS = {
   surface: "#12102A", // panels
   surface2: "#19163A", // tiles
   border: "#2A2457", // outlines
+  slotBg: "#19163A", // alias for slot backgrounds
 
   // Text
   text: "#F2F4FF",
