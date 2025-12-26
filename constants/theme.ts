@@ -25,6 +25,7 @@ export const COLORS = {
   purple: "#7B5CFF", // secondary glow, separators
   red: "#FF3B4D", // delete/strike only
   green: "#00FF99", // success / shop
+  feltGreen: "#0F4D2E", // casino table top
   amber: "#FFC857", // money/goal/progress (warm contrast)
 
   // Glow Helpers (Transparent)
