@@ -652,3 +652,5 @@ This game combines:
 - **Arcade UI**: High contrast, immediate feedback, minimal interaction
 
 The key innovation is **inline scoring** — removing modal popups in favor of a unified dashboard where ALL game state is visible at once. This creates a "control panel" aesthetic that feels premium and responsive.
+
+LAST YAHTZEE COMMIT: Fr 26.12.2025 23:02 -> transition to roguelike now
