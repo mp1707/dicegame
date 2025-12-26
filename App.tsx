@@ -23,6 +23,7 @@ import { FooterControls } from "./components/ui/FooterControls";
 import { ShopModal } from "./components/modals/ShopModal";
 import { OverviewModal } from "./components/modals/OverviewModal";
 import { useGameStore } from "./store/gameStore";
+import { ScoreConfirmOverlay } from "./components/ui/ScoreConfirmOverlay";
 import { COLORS, calculateDiceTrayHeight } from "./constants/theme";
 
 export default function App() {
@@ -108,6 +109,7 @@ export default function App() {
                 containerWidth={screenWidth}
               />
             </View>
+            <ScoreConfirmOverlay />
           </View>
 
           {/* Scoring Dashboard */}

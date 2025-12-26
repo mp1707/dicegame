@@ -1,8 +1,8 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Dices } from "lucide-react-native";
-import { COLORS, TYPOGRAPHY, SPACING, DIMENSIONS } from "../../constants/theme";
+import { Dices, PencilLine } from "lucide-react-native";
+import { COLORS, SPACING, DIMENSIONS } from "../../constants/theme";
 import { useGameStore } from "../../store/gameStore";
 import {
   triggerLightImpact,
@@ -34,6 +34,15 @@ export const FooterControls = () => {
   const goToShop = useGameStore((s) => s.goToShop);
   const retryRun = useGameStore((s) => s.retryRun);
   const pendingCategoryId = useGameStore((s) => s.pendingCategoryId);
+  const submitCategory = useGameStore((s) => s.submitCategory);
+  const diceValues = useGameStore((s) => s.diceValues);
+
+  // Calculate score for display in button
+  const pendingScore = React.useMemo(() => {
+    if (!pendingCategoryId) return 0;
+    const { calculateScore } = require("../../utils/yahtzeeScoring");
+    return calculateScore(diceValues, pendingCategoryId);
+  }, [pendingCategoryId, diceValues]);
 
   // Determine button state
   const canRoll =
@@ -41,6 +50,8 @@ export const FooterControls = () => {
     !isRolling &&
     phase === "rolling" &&
     !pendingCategoryId;
+
+  const isConfirming = !!pendingCategoryId;
 
   const handleGoToShop = () => {
     triggerSelectionHaptic();
@@ -53,6 +64,11 @@ export const FooterControls = () => {
   };
 
   const handleTriggerRoll = () => {
+    if (isConfirming && pendingCategoryId) {
+      triggerSelectionHaptic();
+      submitCategory(pendingCategoryId);
+      return;
+    }
     if (!canRoll) return;
     triggerLightImpact();
     triggerRoll();
@@ -97,6 +113,32 @@ export const FooterControls = () => {
             <Text style={[styles.buttonText, { color: COLORS.textWhite }]}>
               NOCHMAL
             </Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // Confirmation Button State
+  if (isConfirming) {
+    return (
+      <View style={styles.container}>
+        <TouchableOpacity
+          onPress={handleTriggerRoll}
+          activeOpacity={0.9}
+          style={styles.fullWidth}
+        >
+          <LinearGradient
+            colors={[COLORS.cyan, "#0098B3"]}
+            style={[styles.rollButton, styles.confirmButton]}
+          >
+            <View style={styles.overlayHighlight} />
+            <View style={styles.innerContent}>
+              <PencilLine size={28} color={COLORS.textDark} strokeWidth={3} />
+              <Text style={[styles.buttonText, { color: COLORS.textDark }]}>
+                ANNEHMEN
+              </Text>
+            </View>
           </LinearGradient>
         </TouchableOpacity>
       </View>
@@ -185,6 +227,11 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     shadowColor: COLORS.coral,
+    shadowOpacity: 0.6,
+    shadowRadius: 12,
+  },
+  confirmButton: {
+    shadowColor: COLORS.cyan,
     shadowOpacity: 0.6,
     shadowRadius: 12,
   },

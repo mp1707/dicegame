@@ -7,7 +7,6 @@ import { Die } from "./Die";
 import { useGameStore } from "../store/gameStore";
 import { COLORS } from "../constants/theme";
 import { triggerLightImpact, triggerSelectionHaptic } from "../utils/haptics";
-import { ScoreConfirmOverlay } from "./ui/ScoreConfirmOverlay";
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -266,8 +265,6 @@ export const DiceTray = ({
           <Text style={styles.readyToRollText}>START</Text>
         </View>
       )}
-
-      <ScoreConfirmOverlay />
 
       {/* Game End Overlay */}
       <GameEndOverlay />

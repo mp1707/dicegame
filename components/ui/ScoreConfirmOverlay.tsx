@@ -1,6 +1,14 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6 } from "lucide-react-native";
+import {
+  Dice1,
+  Dice2,
+  Dice3,
+  Dice4,
+  Dice5,
+  Dice6,
+  X,
+} from "lucide-react-native";
 import { COLORS, DIMENSIONS, SPACING } from "../../constants/theme";
 import { useGameStore } from "../../store/gameStore";
 import {
@@ -94,7 +102,6 @@ const getScoringDice = (
 
 export const ScoreConfirmOverlay = () => {
   const pendingCategoryId = useGameStore((s) => s.pendingCategoryId);
-  const submitCategory = useGameStore((s) => s.submitCategory);
   const clearPendingCategory = useGameStore((s) => s.clearPendingCategory);
   const diceValues = useGameStore((s) => s.diceValues);
 
@@ -107,19 +114,22 @@ export const ScoreConfirmOverlay = () => {
   const displayDice = scoringDice.length > 0 ? scoringDice : diceValues;
   const score = calculateScore(diceValues, pendingCategoryId);
 
-  const handleConfirm = () => {
-    triggerSelectionHaptic();
-    submitCategory(pendingCategoryId);
-  };
-
   const handleCancel = () => {
     triggerSelectionHaptic();
     clearPendingCategory();
   };
 
   return (
-    <View style={styles.overlay}>
+    <View style={styles.overlay} pointerEvents="box-none">
       <View style={styles.card}>
+        <TouchableOpacity
+          style={styles.closeButton}
+          onPress={handleCancel}
+          activeOpacity={0.7}
+        >
+          <X size={16} color={COLORS.textMuted} strokeWidth={3} />
+        </TouchableOpacity>
+
         <View style={styles.diceRow}>
           {displayDice.map((value, index) => {
             const Icon = diceIcons[Math.max(1, Math.min(6, value)) - 1];
@@ -135,23 +145,7 @@ export const ScoreConfirmOverlay = () => {
           })}
         </View>
         <Text style={styles.title}>{label}</Text>
-        <Text style={styles.subtitle}>eintragen ( +{score} )?</Text>
-        <View style={styles.buttonRow}>
-          <TouchableOpacity
-            style={[styles.button, styles.cancelButton]}
-            onPress={handleCancel}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.buttonText}>NEIN</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.button, styles.confirmButton]}
-            onPress={handleConfirm}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.acceptButtonText}>JA</Text>
-          </TouchableOpacity>
-        </View>
+        <Text style={styles.subtitle}>+{score} PUNKTE</Text>
       </View>
     </View>
   );
@@ -160,27 +154,45 @@ export const ScoreConfirmOverlay = () => {
 const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.65)",
+    backgroundColor: "transparent", // Non-blocking background
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: SPACING.containerPaddingHorizontal,
     zIndex: 90,
   },
   card: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 24,
-    paddingHorizontal: 24,
+    paddingVertical: 20,
+    paddingHorizontal: 32,
     borderRadius: DIMENSIONS.borderRadius,
-    backgroundColor: COLORS.surface, // Use theme surface
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.surface,
+    borderColor: COLORS.cyan, // Highlight border
     borderWidth: 2,
-    gap: 12,
+    gap: 8,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.5,
     shadowRadius: 16,
     elevation: 20,
+    minWidth: 220,
+  },
+  closeButton: {
+    position: "absolute",
+    top: -12,
+    right: -12,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: COLORS.surface2,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: COLORS.border,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
   },
   diceRow: {
     flexDirection: "row",
@@ -202,45 +214,6 @@ const styles = StyleSheet.create({
     color: COLORS.cyan,
     fontFamily: "Bungee-Regular",
     fontSize: 16,
-    textAlign: "center",
-    marginBottom: 8,
-  },
-  buttonRow: {
-    flexDirection: "row",
-    gap: 16,
-    marginTop: 8,
-  },
-  button: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: DIMENSIONS.borderRadiusSmall,
-    minWidth: 100,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  confirmButton: {
-    backgroundColor: COLORS.cyan,
-    shadowColor: COLORS.cyan,
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  cancelButton: {
-    backgroundColor: "transparent",
-    borderColor: COLORS.textMuted,
-    borderWidth: 2,
-    opacity: 0.8,
-  },
-  buttonText: {
-    color: COLORS.textMuted,
-    fontFamily: "Bungee-Regular",
-    fontSize: 14,
-    textAlign: "center",
-  },
-  acceptButtonText: {
-    color: COLORS.textDark,
-    fontFamily: "Bungee-Regular",
-    fontSize: 14,
     textAlign: "center",
   },
 });

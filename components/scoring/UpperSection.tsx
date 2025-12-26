@@ -41,6 +41,7 @@ const UpperSlot = ({ categoryId }: UpperSlotProps) => {
   const diceValues = useGameStore((s) => s.diceValues);
   const validCategories = useValidCategories();
   const pendingCategoryId = useGameStore((s) => s.pendingCategoryId);
+  const clearPendingCategory = useGameStore((s) => s.clearPendingCategory);
 
   // Get category metadata (label)
   const categoryDef = CATEGORIES.find((c) => c.id === categoryId);
@@ -65,7 +66,8 @@ const UpperSlot = ({ categoryId }: UpperSlotProps) => {
 
   const isPossible = isPossibleBase && !hasPendingSelection;
   const isSelected = pendingCategoryId === categoryId;
-  const isPressable = isScratchable || (isPossibleBase && !hasPendingSelection);
+  const isPressable =
+    isScratchable || (isPossibleBase && (!hasPendingSelection || isSelected));
 
   // Calculate predicted score if possible
   const predictedScore = useMemo(() => {
@@ -139,9 +141,14 @@ const UpperSlot = ({ categoryId }: UpperSlotProps) => {
     if (isScratchable) {
       triggerSelectionHaptic();
       scratchCategory(categoryId);
-    } else if (isPossibleBase && !hasPendingSelection) {
-      triggerSelectionHaptic();
-      setPendingCategory(categoryId);
+    } else if (isPossibleBase) {
+      if (isSelected) {
+        triggerSelectionHaptic();
+        clearPendingCategory();
+      } else if (!hasPendingSelection) {
+        triggerSelectionHaptic();
+        setPendingCategory(categoryId);
+      }
     }
   };
 
