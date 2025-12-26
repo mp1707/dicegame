@@ -251,7 +251,7 @@ export const Die = ({
     >
       <group onPointerDown={handlePointerDown}>
         {/* Main die body */}
-        <mesh castShadow receiveShadow>
+        <mesh>
           <boxGeometry args={[DIE_SIZE, DIE_SIZE, DIE_SIZE]} />
           <meshStandardMaterial
             color={dieColor}

@@ -2,7 +2,7 @@ import React, { Suspense, useRef, useCallback, useEffect } from "react";
 import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
 import { Canvas, useThree } from "@react-three/fiber";
 import { Physics, RigidBody, CuboidCollider } from "@react-three/rapier";
-import { ContactShadows, Environment } from "@react-three/drei";
+import { Environment } from "@react-three/drei";
 import { Die } from "./Die";
 import { useGameStore } from "../store/gameStore";
 import { COLORS } from "../constants/theme";
@@ -171,7 +171,6 @@ export const DiceTray = ({
   return (
     <View style={styles.container}>
       <Canvas
-        shadows
         style={styles.canvas}
         frameloop="demand"
         camera={{
@@ -185,7 +184,6 @@ export const DiceTray = ({
           position={[5, 10, 5]}
           angle={0.3}
           penumbra={1}
-          castShadow
           intensity={0.8}
           color={COLORS.cyan}
         />
@@ -193,7 +191,6 @@ export const DiceTray = ({
           position={[-5, 10, -5]}
           angle={0.3}
           penumbra={1}
-          castShadow
           intensity={0.5}
           color={COLORS.magenta}
         />
@@ -203,7 +200,7 @@ export const DiceTray = ({
           <Physics gravity={[0, -9.81, 0]} updateLoop="independent">
             {/* Floor - scaled based on container height */}
             <RigidBody type="fixed" restitution={0.2} friction={1}>
-              <mesh position={[0, 0, 0]} receiveShadow>
+              <mesh position={[0, 0, 0]}>
                 <boxGeometry args={[floorWidth, 0.5, floorDepth]} />
                 <meshStandardMaterial
                   color={COLORS.bg2}
@@ -249,7 +246,6 @@ export const DiceTray = ({
             ))}
           </Physics>
 
-          <ContactShadows opacity={0.6} blur={2.5} />
           <Environment preset="night" />
         </Suspense>
       </Canvas>
