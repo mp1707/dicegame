@@ -98,7 +98,6 @@ export const FooterControls = () => {
     }
 
     // Main Roll Button
-    const rollsLeft = rollsRemaining;
     const label = isRolling ? "ROLLING..." : "WURF";
     const buttonColors = [COLORS.cyan, "#0098B3"] as const;
 
@@ -110,7 +109,6 @@ export const FooterControls = () => {
         <CTA3DButton
           onPress={onPressRoll}
           label={label}
-          subLabel={canRoll ? `ROLL ${rollsLeft}` : undefined}
           disabled={!canRoll} // removed invalid !isRoundOver
           colors={buttonColors}
           icon={

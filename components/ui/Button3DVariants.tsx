@@ -27,8 +27,9 @@ export const CTA3DButton = ({
 }: CTA3DButtonProps) => {
   const DEPTH = 6;
 
-  // Base Color: Darker version of the main color or a generic dark well
-  const baseColor = "#1A1528"; // rough darken of cyan, or we can use surface2
+  // Base/Edge Color: Darker version of the cyan gradient for that 3D "elevated platform" look
+  // This matches the tile button's visible dark edge style
+  const baseColor = "#006676"; // Darker cyan for the edge/shadow
 
   return (
     <Pressable3DBase
