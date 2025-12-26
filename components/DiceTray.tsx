@@ -2,11 +2,12 @@ import React, { Suspense, useRef, useCallback, useEffect } from "react";
 import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
 import { Canvas, useThree } from "@react-three/fiber";
 import { Physics, RigidBody, CuboidCollider } from "@react-three/rapier";
-import { Environment } from "@react-three/drei";
+import { ContactShadows, Environment } from "@react-three/drei";
 import { Die } from "./Die";
 import { useGameStore } from "../store/gameStore";
 import { COLORS } from "../constants/theme";
 import { triggerLightImpact, triggerSelectionHaptic } from "../utils/haptics";
+import { ScoreConfirmOverlay } from "./ui/ScoreConfirmOverlay";
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -90,6 +91,7 @@ export const DiceTray = ({
   const diceVisible = useGameStore((state) => state.diceVisible);
   const completeRoll = useGameStore((state) => state.completeRoll);
   const toggleDiceLock = useGameStore((state) => state.toggleDiceLock);
+  const pendingCategoryId = useGameStore((state) => state.pendingCategoryId);
 
   // Calculate scene scaling based on container height
   const BASE_HEIGHT = 180;
@@ -165,15 +167,17 @@ export const DiceTray = ({
   // Callback for die tap
   const handleDieTap = useCallback(
     (index: number) => {
+      if (pendingCategoryId) return;
       triggerSelectionHaptic();
       toggleDiceLock(index);
     },
-    [toggleDiceLock]
+    [pendingCategoryId, toggleDiceLock]
   );
 
   return (
     <View style={styles.container}>
       <Canvas
+        shadows
         style={styles.canvas}
         frameloop="demand"
         camera={{
@@ -188,6 +192,7 @@ export const DiceTray = ({
           position={[5, 10, 5]}
           angle={0.3}
           penumbra={1}
+          castShadow
           intensity={1.0}
           color={"#FFD700"}
         />
@@ -195,6 +200,7 @@ export const DiceTray = ({
           position={[-5, 10, -5]}
           angle={0.3}
           penumbra={1}
+          castShadow
           intensity={0.8}
           color={COLORS.cyan}
         />
@@ -204,7 +210,7 @@ export const DiceTray = ({
           <Physics gravity={[0, -18, 0]} updateLoop="independent">
             {/* Floor - scaled based on container height */}
             <RigidBody type="fixed" restitution={0.05} friction={1}>
-              <mesh position={[0, 0, 0]}>
+              <mesh position={[0, 0, 0]} receiveShadow>
                 <boxGeometry args={[floorWidth, 0.5, floorDepth]} />
                 <meshStandardMaterial
                   color={COLORS.feltGreen}
@@ -250,6 +256,7 @@ export const DiceTray = ({
             ))}
           </Physics>
 
+          <ContactShadows opacity={0.6} blur={2.5} />
           <Environment preset="night" />
         </Suspense>
       </Canvas>
@@ -259,6 +266,8 @@ export const DiceTray = ({
           <Text style={styles.readyToRollText}>START</Text>
         </View>
       )}
+
+      <ScoreConfirmOverlay />
 
       {/* Game End Overlay */}
       <GameEndOverlay />

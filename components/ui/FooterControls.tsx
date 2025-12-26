@@ -31,9 +31,14 @@ export const FooterControls = () => {
   const phase = useGameStore((s) => s.phase);
   const goToShop = useGameStore((s) => s.goToShop);
   const retryRun = useGameStore((s) => s.retryRun);
+  const pendingCategoryId = useGameStore((s) => s.pendingCategoryId);
 
   // Determine button state
-  const canRoll = rollsRemaining > 0 && !isRolling && phase === "rolling";
+  const canRoll =
+    rollsRemaining > 0 &&
+    !isRolling &&
+    phase === "rolling" &&
+    !pendingCategoryId;
   const handleGoToShop = () => {
     triggerSelectionHaptic();
     goToShop();

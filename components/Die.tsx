@@ -270,7 +270,7 @@ export const Die = ({
         )}
 
         {/* Main die body */}
-        <mesh>
+        <mesh castShadow receiveShadow>
           <boxGeometry args={[DIE_SIZE, DIE_SIZE, DIE_SIZE]} />
           <meshStandardMaterial
             color={dieColor}

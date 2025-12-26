@@ -45,6 +45,7 @@ interface GameState {
   phase: GamePhase;
   overviewVisible: boolean;
   scratchMode: boolean;
+  pendingCategoryId: CategoryId | null;
 
   // Actions
   triggerRoll: () => void;
@@ -52,6 +53,8 @@ interface GameState {
   setRolling: (isRolling: boolean) => void;
   setDiceValues: (values: number[]) => void;
   toggleDiceLock: (index: number) => void;
+  setPendingCategory: (categoryId: CategoryId) => void;
+  clearPendingCategory: () => void;
   submitCategory: (categoryId: CategoryId) => void;
   scratchCategory: (categoryId: CategoryId) => void;
   goToShop: () => void;
@@ -124,12 +127,13 @@ export const useGameStore = create<GameState>((set, get) => ({
   phase: "rolling",
   overviewVisible: false,
   scratchMode: false,
+  pendingCategoryId: null,
 
   // Roll dice
   triggerRoll: () => {
-    const { rollsRemaining, phase } = get();
+    const { rollsRemaining, phase, pendingCategoryId } = get();
     const canRollPhase = phase === "rolling";
-    if (rollsRemaining <= 0 || !canRollPhase) return;
+    if (rollsRemaining <= 0 || !canRollPhase || pendingCategoryId) return;
 
     set((state) => ({
       rollTrigger: state.rollTrigger + 1,
@@ -139,6 +143,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       diceVisible: true,
       phase: "rolling",
       scratchMode: false,
+      pendingCategoryId: null,
     }));
   },
 
@@ -166,9 +171,9 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   // Toggle die lock/unlock
   toggleDiceLock: (index) => {
-    const { hasRolledThisRound, isRolling } = get();
+    const { hasRolledThisRound, isRolling, pendingCategoryId } = get();
     // Can only lock after first roll and when not rolling
-    if (!hasRolledThisRound || isRolling) return;
+    if (!hasRolledThisRound || isRolling || pendingCategoryId) return;
 
     set((state) => {
       const newSelected = [...state.selectedDice];
@@ -183,12 +188,36 @@ export const useGameStore = create<GameState>((set, get) => ({
       const canScore =
         (s.phase === "rolling" || s.phase === "scoring") &&
         s.hasRolledThisRound &&
-        !s.isRolling;
+        !s.isRolling &&
+        !s.pendingCategoryId;
       if (!canScore) {
         return { scratchMode: false };
       }
       return { scratchMode: !s.scratchMode };
     }),
+
+  setPendingCategory: (categoryId) => {
+    const {
+      categories,
+      phase,
+      hasRolledThisRound,
+      isRolling,
+      scratchMode,
+      pendingCategoryId,
+    } = get();
+    const canScore =
+      (phase === "rolling" || phase === "scoring") &&
+      hasRolledThisRound &&
+      !isRolling &&
+      !scratchMode;
+    if (!canScore) return;
+    if (pendingCategoryId) return;
+    if (categories[categoryId].score !== null) return;
+
+    set({ pendingCategoryId: categoryId, scratchMode: false });
+  },
+
+  clearPendingCategory: () => set({ pendingCategoryId: null }),
 
   // Submit score to a category
   submitCategory: (categoryId) => {
@@ -228,6 +257,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         selectedDice: [false, false, false, false, false],
         diceVisible: false,
         scratchMode: false,
+        pendingCategoryId: null,
       });
     } else {
       // Next round
@@ -241,6 +271,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         phase: "rolling",
         diceVisible: false,
         scratchMode: false,
+        pendingCategoryId: null,
       });
     }
   },
@@ -286,6 +317,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         selectedDice: [false, false, false, false, false],
         diceVisible: false,
         scratchMode: false,
+        pendingCategoryId: null,
       });
     } else {
       set({
@@ -298,6 +330,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         phase: "rolling",
         diceVisible: false,
         scratchMode: false,
+        pendingCategoryId: null,
       });
     }
   },
@@ -323,6 +356,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       targetScore: Math.round(targetScore * TARGET_MULTIPLIER),
       phase: "rolling",
       scratchMode: false,
+      pendingCategoryId: null,
       // Keep money
     });
   },
@@ -343,6 +377,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       money: 0, // Reset money on loss
       phase: "rolling",
       scratchMode: false,
+      pendingCategoryId: null,
     });
   },
 
@@ -353,6 +388,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       hasRolledThisRound: false,
       selectedDice: [false, false, false, false, false],
       scratchMode: false,
+      pendingCategoryId: null,
     });
   },
 }));

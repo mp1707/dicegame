@@ -20,13 +20,14 @@ interface LowerSlotProps {
 
 const LowerSlot = ({ categoryId }: LowerSlotProps) => {
   const categories = useGameStore((s) => s.categories);
-  const submitCategory = useGameStore((s) => s.submitCategory);
+  const setPendingCategory = useGameStore((s) => s.setPendingCategory);
   const scratchCategory = useGameStore((s) => s.scratchCategory);
   const scratchMode = useGameStore((s) => s.scratchMode);
   const phase = useGameStore((s) => s.phase);
   const hasRolledThisRound = useGameStore((s) => s.hasRolledThisRound);
   const isRolling = useGameStore((s) => s.isRolling);
   const validCategories = useValidCategories();
+  const pendingCategoryId = useGameStore((s) => s.pendingCategoryId);
 
   // Get category metadata (label)
   const categoryDef = CATEGORIES.find((c) => c.id === categoryId);
@@ -45,16 +46,22 @@ const LowerSlot = ({ categoryId }: LowerSlotProps) => {
     (phase === "rolling" || phase === "scoring") &&
     hasRolledThisRound &&
     !isRolling;
+  const hasPendingSelection = pendingCategoryId !== null;
   const isScratchable = canScore && scratchMode && !isFilled;
-  const isPossible =
+  const isPossibleBase =
     canScore &&
     !scratchMode &&
     !isFilled &&
     validCategories.includes(categoryId);
+  const isPossible = isPossibleBase && !hasPendingSelection;
+  const isSelected = pendingCategoryId === categoryId;
+  const isPressable =
+    isScratchable || (isPossibleBase && !hasPendingSelection);
 
   // Determine visual state
   let state: keyof typeof SLOT_STATES = "empty";
   if (isFilled) state = "filled";
+  else if (isSelected) state = "selected";
   else if (isScratchable) state = "scratch";
   else if (isPossible) state = "possible";
 
@@ -65,6 +72,8 @@ const LowerSlot = ({ categoryId }: LowerSlotProps) => {
     ? COLORS.amber
     : isScratchable
     ? COLORS.red
+    : isSelected
+    ? COLORS.cyan
     : isPossible
     ? COLORS.cyan
     : COLORS.textMuted;
@@ -73,6 +82,8 @@ const LowerSlot = ({ categoryId }: LowerSlotProps) => {
     ? COLORS.amber
     : isScratchable
     ? COLORS.red
+    : isSelected
+    ? COLORS.text
     : isPossible
     ? COLORS.text
     : COLORS.textMuted;
@@ -81,9 +92,9 @@ const LowerSlot = ({ categoryId }: LowerSlotProps) => {
     if (isScratchable) {
       triggerSelectionHaptic();
       scratchCategory(categoryId);
-    } else if (isPossible) {
+    } else if (isPossibleBase && !hasPendingSelection) {
       triggerSelectionHaptic();
-      submitCategory(categoryId);
+      setPendingCategory(categoryId);
     }
   };
 
@@ -102,7 +113,7 @@ const LowerSlot = ({ categoryId }: LowerSlotProps) => {
         },
       ]}
       onPress={handlePress}
-      disabled={!isPossible && !isScratchable}
+      disabled={!isPressable}
       activeOpacity={0.7}
     >
       <View style={styles.contentContainer}>
@@ -158,11 +169,13 @@ const ScratchButton = () => {
   const phase = useGameStore((s) => s.phase);
   const hasRolledThisRound = useGameStore((s) => s.hasRolledThisRound);
   const isRolling = useGameStore((s) => s.isRolling);
+  const pendingCategoryId = useGameStore((s) => s.pendingCategoryId);
   const toggleScratchMode = useGameStore((s) => s.toggleScratchMode);
   const canScratch =
     (phase === "rolling" || phase === "scoring") &&
     hasRolledThisRound &&
-    !isRolling;
+    !isRolling &&
+    !pendingCategoryId;
   const iconColor = COLORS.textMuted;
   const labelColor = COLORS.textMuted;
   const label = canScratch && scratchMode ? "Abbrechen" : "Streichen";
