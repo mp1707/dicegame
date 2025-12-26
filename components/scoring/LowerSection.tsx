@@ -10,6 +10,7 @@ import {
 import { useGameStore, useValidCategories } from "../../store/gameStore";
 import { CategoryId, CATEGORIES } from "../../utils/yahtzeeScoring";
 import { CategoryIcon } from "../ui/CategoryIcon";
+import { triggerSelectionHaptic } from "../../utils/haptics";
 
 const LOWER_CATEGORIES = CATEGORIES.filter((c) => c.section === "lower");
 
@@ -59,6 +60,7 @@ const LowerSlot = ({ categoryId }: LowerSlotProps) => {
 
   const handlePress = () => {
     if (isPossible) {
+      triggerSelectionHaptic();
       submitCategory(categoryId);
     }
   };
@@ -112,7 +114,10 @@ const OverviewButton = () => {
           borderWidth: 1,
         },
       ]}
-      onPress={toggleOverview}
+      onPress={() => {
+        triggerSelectionHaptic();
+        toggleOverview();
+      }}
       activeOpacity={0.7}
     >
       <View style={styles.contentContainer}>

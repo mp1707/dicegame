@@ -2,6 +2,10 @@ import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { COLORS, TYPOGRAPHY, SPACING, DIMENSIONS } from "../../constants/theme";
 import { useGameStore } from "../../store/gameStore";
+import {
+  triggerLightImpact,
+  triggerSelectionHaptic,
+} from "../../utils/haptics";
 
 // Roll pips indicator
 const RollPips = ({ remaining }: { remaining: number }) => {
@@ -30,6 +34,21 @@ export const FooterControls = () => {
 
   // Determine button state
   const canRoll = rollsRemaining > 0 && !isRolling && phase === "rolling";
+  const handleGoToShop = () => {
+    triggerSelectionHaptic();
+    goToShop();
+  };
+
+  const handleRetryRun = () => {
+    triggerSelectionHaptic();
+    retryRun();
+  };
+
+  const handleTriggerRoll = () => {
+    if (!canRoll) return;
+    triggerLightImpact();
+    triggerRoll();
+  };
 
   // Different button modes based on phase
   if (phase === "won") {
@@ -37,7 +56,7 @@ export const FooterControls = () => {
       <View style={styles.container}>
         <TouchableOpacity
           style={[styles.rollButton, styles.shopButton]}
-          onPress={goToShop}
+          onPress={handleGoToShop}
           activeOpacity={0.8}
         >
           <Text style={[styles.buttonText, { color: COLORS.textWhite }]}>
@@ -53,7 +72,7 @@ export const FooterControls = () => {
       <View style={styles.container}>
         <TouchableOpacity
           style={[styles.rollButton, styles.retryButton]}
-          onPress={retryRun}
+          onPress={handleRetryRun}
           activeOpacity={0.8}
         >
           <Text style={[styles.buttonText, { color: COLORS.textWhite }]}>
@@ -73,7 +92,7 @@ export const FooterControls = () => {
           !canRoll && styles.rollButtonDisabled,
           // Add glow effect based on state or assume it's always glowing if active can be done with shadow
         ]}
-        onPress={triggerRoll}
+        onPress={handleTriggerRoll}
         disabled={!canRoll}
         activeOpacity={0.8}
       >

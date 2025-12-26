@@ -10,6 +10,7 @@ import {
 import { useGameStore, useValidCategories } from "../../store/gameStore";
 import { CategoryId, CATEGORIES } from "../../utils/yahtzeeScoring";
 import { CategoryIcon } from "../ui/CategoryIcon";
+import { triggerSelectionHaptic } from "../../utils/haptics";
 
 const UPPER_CATEGORIES: CategoryId[] = [
   "ones",
@@ -59,6 +60,7 @@ const UpperSlot = ({ categoryId }: UpperSlotProps) => {
 
   const handlePress = () => {
     if (isPossible) {
+      triggerSelectionHaptic();
       submitCategory(categoryId);
     }
   };

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Modal } from "react-native";
 import { COLORS, TYPOGRAPHY, DIMENSIONS } from "../../constants/theme";
 import { useGameStore } from "../../store/gameStore";
 import { formatNumber } from "../../utils/yahtzeeScoring";
+import { triggerSelectionHaptic } from "../../utils/haptics";
 
 interface ShopModalProps {
   visible: boolean;
@@ -11,6 +12,10 @@ interface ShopModalProps {
 export const ShopModal = ({ visible }: ShopModalProps) => {
   const money = useGameStore((s) => s.money);
   const startNextRun = useGameStore((s) => s.startNextRun);
+  const handleStartNextRun = () => {
+    triggerSelectionHaptic();
+    startNextRun();
+  };
 
   return (
     <Modal visible={visible} transparent animationType="fade">
@@ -31,7 +36,7 @@ export const ShopModal = ({ visible }: ShopModalProps) => {
           {/* Next round button */}
           <TouchableOpacity
             style={styles.nextButton}
-            onPress={startNextRun}
+            onPress={handleStartNextRun}
             activeOpacity={0.8}
           >
             <Text style={styles.nextButtonText}>NÄCHSTE RUNDE</Text>

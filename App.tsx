@@ -26,6 +26,7 @@ import {
   TYPOGRAPHY,
   DIMENSIONS,
 } from "./constants/theme";
+import { triggerSelectionHaptic } from "./utils/haptics";
 
 export default function App() {
   // Game states
@@ -99,7 +100,10 @@ export default function App() {
               {canScratch && (
                 <TouchableOpacity
                   style={styles.scratchButton}
-                  onPress={() => setScratchVisible(true)}
+                  onPress={() => {
+                    triggerSelectionHaptic();
+                    setScratchVisible(true);
+                  }}
                   activeOpacity={0.8}
                 >
                   <Text style={styles.scratchText}>STREICHEN</Text>

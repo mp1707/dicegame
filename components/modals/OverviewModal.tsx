@@ -11,6 +11,7 @@ import { COLORS, TYPOGRAPHY, DIMENSIONS } from "../../constants/theme";
 import { useGameStore } from "../../store/gameStore";
 import { CATEGORIES } from "../../utils/yahtzeeScoring";
 import { CategoryIcon } from "../ui/CategoryIcon";
+import { triggerSelectionHaptic } from "../../utils/haptics";
 
 interface OverviewModalProps {
   visible: boolean;
@@ -19,13 +20,17 @@ interface OverviewModalProps {
 
 export const OverviewModal = ({ visible, onClose }: OverviewModalProps) => {
   const categories = useGameStore((s) => s.categories);
+  const handleClose = () => {
+    triggerSelectionHaptic();
+    onClose();
+  };
 
   return (
     <Modal
       visible={visible}
       transparent
       animationType="fade"
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
     >
       <View style={styles.overlay}>
         <View style={styles.content}>
@@ -62,7 +67,7 @@ export const OverviewModal = ({ visible, onClose }: OverviewModalProps) => {
 
           <TouchableOpacity
             style={styles.closeButton}
-            onPress={onClose}
+            onPress={handleClose}
             activeOpacity={0.8}
           >
             <Text style={styles.closeText}>Schließen</Text>

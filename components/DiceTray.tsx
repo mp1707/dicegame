@@ -6,6 +6,10 @@ import { Environment } from "@react-three/drei";
 import { Die } from "./Die";
 import { useGameStore } from "../store/gameStore";
 import { COLORS } from "../constants/theme";
+import {
+  triggerLightImpact,
+  triggerSelectionHaptic,
+} from "../utils/haptics";
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -149,6 +153,7 @@ export const DiceTray = ({
       const allSleeping = isSleepingRef.current.every((s) => s);
 
       if (allSleeping) {
+        triggerLightImpact();
         // Only when everything is quiet do we update the game state
         // This prevents the UI from flickering with partial results
         completeRoll([...settledValuesRef.current]);
@@ -163,6 +168,7 @@ export const DiceTray = ({
   // Callback for die tap
   const handleDieTap = useCallback(
     (index: number) => {
+      triggerSelectionHaptic();
       toggleDiceLock(index);
     },
     [toggleDiceLock]

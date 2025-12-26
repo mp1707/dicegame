@@ -10,6 +10,7 @@ import {
 import { COLORS, TYPOGRAPHY, DIMENSIONS } from "../../constants/theme";
 import { useGameStore } from "../../store/gameStore";
 import { CATEGORIES, CategoryId } from "../../utils/yahtzeeScoring";
+import { triggerSelectionHaptic } from "../../utils/haptics";
 
 interface ScratchModalProps {
   visible: boolean;
@@ -25,7 +26,13 @@ export const ScratchModal = ({ visible, onClose }: ScratchModalProps) => {
     (cat) => categories[cat.id].score === null
   );
 
+  const handleClose = () => {
+    triggerSelectionHaptic();
+    onClose();
+  };
+
   const handleScratch = (categoryId: CategoryId) => {
+    triggerSelectionHaptic();
     scratchCategory(categoryId);
     onClose();
   };
@@ -35,7 +42,7 @@ export const ScratchModal = ({ visible, onClose }: ScratchModalProps) => {
       visible={visible}
       transparent
       animationType="fade"
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
     >
       <View style={styles.overlay}>
         <View style={styles.content}>
@@ -64,7 +71,7 @@ export const ScratchModal = ({ visible, onClose }: ScratchModalProps) => {
           {/* Cancel button */}
           <TouchableOpacity
             style={styles.cancelButton}
-            onPress={onClose}
+            onPress={handleClose}
             activeOpacity={0.8}
           >
             <Text style={styles.cancelText}>ABBRECHEN</Text>
