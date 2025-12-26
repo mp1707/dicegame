@@ -27,10 +27,6 @@ export const CTA3DButton = ({
 }: CTA3DButtonProps) => {
   const DEPTH = 6;
 
-  // Base/Edge Color: Darker version of the cyan gradient for that 3D "elevated platform" look
-  // This matches the tile button's visible dark edge style
-  const baseColor = "#006676"; // Darker cyan for the edge/shadow
-
   return (
     <Pressable3DBase
       onPress={onPress}
@@ -38,15 +34,8 @@ export const CTA3DButton = ({
       depth={DEPTH}
       borderRadius={DIMENSIONS.borderRadius}
       style={[styles.ctaWrapper, style, disabled && styles.ctaDisabled]}
-      // BASE: The dark "well" showing the depth
-      base={
-        <View
-          style={[
-            styles.baseLayer,
-            { backgroundColor: disabled ? COLORS.surface2 : baseColor },
-          ]}
-        />
-      }
+      // BASE: Dark "well" that shows when face moves down (same as Tile3DButton)
+      base={<View style={[styles.baseLayer, styles.ctaBase]} />}
       // FACE: The gradient button surface
       face={
         <LinearGradient
@@ -54,12 +43,7 @@ export const CTA3DButton = ({
             disabled ? [COLORS.surface2, COLORS.surface2] : (colors as any)
           }
           style={styles.faceGradient}
-        >
-          {/* Top Edge Highlight / Lip - "Give the face a tiny bottom edge" ... or top? 
-              Request said: "Give the face a tiny bottom edge (1–2px darker band)" to sell thickness
-          */}
-          <View style={styles.faceBottomEdge} />
-        </LinearGradient>
+        />
       }
     >
       {/* Content */}
@@ -158,18 +142,12 @@ const styles = StyleSheet.create({
     borderRadius: DIMENSIONS.borderRadius,
     backgroundColor: COLORS.shadow, // Default deep shadow color
   },
+  ctaBase: {
+    backgroundColor: "rgba(0, 0, 0, 0.5)", // Dark well matching Tile3DButton style
+  },
   faceGradient: {
     ...StyleSheet.absoluteFillObject,
     borderRadius: DIMENSIONS.borderRadius,
-    // borderBottomWidth: 4, // Remove old fake border
-  },
-  faceBottomEdge: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 2,
-    backgroundColor: "rgba(0,0,0,0.2)",
   },
   contentRow: {
     flexDirection: "row",
