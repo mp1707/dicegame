@@ -93,22 +93,24 @@ const styles = StyleSheet.create({
   content: {
     width: "90%",
     maxHeight: "80%",
-    backgroundColor: COLORS.slotBg,
+    backgroundColor: COLORS.surface,
     borderRadius: DIMENSIONS.borderRadius * 2,
     padding: 20,
+    borderWidth: 2,
+    borderColor: COLORS.coral,
   },
   title: {
-    color: COLORS.cyan,
-    ...TYPOGRAPHY.largeScore,
+    ...TYPOGRAPHY.displayLarge,
+    color: COLORS.coral,
     textAlign: "center",
     marginBottom: 8,
-    textShadowColor: COLORS.cyan,
+    textShadowColor: COLORS.coral,
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 10,
   },
   subtitle: {
-    color: COLORS.textLight,
-    ...TYPOGRAPHY.metaInfo,
+    ...TYPOGRAPHY.body,
+    color: COLORS.textMuted,
     textAlign: "center",
     marginBottom: 20,
   },
@@ -121,15 +123,15 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: "rgba(255, 68, 68, 0.1)",
+    backgroundColor: "rgba(255, 90, 122, 0.1)", // Coral tint
     borderRadius: DIMENSIONS.borderRadius,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: "rgba(255, 68, 68, 0.3)",
+    borderColor: "rgba(255, 90, 122, 0.3)",
   },
   categoryName: {
-    color: COLORS.textWhite,
-    ...TYPOGRAPHY.labels,
+    ...TYPOGRAPHY.label,
+    color: COLORS.text,
   },
   rightSide: {
     flexDirection: "row",
@@ -137,8 +139,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   zeroScore: {
-    color: COLORS.red,
-    ...TYPOGRAPHY.smallScore,
+    ...TYPOGRAPHY.scoreValue,
+    color: COLORS.coral,
   },
   crossIcon: {
     fontSize: 14,
@@ -146,12 +148,12 @@ const styles = StyleSheet.create({
   cancelButton: {
     marginTop: 16,
     paddingVertical: 14,
-    backgroundColor: COLORS.cyanDark,
+    backgroundColor: COLORS.surfaceHighlight,
     borderRadius: DIMENSIONS.borderRadius,
     alignItems: "center",
   },
   cancelText: {
-    color: COLORS.textBlack,
-    ...TYPOGRAPHY.mediumScore,
+    ...TYPOGRAPHY.button,
+    color: COLORS.text,
   },
 });

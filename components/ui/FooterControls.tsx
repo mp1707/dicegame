@@ -1,5 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Dices } from "lucide-react-native";
 import { COLORS, TYPOGRAPHY, SPACING, DIMENSIONS } from "../../constants/theme";
 import { useGameStore } from "../../store/gameStore";
 import {
@@ -39,6 +41,7 @@ export const FooterControls = () => {
     !isRolling &&
     phase === "rolling" &&
     !pendingCategoryId;
+
   const handleGoToShop = () => {
     triggerSelectionHaptic();
     goToShop();
@@ -60,13 +63,19 @@ export const FooterControls = () => {
     return (
       <View style={styles.container}>
         <TouchableOpacity
-          style={[styles.rollButton, styles.shopButton]}
           onPress={handleGoToShop}
-          activeOpacity={0.8}
+          activeOpacity={0.9}
+          style={styles.fullWidth}
         >
-          <Text style={[styles.buttonText, { color: COLORS.textWhite }]}>
-            SHOP
-          </Text>
+          <LinearGradient
+            colors={[COLORS.mint, "#00A36C"]}
+            style={[styles.rollButton, styles.shopButton]}
+          >
+            <View style={styles.overlayHighlight} />
+            <Text style={[styles.buttonText, { color: COLORS.textDark }]}>
+              SHOP
+            </Text>
+          </LinearGradient>
         </TouchableOpacity>
       </View>
     );
@@ -76,13 +85,19 @@ export const FooterControls = () => {
     return (
       <View style={styles.container}>
         <TouchableOpacity
-          style={[styles.rollButton, styles.retryButton]}
           onPress={handleRetryRun}
-          activeOpacity={0.8}
+          activeOpacity={0.9}
+          style={styles.fullWidth}
         >
-          <Text style={[styles.buttonText, { color: COLORS.textWhite }]}>
-            NOCHMAL
-          </Text>
+          <LinearGradient
+            colors={[COLORS.coral, "#C24466"]}
+            style={[styles.rollButton, styles.retryButton]}
+          >
+            <View style={styles.overlayHighlight} />
+            <Text style={[styles.buttonText, { color: COLORS.textWhite }]}>
+              NOCHMAL
+            </Text>
+          </LinearGradient>
         </TouchableOpacity>
       </View>
     );
@@ -92,19 +107,40 @@ export const FooterControls = () => {
     <View style={styles.container}>
       {/* Main roll button */}
       <TouchableOpacity
-        style={[
-          styles.rollButton,
-          !canRoll && styles.rollButtonDisabled,
-          // Add glow effect based on state or assume it's always glowing if active can be done with shadow
-        ]}
         onPress={handleTriggerRoll}
         disabled={!canRoll}
-        activeOpacity={0.8}
+        activeOpacity={0.9}
+        style={styles.fullWidth}
       >
-        <RollPips remaining={rollsRemaining} />
-        <Text style={styles.buttonText}>
-          {isRolling ? "ROLLING..." : "WURF"}
-        </Text>
+        <LinearGradient
+          colors={
+            !canRoll
+              ? [COLORS.surface2, COLORS.surface2]
+              : [COLORS.cyan, "#0098B3"]
+          }
+          style={[styles.rollButton, !canRoll && styles.rollButtonDisabled]}
+        >
+          <View style={styles.overlayHighlight} />
+
+          <View style={styles.innerContent}>
+            <Dices
+              size={28}
+              color={!canRoll ? COLORS.textMuted : COLORS.textDark}
+            />
+
+            <View style={styles.textContainer}>
+              <Text
+                style={[
+                  styles.buttonText,
+                  !canRoll && { color: COLORS.textMuted },
+                ]}
+              >
+                {isRolling ? "ROLLING..." : "WURF"}
+              </Text>
+              <RollPips remaining={rollsRemaining} />
+            </View>
+          </View>
+        </LinearGradient>
       </TouchableOpacity>
     </View>
   );
@@ -116,61 +152,82 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.sectionGap,
     gap: 8,
   },
+  fullWidth: {
+    width: "100%",
+  },
   rollButton: {
     height: DIMENSIONS.rollButtonHeight,
-    // FILLED button - not outline-only (reads as primary action)
-    backgroundColor: "#0098B3", // Deep cyan base
     borderRadius: DIMENSIONS.borderRadius,
-    borderWidth: 0, // No border on filled button
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 12,
-    // Cyan glow
-    shadowColor: COLORS.cyan,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
-    shadowRadius: 12,
+    // Shadow calculated manually for "Toy" feel
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 1, // Sharp shadow
     elevation: 8,
+    borderBottomWidth: 4,
+    borderBottomColor: "rgba(0,0,0,0.3)",
+    position: "relative",
+    overflow: "hidden",
   },
   rollButtonDisabled: {
-    backgroundColor: COLORS.surface,
-    opacity: 0.6,
-    shadowOpacity: 0,
+    opacity: 0.8,
+    borderBottomWidth: 0,
     elevation: 0,
+    shadowOpacity: 0,
   },
   shopButton: {
-    backgroundColor: "#00A36C", // Deep mint/green
-    shadowColor: COLORS.green,
+    shadowColor: COLORS.mint,
+    shadowOpacity: 0.6,
+    shadowRadius: 12,
   },
   retryButton: {
-    backgroundColor: "#C24466", // Deep coral
     shadowColor: COLORS.coral,
+    shadowOpacity: 0.6,
+    shadowRadius: 12,
+  },
+  overlayHighlight: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: "40%",
+    backgroundColor: "rgba(255,255,255,0.15)", // Top bevel highlight
+  },
+  innerContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+  },
+  textContainer: {
+    flexDirection: "column",
+    alignItems: "flex-start",
+    gap: 2,
   },
   buttonText: {
-    color: COLORS.textWhite, // White on filled button
-    fontSize: 20,
-    fontFamily: "PressStart2P-Regular",
+    color: COLORS.textDark,
+    fontSize: 24, // Bigger display size
+    fontFamily: "Bungee-Regular",
+    lineHeight: 26,
     letterSpacing: 2,
   },
   pipsContainer: {
     flexDirection: "row",
-    gap: 6,
+    gap: 4,
   },
   pip: {
-    width: 10,
-    height: 10,
-    borderRadius: 5, // Round pips
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   pipActive: {
-    backgroundColor: COLORS.textWhite,
-    shadowColor: COLORS.textWhite,
-    shadowOpacity: 0.8,
-    shadowRadius: 4,
+    backgroundColor: COLORS.textDark,
   },
   pipUsed: {
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "rgba(0,0,0,0.2)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.3)",
+    borderColor: "rgba(0,0,0,0.3)",
   },
 });

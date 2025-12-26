@@ -44,8 +44,7 @@ export const OverviewModal = ({ visible, onClose }: OverviewModalProps) => {
             >
               {CATEGORIES.map((cat) => {
                 const slot = categories[cat.id];
-                const score =
-                  slot.score === null ? "-" : String(slot.score);
+                const score = slot.score === null ? "-" : String(slot.score);
 
                 return (
                   <View key={cat.id} style={styles.row}>
@@ -89,13 +88,15 @@ const styles = StyleSheet.create({
   content: {
     width: "90%",
     height: "85%",
-    backgroundColor: COLORS.slotBg,
+    backgroundColor: COLORS.surface,
     borderRadius: DIMENSIONS.borderRadius * 2,
     padding: 20,
+    borderWidth: 2,
+    borderColor: COLORS.border,
   },
   title: {
-    color: COLORS.textWhite,
-    ...TYPOGRAPHY.largeScore,
+    ...TYPOGRAPHY.displayLarge,
+    color: COLORS.text,
     textAlign: "center",
     marginBottom: 16,
   },
@@ -114,7 +115,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderColor: "rgba(0, 255, 255, 0.2)",
+    borderColor: "rgba(255, 255, 255, 0.1)",
   },
   leftSide: {
     flexDirection: "row",
@@ -122,22 +123,24 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   label: {
+    ...TYPOGRAPHY.label,
     color: COLORS.cyan,
-    ...TYPOGRAPHY.labels,
   },
   score: {
+    ...TYPOGRAPHY.scoreValue,
     color: COLORS.gold,
-    ...TYPOGRAPHY.smallScore,
   },
   closeButton: {
     marginTop: 16,
     paddingVertical: 14,
-    backgroundColor: COLORS.blue,
+    backgroundColor: COLORS.surfaceHighlight,
     borderRadius: DIMENSIONS.borderRadius,
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: COLORS.cyan,
   },
   closeText: {
-    color: COLORS.textWhite,
-    ...TYPOGRAPHY.mediumScore,
+    ...TYPOGRAPHY.button,
+    color: COLORS.text,
   },
 });

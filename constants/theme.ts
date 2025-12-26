@@ -1,167 +1,211 @@
 /**
  * Theme constants for Roguelike Yahtzee
- * Based on CRT Arcade UI Direction
+ * Based on Balatro Vibe Code (Bright Felt + Warm Casino Neon)
  */
 
-import { Platform } from "react-native";
+import { Platform, TextStyle } from "react-native";
 
-// Color Palette - Bright Felt + Warm Casino Neon (Balatro-inspired)
+// Color Palette - Bolder, Warmer, Tactile
 export const COLORS = {
-  // Base - Mid-bright felt, not near-black
-  bg: "#1E8A63", // saturated felt green (shadow)
-  bg2: "#2FB67A", // primary felt green (bright)
-  surface: "#2A2242", // panels - warm eggplant
-  surface2: "#352B58", // tiles - panel highlight
-  border: "#4A3D7A", // outlines - brighter for visibility
-  slotBg: "#2A2242", // alias for slot backgrounds
+  // Backgrounds
+  bg: "#2A2242", // Deep warm violet (Eggplant) - Main Background
+  bg2: "#3C325B", // Slightly lighter violet for layering
 
-  // Text - high contrast on warm backgrounds
-  text: "rgba(255,255,255,0.92)",
-  textMuted: "rgba(255,255,255,0.68)",
+  // Surfaces (Panels/Cards)
+  surface: "#352B58", // Primary panel color
+  surface2: "#4A3D7A", // Secondary panel / inactive slot
+  surfaceHighlight: "#5D4D8F", // Hover/Active state base
 
-  // Accent Trio (intentional usage)
-  cyan: "#38E8FF", // info/interactive
-  magenta: "#FF3CF2", // selected / jackpot (kept for special moments)
-  purple: "#7B5CFF", // secondary glow, separators
-  coral: "#FF5A7A", // error/locked/strike (replaces some red usage)
-  red: "#FF5A7A", // alias for coral
-  green: "#6CFFB8", // mint - success/confirm
-  feltGreen: "#2FB67A", // casino table top - bright!
-  amber: "#FFC857", // gold - progress/goal/reward
+  // Borders
+  border: "#5D4D8F", // Standard border
+  borderHighlight: "#8874C4", // Highlighted border
 
-  // Glow Helpers (Transparent) - used sparingly
-  cyanGlow: "rgba(56, 232, 255, 0.4)",
-  magentaGlow: "rgba(255, 60, 242, 0.28)",
-  purpleGlow: "rgba(123, 92, 255, 0.25)",
+  // Text
+  text: "#FFFFFF", // Primary text (high contrast)
+  textMuted: "#AA9ECF", // Secondary text (soft purple-grey)
+  textDark: "#1A1528", // Text on bright/neon backgrounds
 
-  // Legacy mappings for compatibility
-  background: "#1E8A63",
-  backgroundDark: "#2FB67A",
-  gold: "#FFC857",
+  // Accent Trio (The "Fun" Layer)
+  cyan: "#4DEEEA", // Info / Selection / Neutral interactable
+  gold: "#FFC857", // Goals / Progress / Best option / Money
+  coral: "#FF5A7A", // Strike / Cancel / Danger / Locked
+  mint: "#6CFFB8", // Confirm / Success / Buy
+
+  // Specific usages
+  feltGreen: "#2FB67A", // The "Table" felt color (if used)
+  shadow: "#1A1528", // Deep purple shadow
+  slotBg: "#352B58", // Alias for components using slotBg
+
+  // Legacy mappings for safe-keep
+  background: "#2A2242",
+  backgroundDark: "#1A1528",
   goldDark: "#D9A830",
-  textWhite: "rgba(255,255,255,0.92)",
-  textBlack: "#1E8A63",
+  textWhite: "#FFFFFF",
+  textBlack: "#1A1528",
+  red: "#FF5A7A",
+  green: "#6CFFB8",
+  purple: "#7B5CFF",
+  magenta: "#FF3CF2",
+  amber: "#FFC857",
+  cyanGlow: "rgba(77, 238, 234, 0.4)",
 } as const;
 
-// Typography
+// Typography - Split into Display (Bungee) and UI (Inter)
 export const TYPOGRAPHY = {
-  // Headlines / Buttons (Retro pixel appeal)
-  // Fallback to PressStart2P since Silkscreen is not available
-  largeScore: {
-    fontFamily: "PressStart2P-Regular",
-    fontSize: 22,
+  // Display - Big numbers, Headers, "WURF"
+  displayHuge: {
+    fontFamily: "Bungee-Regular",
+    fontSize: 44,
     color: COLORS.text,
   },
-  mediumScore: {
-    fontFamily: "PressStart2P-Regular",
+  displayLarge: {
+    fontFamily: "Bungee-Regular",
+    fontSize: 32,
+    color: COLORS.text,
+  },
+  displayMedium: {
+    fontFamily: "Bungee-Regular",
+    fontSize: 24, // Use for "WURF"
+    color: COLORS.text,
+  },
+  displaySmall: {
+    fontFamily: "Bungee-Regular",
     fontSize: 16,
     color: COLORS.text,
   },
 
-  // Numbers / Scores (Clean, stable digits)
-  // Using Roboto Mono as requested
+  // UI - Labels, readable numbers, body
+  // Inter supports tabular numbers (tnum) by default features usually, or we ensure mono-look
   scoreValue: {
-    fontFamily: "RobotoMono-Regular",
-    fontSize: 18,
-    fontWeight: "500" as const,
+    fontFamily: "Inter-Bold",
+    fontSize: 14, // Slightly bigger
     color: COLORS.text,
+    fontVariant: ["tabular-nums"] as any, // Tabular numbers! Cast to any to avoid readonly issues
   },
-
-  // Labels (Tile labels)
   label: {
-    fontFamily: "PressStart2P-Regular",
-    fontSize: 10,
+    fontFamily: "Inter-SemiBold",
+    fontSize: 11,
     color: COLORS.textMuted,
+    textTransform: "uppercase" as const,
+    letterSpacing: 0.5,
   },
-
-  // Body / Meta
   body: {
-    fontFamily: "RobotoMono-Regular",
+    fontFamily: "Inter-Medium",
     fontSize: 12,
     color: COLORS.textMuted,
   },
-
-  // Legacy
-  tinyScore: {
-    fontFamily: "PressStart2P-Regular",
-    fontSize: 10,
-    color: COLORS.text,
-  },
-  metaInfo: {
-    fontFamily: "RobotoMono-Regular",
-    fontSize: 12,
-    color: COLORS.textMuted,
+  button: {
+    fontFamily: "Bungee-Regular",
+    fontSize: 18,
+    color: COLORS.textDark,
   },
 } as const;
 
 // Spacing
 export const SPACING = {
   screenPadding: 8,
-  sectionGap: 12,
-  slotGapHorizontal: 6,
-  slotGapVertical: 6,
+  sectionGap: 16,
+  slotGapHorizontal: 8,
+  slotGapVertical: 8,
   containerPaddingHorizontal: 16,
   containerPaddingVertical: 12,
-  buttonPaddingVertical: 14,
+  buttonPaddingVertical: 16,
 } as const;
 
 // Dimensions
 export const DIMENSIONS = {
-  headerHeight: 60,
-  rollButtonHeight: 56, // Slightly taller for prominence
-  borderRadius: 14, // Softer, Balatro-style rounded corners
-  progressBarHeight: 18,
-  borderWidth: 2,
+  headerHeight: 64,
+  rollButtonHeight: 60, // Beefy button
+  borderRadius: 12, // Compact radius
+  borderRadiusSmall: 8,
+  progressBarHeight: 20,
+  borderWidth: 2, // Thicker borders for "tactile" feel
 } as const;
 
 // Responsive Helper
 export const calculateDiceTrayHeight = (screenHeight: number): number => {
-  return Math.round(screenHeight * 0.35); // Slightly larger for CRT screen effect
+  return Math.round(screenHeight * 0.38); // More room for dice
 };
 
-// Slot Visual States - Punchy, minimal glow (Balatro-inspired)
-// Glow is RARE - only on selected/primary action
+// Slot Visual States - Solid, Tactile, No excessive glow
 export const SLOT_STATES = {
   empty: {
-    backgroundColor: COLORS.surface,
-    borderColor: COLORS.border,
-    borderWidth: 2,
+    backgroundColor: COLORS.surface2,
+    borderColor: "transparent",
+    borderWidth: 0,
+    borderStyle: "solid",
+    // Bevel effect (fake)
+    borderTopWidth: 2,
+    borderTopColor: "rgba(255,255,255,0.1)",
+    borderBottomWidth: 4,
+    borderBottomColor: "rgba(0,0,0,0.2)",
     shadowColor: "transparent",
+    shadowOpacity: 0,
+    elevation: 0,
+    shadowRadius: 0,
   },
   possible: {
-    // NO GLOW - just highlighted border
-    backgroundColor: COLORS.surface2,
+    backgroundColor: COLORS.surfaceHighlight,
     borderColor: COLORS.cyan,
-    borderWidth: 2,
-    shadowColor: "transparent", // Removed glow!
+    borderWidth: 0, // Filled look is cleaner, maybe small side accent
+    borderStyle: "solid",
+    // Bevel
+    borderTopWidth: 2,
+    borderTopColor: "rgba(255,255,255,0.2)",
+    borderBottomWidth: 4,
+    borderBottomColor: "rgba(0,0,0,0.3)",
+    // Small glow? No, "Everything else is calm"
+    shadowColor: "transparent",
     shadowOpacity: 0,
-    shadowRadius: 0,
     elevation: 0,
+    shadowRadius: 0,
   },
   scratch: {
-    // NO GLOW - just red border
-    backgroundColor: COLORS.surface2,
+    backgroundColor: COLORS.surface,
     borderColor: COLORS.coral,
     borderWidth: 2,
-    shadowColor: "transparent", // Removed glow!
+    borderStyle: "dashed",
+    shadowColor: "transparent",
+    // default/empty bevel props to satisfy union
+    borderTopWidth: 0,
+    borderTopColor: "transparent",
+    borderBottomWidth: 0,
+    borderBottomColor: "transparent",
     shadowOpacity: 0,
-    shadowRadius: 0,
     elevation: 0,
+    shadowRadius: 0,
   },
   selected: {
-    // ONLY selected gets glow - feel special
-    backgroundColor: COLORS.surface2,
+    // ONLY here we glow
+    backgroundColor: COLORS.surfaceHighlight, // Brighter
     borderColor: COLORS.cyan,
     borderWidth: 3,
+    borderStyle: "solid",
     shadowColor: COLORS.cyan,
     shadowOpacity: 0.6,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowRadius: 16,
+    elevation: 10,
+    // default/empty bevel props to satisfy union
+    borderTopWidth: 0,
+    borderTopColor: "transparent",
+    borderBottomWidth: 0,
+    borderBottomColor: "transparent",
   },
   filled: {
-    backgroundColor: COLORS.surface,
-    borderColor: COLORS.border,
-    borderWidth: 2,
+    // "Polished stone" look
+    backgroundColor: COLORS.bg, // Darker recessed
+    borderColor: COLORS.gold, // Subtle gold rim if high score, else muted
+    borderWidth: 1,
+    borderStyle: "solid",
+    opacity: 0.8,
     shadowColor: "transparent",
+    // default/empty bevel props to satisfy union
+    borderTopWidth: 0,
+    borderTopColor: "transparent",
+    borderBottomWidth: 0,
+    borderBottomColor: "transparent",
+    shadowOpacity: 0,
+    elevation: 0,
+    shadowRadius: 0,
   },
 } as const;
