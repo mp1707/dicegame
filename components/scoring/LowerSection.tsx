@@ -262,6 +262,27 @@ const OverviewButton = () => {
   );
 };
 
+const WinButton = () => {
+  const forceWin = useGameStore((s) => s.forceWin);
+
+  return (
+    <Tile3DButton
+      style={styles.lowerSlotWrapper}
+      onPress={() => {
+        triggerSelectionHaptic();
+        forceWin();
+      }}
+    >
+      <View style={[styles.lowerSlotVisuals, styles.winButtonVisuals]}>
+        <View style={[styles.contentContainer, { justifyContent: "center" }]}>
+          <Check size={20} color={COLORS.textDark} strokeWidth={3} />
+          <Text style={[styles.label, styles.winLabel]}>WIN</Text>
+        </View>
+      </View>
+    </Tile3DButton>
+  );
+};
+
 const ScratchButton = () => {
   const scratchMode = useGameStore((s) => s.scratchMode);
   const phase = useGameStore((s) => s.phase);
@@ -352,12 +373,15 @@ export const LowerSection = () => {
         </View>
       ))}
 
-      {/* 3 Spacers */}
-      {[...Array(3)].map((_, i) => (
+      {/* 2 Spacers */}
+      {[...Array(2)].map((_, i) => (
         <View key={`spacer-${i}`} style={styles.slotWrapper} />
       ))}
 
-      {/* Scratch + Overview buttons at the end */}
+      {/* Win + Scratch + Overview buttons at the end */}
+      <View style={styles.slotWrapper}>
+        <WinButton />
+      </View>
       <View style={styles.slotWrapper}>
         <ScratchButton />
       </View>
@@ -452,5 +476,18 @@ const styles = StyleSheet.create({
   },
   badgeScratch: {
     backgroundColor: COLORS.coral,
+  },
+  winButtonVisuals: {
+    backgroundColor: COLORS.mint,
+    borderColor: COLORS.mint,
+    borderWidth: 1,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.2)",
+    borderBottomWidth: 4,
+    borderBottomColor: "rgba(0,0,0,0.25)",
+  },
+  winLabel: {
+    color: COLORS.textDark,
+    marginTop: 4,
   },
 });

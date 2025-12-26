@@ -63,6 +63,7 @@ interface GameState {
   goToShop: () => void;
   startNextRun: () => void;
   retryRun: () => void;
+  forceWin: () => void;
   resetForNewRound: () => void;
   toggleOverview: () => void;
   toggleScratchMode: () => void;
@@ -438,6 +439,19 @@ export const useGameStore = create<GameState>((set, get) => ({
       scratchMode: false,
       pendingCategoryId: null,
       pendingScratchCategoryId: null,
+    });
+  },
+
+  // Debug: force a win state
+  forceWin: () => {
+    set({
+      phase: "won",
+      isRolling: false,
+      diceVisible: false,
+      scratchMode: false,
+      pendingCategoryId: null,
+      pendingScratchCategoryId: null,
+      selectedDice: [false, false, false, false, false],
     });
   },
 
