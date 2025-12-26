@@ -4,11 +4,8 @@ import {
   StyleSheet,
   StatusBar,
   useWindowDimensions,
-  TouchableOpacity,
-  Text,
   ImageBackground,
   Platform,
-  Dimensions,
 } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { DiceTray } from "./components/DiceTray";
@@ -18,22 +15,13 @@ import { FooterControls } from "./components/ui/FooterControls";
 import { ScratchModal } from "./components/modals/ScratchModal";
 import { ShopModal } from "./components/modals/ShopModal";
 import { OverviewModal } from "./components/modals/OverviewModal";
-import { useGameStore, useHasValidCategories } from "./store/gameStore";
-import {
-  COLORS,
-  SPACING,
-  calculateDiceTrayHeight,
-  TYPOGRAPHY,
-  DIMENSIONS,
-} from "./constants/theme";
+import { useGameStore } from "./store/gameStore";
+import { COLORS, calculateDiceTrayHeight } from "./constants/theme";
 import { triggerSelectionHaptic } from "./utils/haptics";
 
 export default function App() {
   // Game states
   const phase = useGameStore((s) => s.phase);
-  const hasRolled = useGameStore((s) => s.hasRolledThisRound);
-  const rollsRemaining = useGameStore((s) => s.rollsRemaining);
-  const hasValidCategories = useHasValidCategories();
   const overviewVisible = useGameStore((s) => s.overviewVisible);
   const toggleOverview = useGameStore((s) => s.toggleOverview);
 
@@ -53,11 +41,12 @@ export default function App() {
   const { height: screenHeight, width: screenWidth } = useWindowDimensions();
   const diceTrayHeight = calculateDiceTrayHeight(screenHeight);
 
-  const canScratch =
-    hasRolled &&
-    !hasValidCategories &&
-    rollsRemaining === 0 &&
-    phase === "rolling";
+  const canScratch = true;
+  const handleScratchPress = () => {
+    if (!canScratch) return;
+    triggerSelectionHaptic();
+    setScratchVisible(true);
+  };
 
   return (
     <SafeAreaProvider>
@@ -96,21 +85,10 @@ export default function App() {
 
           {/* Scoring Dashboard */}
           <View style={styles.scoringDashboard}>
-            <View style={styles.scoreActions}>
-              {canScratch && (
-                <TouchableOpacity
-                  style={styles.scratchButton}
-                  onPress={() => {
-                    triggerSelectionHaptic();
-                    setScratchVisible(true);
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.scratchText}>STREICHEN</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-            <ScoringGrid />
+            <ScoringGrid
+              canScratch={canScratch}
+              onScratchPress={handleScratchPress}
+            />
           </View>
 
           {/* Footer Controls */}
@@ -162,27 +140,5 @@ const styles = StyleSheet.create({
     flex: 1,
     width: "100%",
     marginTop: 8,
-  },
-  scoreActions: {
-    flexDirection: "row",
-    justifyContent: "center",
-    paddingHorizontal: SPACING.screenPadding,
-    marginBottom: SPACING.slotGapVertical,
-    minHeight: 40,
-  },
-  scratchButton: {
-    paddingHorizontal: 16,
-    height: 36,
-    backgroundColor: "transparent",
-    borderRadius: DIMENSIONS.borderRadius,
-    borderWidth: 1.5,
-    borderColor: COLORS.red,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  scratchText: {
-    ...TYPOGRAPHY.label,
-    color: COLORS.red,
-    fontSize: 12,
   },
 });

@@ -1,6 +1,6 @@
 import React from "react";
 import { View, StyleSheet, TouchableOpacity, Text } from "react-native";
-import { ScrollText, Check } from "lucide-react-native";
+import { ScrollText, Check, X } from "lucide-react-native";
 import {
   COLORS,
   SPACING,
@@ -130,9 +130,45 @@ const OverviewButton = () => {
   );
 };
 
-export const LowerSection = () => {
+interface ScratchButtonProps {
+  canScratch: boolean;
+  onPress: () => void;
+}
+
+const ScratchButton = ({ canScratch, onPress }: ScratchButtonProps) => {
+  const iconColor = COLORS.textMuted;
+  const labelColor = COLORS.textMuted;
+
+  return (
+    <TouchableOpacity
+      style={[
+        styles.lowerSlot,
+        styles.scratchSlot,
+        !canScratch && styles.scratchSlotDisabled,
+      ]}
+      onPress={onPress}
+      disabled={!canScratch}
+      activeOpacity={0.7}
+    >
+      <View style={styles.contentContainer}>
+        <X size={20} color={iconColor} strokeWidth={3} />
+        <Text style={[styles.label, { color: labelColor }]}>Streichen</Text>
+      </View>
+    </TouchableOpacity>
+  );
+};
+
+interface LowerSectionProps {
+  canScratch: boolean;
+  onScratchPress: () => void;
+}
+
+export const LowerSection = ({
+  canScratch,
+  onScratchPress,
+}: LowerSectionProps) => {
   // Use a simple flex-wrap container instead of calculating rows manually for max flexibility with 4 columns
-  // We need 4 empty spacers between Chance (index 0 of last row) and Overview (index 5).
+  // We need 3 empty spacers between Chance (index 0 of last row) and Scratch/Overview (index 4/5).
   // Lower categories: 3kind, 4kind, FH, SmStr, LgStr, Yahtzee (6 items - Row 1)
   // Chance (1 item - Row 2)
   // So Chance is the first item of the second row of THIS section.
@@ -145,12 +181,15 @@ export const LowerSection = () => {
         </View>
       ))}
 
-      {/* 4 Spacers */}
-      {[...Array(4)].map((_, i) => (
+      {/* 3 Spacers */}
+      {[...Array(3)].map((_, i) => (
         <View key={`spacer-${i}`} style={styles.slotWrapper} />
       ))}
 
-      {/* Overview Button at the end */}
+      {/* Scratch + Overview buttons at the end */}
+      <View style={styles.slotWrapper}>
+        <ScratchButton canScratch={canScratch} onPress={onScratchPress} />
+      </View>
       <View style={styles.slotWrapper}>
         <OverviewButton />
       </View>
@@ -191,5 +230,13 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.6,
     shadowRadius: 8,
+  },
+  scratchSlot: {
+    backgroundColor: COLORS.surface,
+    borderColor: COLORS.border,
+    borderWidth: 1,
+  },
+  scratchSlotDisabled: {
+    opacity: 0.6,
   },
 });

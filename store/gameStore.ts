@@ -218,9 +218,8 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   // Scratch a category (enter 0)
   scratchCategory: (categoryId) => {
-    const { categories, round, hasRolledThisRound, rollsRemaining } = get();
+    const { categories, round, rollsRemaining } = get();
 
-    if (!hasRolledThisRound) return;
     if (categories[categoryId].score !== null) return;
 
     const newCategories = { ...categories };
