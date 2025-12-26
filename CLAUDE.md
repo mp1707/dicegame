@@ -106,9 +106,17 @@ Key state properties:
 - `round` (1-13), `rollsRemaining` (0-3)
 - `categories`: Record of 13 slots with score/filled status
 - `selectedDice`: 5 booleans for locked dice
-- `phase`: `'rolling' | 'scoring' | 'won' | 'lost' | 'shop'`
+- `phase`: `'rolling' | 'scoring' | 'won' | 'lost' | 'shop'` (see phase model below)
 
 Key actions: `triggerRoll`, `toggleDiceLock`, `submitCategory`, `scratchCategory`
+
+### Game Phase Model
+
+- `rolling`: Default round state. Player can roll while `rollsRemaining > 0` and `isRolling === false`; can lock/unlock dice after the first roll. Scoring or scratching is allowed after any settled roll and ends the round early.
+- `scoring`: Entered automatically when `rollsRemaining` reaches 0 after a roll. Player must submit a category or scratch. Rolling is disabled.
+- `won`: Run complete; wait for shop entry.
+- `lost`: Run failed; wait for retry.
+- `shop`: Shop modal is open.
 
 ### Dice Locking Pattern
 

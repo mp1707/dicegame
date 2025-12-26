@@ -8,8 +8,8 @@ import {
 
 // Game phases
 export type GamePhase =
-  | "rolling" // Player can roll/lock dice
-  | "scoring" // Player must select a category (or scratch)
+  | "rolling" // Player can roll/lock dice (and may score/scratch after a roll)
+  | "scoring" // No rolls left; player must score or scratch
   | "won" // Game won, awaiting shop
   | "lost" // Game lost, awaiting retry
   | "shop"; // In shop view
@@ -128,7 +128,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   // Roll dice
   triggerRoll: () => {
     const { rollsRemaining, phase } = get();
-    const canRollPhase = phase === "rolling" || phase === "scoring";
+    const canRollPhase = phase === "rolling";
     if (rollsRemaining <= 0 || !canRollPhase) return;
 
     set((state) => ({
@@ -144,9 +144,13 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   // Complete roll with final dice values (batch update for performance)
   completeRoll: (values: number[]) => {
-    const { phase } = get();
-    const nextPhase =
-      phase === "rolling" || phase === "scoring" ? "scoring" : phase;
+    const { phase, rollsRemaining } = get();
+    const canUpdatePhase = phase === "rolling";
+    const nextPhase = canUpdatePhase
+      ? rollsRemaining === 0
+        ? "scoring"
+        : "rolling"
+      : phase;
 
     set({
       diceValues: values,
@@ -176,7 +180,11 @@ export const useGameStore = create<GameState>((set, get) => ({
   toggleOverview: () => set((s) => ({ overviewVisible: !s.overviewVisible })),
   toggleScratchMode: () =>
     set((s) => {
-      if (s.phase !== "scoring") {
+      const canScore =
+        (s.phase === "rolling" || s.phase === "scoring") &&
+        s.hasRolledThisRound &&
+        !s.isRolling;
+      if (!canScore) {
         return { scratchMode: false };
       }
       return { scratchMode: !s.scratchMode };
@@ -239,9 +247,21 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   // Scratch a category (enter 0)
   scratchCategory: (categoryId) => {
-    const { categories, round, rollsRemaining, phase } = get();
+    const {
+      categories,
+      round,
+      rollsRemaining,
+      phase,
+      hasRolledThisRound,
+      isRolling,
+    } = get();
 
-    if (phase !== "scoring") return;
+    const canScore =
+      (phase === "rolling" || phase === "scoring") &&
+      hasRolledThisRound &&
+      !isRolling;
+
+    if (!canScore) return;
 
     if (categories[categoryId].score !== null) return;
 

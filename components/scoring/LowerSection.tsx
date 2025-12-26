@@ -24,6 +24,8 @@ const LowerSlot = ({ categoryId }: LowerSlotProps) => {
   const scratchCategory = useGameStore((s) => s.scratchCategory);
   const scratchMode = useGameStore((s) => s.scratchMode);
   const phase = useGameStore((s) => s.phase);
+  const hasRolledThisRound = useGameStore((s) => s.hasRolledThisRound);
+  const isRolling = useGameStore((s) => s.isRolling);
   const validCategories = useValidCategories();
 
   // Get category metadata (label)
@@ -39,10 +41,13 @@ const LowerSlot = ({ categoryId }: LowerSlotProps) => {
 
   const slot = categories[categoryId];
   const isFilled = slot.score !== null;
-  const canScratch = phase === "scoring";
-  const isScratchable = canScratch && scratchMode && !isFilled;
+  const canScore =
+    (phase === "rolling" || phase === "scoring") &&
+    hasRolledThisRound &&
+    !isRolling;
+  const isScratchable = canScore && scratchMode && !isFilled;
   const isPossible =
-    !scratchMode && !isFilled && validCategories.includes(categoryId);
+    canScore && !scratchMode && !isFilled && validCategories.includes(categoryId);
 
   // Determine visual state
   let state: keyof typeof SLOT_STATES = "empty";
@@ -147,8 +152,13 @@ const OverviewButton = () => {
 const ScratchButton = () => {
   const scratchMode = useGameStore((s) => s.scratchMode);
   const phase = useGameStore((s) => s.phase);
+  const hasRolledThisRound = useGameStore((s) => s.hasRolledThisRound);
+  const isRolling = useGameStore((s) => s.isRolling);
   const toggleScratchMode = useGameStore((s) => s.toggleScratchMode);
-  const canScratch = phase === "scoring";
+  const canScratch =
+    (phase === "rolling" || phase === "scoring") &&
+    hasRolledThisRound &&
+    !isRolling;
   const iconColor = COLORS.textMuted;
   const labelColor = COLORS.textMuted;
   const label = canScratch && scratchMode ? "Abbrechen" : "Streichen";
