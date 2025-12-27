@@ -31,8 +31,10 @@ export type GamePhase =
 export interface RevealState {
   active: boolean;
   breakdown: ScoringBreakdown | null;
-  currentPips: number;
-  animationComplete: boolean;
+  // Animation tracking
+  animationPhase: "counting" | "final";
+  currentDieIndex: number; // Which die is being animated (-1 = none yet)
+  accumulatedPips: number; // Running total of pips counted so far
 }
 
 interface GameState {
@@ -85,6 +87,7 @@ interface GameState {
   selectHand: (handId: HandId) => void;
   deselectHand: () => void;
   acceptHand: () => void;
+  updateRevealAnimation: (update: Partial<RevealState>) => void;
   finalizeHand: () => void;
 
   // Cash out flow
@@ -284,8 +287,21 @@ export const useGameStore = create<GameState>((set, get) => ({
       revealState: {
         active: true,
         breakdown,
-        currentPips: 0,
-        animationComplete: false,
+        animationPhase: "counting",
+        currentDieIndex: -1,
+        accumulatedPips: 0,
+      },
+    });
+  },
+
+  updateRevealAnimation: (update: Partial<RevealState>) => {
+    const { revealState } = get();
+    if (!revealState) return;
+
+    set({
+      revealState: {
+        ...revealState,
+        ...update,
       },
     });
   },

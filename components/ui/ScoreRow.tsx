@@ -5,24 +5,29 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
   withSequence,
-  withDelay,
-  runOnJS,
+  SharedValue,
 } from "react-native-reanimated";
 import { COLORS, SPACING } from "../../constants/theme";
 import { useGameStore } from "../../store/gameStore";
 import { CATEGORIES } from "../../utils/yahtzeeScoring";
-import { HAND_BASE_CONFIG, getBasePoints } from "../../utils/gameCore";
+import {
+  HAND_BASE_CONFIG,
+  getBasePoints,
+  getContributingDiceIndices,
+} from "../../utils/gameCore";
 
 export const ScoreRow = () => {
   const selectedHandId = useGameStore((s) => s.selectedHandId);
   const handLevels = useGameStore((s) => s.handLevels);
   const revealState = useGameStore((s) => s.revealState);
+  const diceValues = useGameStore((s) => s.diceValues);
   const finalizeHand = useGameStore((s) => s.finalizeHand);
+  const updateRevealAnimation = useGameStore((s) => s.updateRevealAnimation);
 
   // Animation values
-  const scale = useSharedValue(1);
-  const animatedPips = useSharedValue(0);
-  const showFinalScore = useSharedValue(false);
+  // Animation values
+  const pointsScale = useSharedValue(1);
+  const finalScoreScale = useSharedValue(1);
 
   // Track animation in progress
   const animationInProgress = useRef(false);
@@ -40,94 +45,136 @@ export const ScoreRow = () => {
     : 0;
   const mult = selectedHandId ? HAND_BASE_CONFIG[selectedHandId].mult : 1;
 
+  // Spring config for snappy animation
+  const springConfig = { damping: 15, stiffness: 400 };
+
   // Run reveal animation when revealState becomes active
   useEffect(() => {
-    if (revealState?.active && revealState.breakdown && !animationInProgress.current) {
-      animationInProgress.current = true;
-      const { pips, finalScore } = revealState.breakdown;
-
-      // Animate pips counting up
-      animatedPips.value = 0;
-      showFinalScore.value = false;
-
-      // Simple counting animation over 800ms
-      const duration = 800;
-      const startTime = Date.now();
-      const countUp = () => {
-        const elapsed = Date.now() - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        animatedPips.value = Math.round(pips * progress);
-
-        if (progress < 1) {
-          requestAnimationFrame(countUp);
-        } else {
-          // Counting complete - show final score with bounce
-          showFinalScore.value = true;
-          scale.value = withSequence(
-            withSpring(1.15, { damping: 10, stiffness: 400 }),
-            withSpring(1, { damping: 15, stiffness: 300 })
-          );
-
-          // Hold for 2 seconds then finalize
-          setTimeout(() => {
-            animationInProgress.current = false;
-            finalizeHand();
-          }, 2000);
-        }
-      };
-
-      // Start animation after a short delay
-      setTimeout(countUp, 200);
+    if (
+      !revealState?.active ||
+      !revealState.breakdown ||
+      animationInProgress.current
+    ) {
+      return;
     }
+
+    animationInProgress.current = true;
+    const { contributingIndices, basePoints: bp } = revealState.breakdown;
+    const currentDiceValues = useGameStore.getState().diceValues;
+
+    let accumulatedPips = 0;
+    let dieIdx = 0;
+
+    const animateNextDie = () => {
+      if (dieIdx >= contributingIndices.length) {
+        // All dice counted - show final score
+        updateRevealAnimation({ animationPhase: "final" });
+
+        // Bounce animation for final score
+        finalScoreScale.value = withSequence(
+          withSpring(1.15, { damping: 10, stiffness: 400 }),
+          withSpring(1, { damping: 15, stiffness: 300 })
+        );
+
+        // Hold for 2 seconds then finalize
+        setTimeout(() => {
+          animationInProgress.current = false;
+          finalizeHand();
+        }, 2000);
+        return;
+      }
+
+      const actualDieIndex = contributingIndices[dieIdx];
+      const pipValue = currentDiceValues[actualDieIndex];
+
+      // Update accumulated pips
+      accumulatedPips += pipValue;
+
+      // Update reveal state
+      updateRevealAnimation({
+        currentDieIndex: actualDieIndex,
+        accumulatedPips,
+      });
+
+      // Animate points scale simultaneously
+      pointsScale.value = withSequence(
+        withSpring(1.1, springConfig),
+        withSpring(1, springConfig)
+      );
+
+      // Wait then animate next die
+      setTimeout(() => {
+        dieIdx++;
+        animateNextDie();
+      }, 700);
+    };
+
+    // Start animation after short delay
+    setTimeout(animateNextDie, 800);
   }, [revealState?.active]);
 
   // Reset animation when reveal ends
   useEffect(() => {
     if (!revealState?.active) {
-      animatedPips.value = 0;
-      showFinalScore.value = false;
-      scale.value = 1;
+      pointsScale.value = 1;
+      finalScoreScale.value = 1;
       animationInProgress.current = false;
     }
   }, [revealState?.active]);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
+  // Animated styles
+  const pointsAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pointsScale.value }],
   }));
 
-  // Determine what to show
-  const renderRightContent = () => {
-    if (!selectedHandId) {
-      return <Text style={styles.placeholder}>—</Text>;
-    }
+  const finalScoreAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: finalScoreScale.value }],
+  }));
 
-    if (revealState?.active && revealState.breakdown) {
-      const { finalScore } = revealState.breakdown;
+  // Determine contributing indices (from breakdown during reveal, or calculate from selected hand)
+  const contributingIndices =
+    revealState?.breakdown?.contributingIndices ||
+    (selectedHandId
+      ? getContributingDiceIndices(selectedHandId, diceValues)
+      : []);
+  const contributingSet = new Set(contributingIndices);
 
-      // During animation or after showing final
-      if (showFinalScore.value) {
-        return (
-          <Animated.Text style={[styles.finalScore, animatedStyle]}>
-            {finalScore}
-          </Animated.Text>
-        );
-      }
+  // Get level score for display when no hand is selected
+  const levelScore = useGameStore((s) => s.levelScore);
 
-      // Show formula with animated pips
-      return (
-        <Text style={styles.formula}>
-          ({basePoints} + {Math.round(animatedPips.value)}) × {mult}
-        </Text>
-      );
-    }
+  // Determine content components
+  const showDiceRow = !!selectedHandId; // Only show dice row if a hand is selected
 
-    // Selected but not accepted yet - show formula with "pips" text
-    return (
-      <Text style={styles.formula}>
-        ({basePoints} + pips) × {mult}
-      </Text>
+  // Calculate current score display
+  let scoreComponent;
+
+  if (!selectedHandId) {
+    // Case: No hand selected -> Show total level score
+    scoreComponent = <Text style={styles.standScore}>{levelScore}</Text>;
+  } else if (revealState?.active && revealState.animationPhase === "final") {
+    // Case: Reveal finished -> Show final score
+    scoreComponent = (
+      <Animated.Text style={[styles.finalScore, finalScoreAnimatedStyle]}>
+        {revealState.breakdown?.finalScore}
+      </Animated.Text>
     );
-  };
+  } else {
+    // Case: Hand selected / Reveal in progress -> Show prediction formula
+    const currentPoints =
+      revealState?.active && revealState.breakdown
+        ? revealState.breakdown.basePoints + revealState.accumulatedPips
+        : basePoints;
+
+    scoreComponent = (
+      <View style={styles.scoreFormula}>
+        <Animated.Text style={[styles.pointsText, pointsAnimatedStyle]}>
+          {currentPoints}
+        </Animated.Text>
+        <Text style={styles.multSymbol}> × </Text>
+        <Text style={styles.multText}>{mult}</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -146,8 +193,8 @@ export const ScoreRow = () => {
         )}
       </View>
 
-      {/* Right: Formula or score */}
-      <View style={styles.rightSection}>{renderRightContent()}</View>
+      {/* Right: Score Info */}
+      <View style={styles.rightSection}>{scoreComponent}</View>
     </View>
   );
 };
@@ -158,11 +205,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: SPACING.containerPaddingHorizontal,
-    paddingVertical: 10,
+    paddingVertical: 12,
     backgroundColor: "rgba(0,0,0,0.15)",
     borderBottomWidth: 1,
     borderBottomColor: "rgba(255,255,255,0.05)",
-    minHeight: 48,
+    minHeight: 56,
   },
   leftSection: {
     flexDirection: "row",
@@ -171,7 +218,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   rightSection: {
-    alignItems: "flex-end",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
     minWidth: 120,
   },
   handName: {
@@ -196,18 +245,37 @@ const styles = StyleSheet.create({
     fontFamily: "Inter-Bold",
     letterSpacing: 0.5,
   },
-  formula: {
+  // Score formula styles
+  scoreFormula: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  pointsText: {
+    color: COLORS.text,
+    fontSize: 24,
+    fontFamily: "Bungee-Regular",
+  },
+  multSymbol: {
     color: COLORS.textMuted,
-    fontSize: 14,
-    fontFamily: "Inter-SemiBold",
-    letterSpacing: 0.5,
+    fontSize: 20,
+    fontFamily: "Bungee-Regular",
+  },
+  multText: {
+    color: COLORS.cyan,
+    fontSize: 24,
+    fontFamily: "Bungee-Regular",
   },
   finalScore: {
     color: COLORS.gold,
-    fontSize: 28,
+    fontSize: 32,
     fontFamily: "Bungee-Regular",
     textShadowColor: "rgba(255, 200, 87, 0.4)",
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 10,
+  },
+  standScore: {
+    color: COLORS.text,
+    fontSize: 24,
+    fontFamily: "Bungee-Regular",
   },
 });

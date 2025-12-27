@@ -19,7 +19,6 @@ import { DiceTray } from "./components/DiceTray";
 import { GlassHeader } from "./components/ui/GlassHeader";
 import { ScoreRow } from "./components/ui/ScoreRow";
 import { ScoringGrid } from "./components/scoring/ScoringGrid";
-import { ScoreGoalDisplay } from "./components/ui/ScoreGoalDisplay";
 import { FooterControls } from "./components/ui/FooterControls";
 import { OverviewModal } from "./components/modals/OverviewModal";
 import { ResultScreen, ShopScreen, EndScreen } from "./components/screens";
@@ -100,9 +99,6 @@ export default function App() {
             />
           </View>
         </View>
-
-        {/* Score/Goal + Stand/Ziel Display (Moved from top) */}
-        <ScoreGoalDisplay />
 
         {/* Score Row (selected hand + formula) */}
         <ScoreRow />
