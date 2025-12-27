@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Text } from "react-native";
 import { PrimaryButton } from "../shared";
 import { COLORS, SPACING } from "../../constants/theme";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -8,10 +8,12 @@ import {
   triggerLightImpact,
   triggerSelectionHaptic,
 } from "../../utils/haptics";
-import { RollCounter } from "./RollCounter";
+// import { RollCounter } from "./RollCounter"; // Removed
+// import { MAX_HANDS_PER_LEVEL, MAX_ROLLS_PER_HAND } from "../../utils/gameCore";
 
 export const FooterControls = () => {
   const rollsRemaining = useGameStore((s) => s.rollsRemaining);
+  const handsRemaining = useGameStore((s) => s.handsRemaining);
   const isRolling = useGameStore((s) => s.isRolling);
   const triggerRoll = useGameStore((s) => s.triggerRoll);
   const phase = useGameStore((s) => s.phase);
@@ -142,7 +144,20 @@ export const FooterControls = () => {
 
     return (
       <View style={styles.mainControlWrapper}>
-        <RollCounter remaining={rollsRemaining} />
+        <View style={styles.statsRow}>
+          <View style={styles.statItem}>
+            <Text style={styles.statLabel}>Hands:</Text>
+            <Text style={[styles.statValue, { color: COLORS.cyan }]}>
+              {handsRemaining}
+            </Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text style={styles.statLabel}>Rolls:</Text>
+            <Text style={[styles.statValue, { color: COLORS.gold }]}>
+              {rollsRemaining}
+            </Text>
+          </View>
+        </View>
         <PrimaryButton
           onPress={onPressRoll}
           label={label}
@@ -184,6 +199,31 @@ const styles = StyleSheet.create({
   mainControlWrapper: {
     width: "100%",
     alignItems: "center",
+    gap: 8, // Add gap between stats and button
+  },
+  statsRow: {
+    width: "100%",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+  },
+  statItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  statLabel: {
+    fontSize: 14,
+    fontFamily: "Inter-SemiBold",
+    color: COLORS.textMuted,
+    letterSpacing: 0.5,
+  },
+  statValue: {
+    fontFamily: "Bungee-Regular",
+    fontSize: 20,
+    color: COLORS.text,
+    lineHeight: 24, // Visual adjustment for Bungee
   },
   button: {
     shadowOpacity: 0.6,

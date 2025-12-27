@@ -19,6 +19,7 @@ import { DiceTray } from "./components/DiceTray";
 import { GlassHeader } from "./components/ui/GlassHeader";
 import { ScoreRow } from "./components/ui/ScoreRow";
 import { ScoringGrid } from "./components/scoring/ScoringGrid";
+import { ScoreGoalDisplay } from "./components/ui/ScoreGoalDisplay";
 import { FooterControls } from "./components/ui/FooterControls";
 import { OverviewModal } from "./components/modals/OverviewModal";
 import { ResultScreen, ShopScreen, EndScreen } from "./components/screens";
@@ -100,6 +101,9 @@ export default function App() {
           </View>
         </View>
 
+        {/* Score/Goal + Stand/Ziel Display (Moved from top) */}
+        <ScoreGoalDisplay />
+
         {/* Score Row (selected hand + formula) */}
         <ScoreRow />
 
@@ -123,7 +127,7 @@ export default function App() {
         {/* Vignette effect */}
         <View style={styles.vignette} pointerEvents="none" />
 
-        <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
+        <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
           {/* Top HUD - always visible */}
           <GlassHeader />
 
