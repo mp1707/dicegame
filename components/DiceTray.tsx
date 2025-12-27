@@ -3,15 +3,7 @@ import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
 import { Canvas, useThree } from "@react-three/fiber";
 import { Physics, RigidBody, CuboidCollider } from "@react-three/rapier";
 import { ContactShadows, Environment } from "@react-three/drei";
-import Animated, {
-  useSharedValue,
-  withSpring,
-  withSequence,
-  FadeIn,
-  FadeOut,
-} from "react-native-reanimated";
 import { Die } from "./Die";
-import { DiceIcon } from "./ui/DiceIcon";
 import { useGameStore } from "../store/gameStore";
 import { COLORS } from "../constants/theme";
 import { triggerLightImpact, triggerSelectionHaptic } from "../utils/haptics";
@@ -103,39 +95,6 @@ export const DiceTray = ({
   const selectedHandId = useGameStore((state) => state.selectedHandId);
   const revealState = useGameStore((state) => state.revealState);
 
-  // Animation values for 2D dice
-  const dieScales = [
-    useSharedValue(1),
-    useSharedValue(1),
-    useSharedValue(1),
-    useSharedValue(1),
-    useSharedValue(1),
-  ];
-
-  // Spring config for snappy animation
-  const springConfig = { damping: 15, stiffness: 400 };
-
-  // Reset animation when reveal ends
-  useEffect(() => {
-    if (!revealState?.active) {
-      dieScales.forEach((scale) => (scale.value = 1));
-    }
-  }, [revealState?.active]);
-
-  // Animate specific dice when active in reveal
-  useEffect(() => {
-    if (revealState?.active && revealState.currentDieIndex !== undefined) {
-      const idx = revealState.currentDieIndex;
-      // Animate die scale: 1 -> 1.15 -> 1
-      if (dieScales[idx]) {
-        dieScales[idx].value = withSequence(
-          withSpring(1.15, springConfig),
-          withSpring(1, springConfig)
-        );
-      }
-    }
-  }, [revealState?.currentDieIndex]);
-
   // Determine contributing indices
   const contributingIndices =
     revealState?.breakdown?.contributingIndices ||
@@ -143,8 +102,6 @@ export const DiceTray = ({
       ? getContributingDiceIndices(selectedHandId, diceValues)
       : []);
   const contributingSet = new Set(contributingIndices);
-
-  const show2DDice = !!selectedHandId;
 
   // Calculate scene scaling based on container height
   const BASE_HEIGHT = 180;
@@ -305,6 +262,9 @@ export const DiceTray = ({
                 onSettle={handleDieSettle}
                 onWake={handleDieWake}
                 onTap={handleDieTap}
+                isHighlighted={!!revealState?.active && revealState.currentDieIndex === i}
+                isContributing={contributingSet.has(i)}
+                isRevealActive={!!revealState?.active}
               />
             ))}
           </Physics>
@@ -314,15 +274,6 @@ export const DiceTray = ({
         </Suspense>
       </Canvas>
 
-      {/* Dimming Overlay when Hand is selected */}
-      {show2DDice && (
-        <Animated.View
-          entering={FadeIn.duration(300)}
-          exiting={FadeOut.duration(300)}
-          style={styles.dimmingOverlay}
-          pointerEvents="none"
-        />
-      )}
 
       {phase === "rolling" && !hasRolledThisRound && !isRolling && (
         <View pointerEvents="none" style={styles.readyToRollOverlay}>
@@ -340,27 +291,6 @@ export const DiceTray = ({
         </Text>
       </View>
 
-      {/* 2D Dice Overlay (Bottom Right) */}
-      {show2DDice && (
-        <View style={styles.diceOverlay} pointerEvents="none">
-          <View style={styles.diceRow}>
-            {diceValues.map((value, index) => (
-              <DiceIcon
-                key={index}
-                value={value}
-                isHighlighted={
-                  !!(
-                    revealState?.active &&
-                    revealState?.currentDieIndex === index
-                  )
-                }
-                isContributing={contributingSet.has(index)}
-                animatedScale={dieScales[index]}
-              />
-            ))}
-          </View>
-        </View>
-      )}
 
       {/* Game End Overlay */}
       <GameEndOverlay />
@@ -416,9 +346,9 @@ const styles = StyleSheet.create({
   },
   goalDisplayOverlay: {
     position: "absolute",
-    bottom: 12, // slightly above bottom edge
+    bottom: 12,
     left: 16,
-    zIndex: 30, // Above dimmer
+    zIndex: 30,
   },
   goalText: {
     color: COLORS.text,
@@ -429,22 +359,5 @@ const styles = StyleSheet.create({
   goalValue: {
     color: COLORS.text,
     fontSize: 20,
-  },
-  // Dim the 3D scene when 2D dice are shown
-  dimmingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    zIndex: 25, // Above canvas (10), below overlays (30)
-  },
-  // 2D Dice Overlay (Bottom Right)
-  diceOverlay: {
-    position: "absolute",
-    bottom: 12,
-    right: 16,
-    zIndex: 30, // Above dimmer
-  },
-  diceRow: {
-    flexDirection: "row",
-    gap: 4,
   },
 });

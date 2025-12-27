@@ -89,6 +89,10 @@ interface DieProps {
   rollTrigger: number;
   onSettle: (index: number, value: number) => void;
   onTap: (index: number) => void;
+  // Animation props for scoring reveal
+  isHighlighted: boolean;
+  isContributing: boolean;
+  isRevealActive: boolean;
 }
 
 export const Die = ({
@@ -100,12 +104,26 @@ export const Die = ({
   onSettle,
   onWake,
   onTap,
+  isHighlighted,
+  isContributing,
+  isRevealActive,
 }: DieProps & { onWake: (index: number) => void }) => {
   const rigidBody = useRef<RapierRigidBody>(null);
   const prevRollTrigger = useRef(rollTrigger);
   const initialPosition = useRef(position);
   const settleReportedRef = useRef(false);
   const stableTimeRef = useRef(0);
+
+  // Animation refs for smooth transitions
+  const groupRef = useRef<THREE.Group>(null);
+  const meshRef = useRef<THREE.Mesh>(null);
+  const animatedScaleRef = useRef(1.0);
+  const animatedColorRef = useRef(new THREE.Color("#f5f5f5"));
+  const animatedOpacityRef = useRef(1.0);
+
+  // Highlight pulse tracking
+  const wasHighlightedRef = useRef(false);
+  const highlightStartTimeRef = useRef(0);
 
   // Trigger Roll Logic - only when rollTrigger changes
   useEffect(() => {
@@ -198,22 +216,116 @@ export const Die = ({
     onSettle(index, resultFace);
   };
 
-  // Detect when the die becomes stable without waiting for Rapier's sleep timeout
-  useFrame((_, delta) => {
-    if (isLocked || settleReportedRef.current || !rigidBody.current) return;
+  // Detect highlight transition for pulse animation
+  useEffect(() => {
+    if (isHighlighted && !wasHighlightedRef.current) {
+      highlightStartTimeRef.current = performance.now();
+    }
+    wasHighlightedRef.current = isHighlighted;
+  }, [isHighlighted]);
 
-    const linvel = rigidBody.current.linvel();
-    const angvel = rigidBody.current.angvel();
-    const speed = Math.hypot(linvel.x, linvel.y, linvel.z);
-    const spin = Math.hypot(angvel.x, angvel.y, angvel.z);
+  // Reset animation state when reveal ends
+  useEffect(() => {
+    if (!isRevealActive) {
+      animatedScaleRef.current = isLocked ? 1.1 : 1.0;
+      animatedColorRef.current.set(isLocked ? COLORS.gold : "#f5f5f5");
+      animatedOpacityRef.current = isVisible ? 1.0 : 0.0;
+    }
+  }, [isRevealActive, isLocked, isVisible]);
 
-    if (speed < 0.05 && spin < 0.1) {
-      stableTimeRef.current += delta;
-      if (stableTimeRef.current >= 0.15) {
-        reportSettle();
+  // Combined useFrame for settle detection + animation
+  useFrame((state, delta) => {
+    // Settle detection (only for unlocked, unsettled dice)
+    if (!isLocked && !settleReportedRef.current && rigidBody.current) {
+      const linvel = rigidBody.current.linvel();
+      const angvel = rigidBody.current.angvel();
+      const speed = Math.hypot(linvel.x, linvel.y, linvel.z);
+      const spin = Math.hypot(angvel.x, angvel.y, angvel.z);
+
+      if (speed < 0.05 && spin < 0.1) {
+        stableTimeRef.current += delta;
+        if (stableTimeRef.current >= 0.15) {
+          reportSettle();
+        }
+      } else {
+        stableTimeRef.current = 0;
       }
+    }
+
+    // Animation logic
+    const WHITE = "#f5f5f5";
+    const GOLD = COLORS.gold;
+    const lerpFactor = 1 - Math.pow(0.001, delta);
+
+    // Calculate target values based on state
+    let targetScale: number;
+    let targetColor: string;
+    let targetOpacity: number;
+
+    if (isHighlighted) {
+      // Pulse animation: grow then shrink
+      const elapsed = performance.now() - highlightStartTimeRef.current;
+      const pulseDuration = 400;
+      if (elapsed < pulseDuration / 2) {
+        targetScale = THREE.MathUtils.lerp(1.0, 1.15, elapsed / (pulseDuration / 2));
+      } else if (elapsed < pulseDuration) {
+        targetScale = THREE.MathUtils.lerp(1.15, 1.0, (elapsed - pulseDuration / 2) / (pulseDuration / 2));
+      } else {
+        targetScale = 1.0;
+      }
+      targetColor = GOLD;
+      targetOpacity = 1.0;
+    } else if (isRevealActive && !isContributing) {
+      // Non-contributing during reveal: dimmed
+      targetScale = 1.0;
+      targetColor = WHITE;
+      targetOpacity = 0.3;
+    } else if (isRevealActive && isContributing) {
+      // Contributing but not currently highlighted
+      targetScale = 1.0;
+      targetColor = WHITE;
+      targetOpacity = 1.0;
+    } else if (isLocked) {
+      // Normal locked state
+      targetScale = 1.1;
+      targetColor = GOLD;
+      targetOpacity = 1.0;
     } else {
-      stableTimeRef.current = 0;
+      // Normal unlocked state
+      targetScale = 1.0;
+      targetColor = WHITE;
+      targetOpacity = isVisible ? 1.0 : 0.0;
+    }
+
+    // Lerp toward targets
+    animatedScaleRef.current = THREE.MathUtils.lerp(
+      animatedScaleRef.current,
+      targetScale,
+      lerpFactor * 8
+    );
+    animatedColorRef.current.lerp(new THREE.Color(targetColor), lerpFactor * 6);
+    animatedOpacityRef.current = THREE.MathUtils.lerp(
+      animatedOpacityRef.current,
+      targetOpacity,
+      lerpFactor * 6
+    );
+
+    // Apply to refs
+    if (groupRef.current) {
+      const s = animatedScaleRef.current;
+      groupRef.current.scale.set(s, s, s);
+    }
+
+    if (meshRef.current) {
+      const mat = meshRef.current.material as THREE.MeshStandardMaterial;
+      mat.color.copy(animatedColorRef.current);
+      mat.opacity = animatedOpacityRef.current;
+      mat.needsUpdate = true;
+    }
+
+    // Keep frame loop running during reveal animation
+    if (isRevealActive || isHighlighted) {
+      state.invalidate();
     }
   });
 
@@ -231,15 +343,12 @@ export const Die = ({
     onTap(index);
   };
 
-  // Die colors based on selection
-  const dieColor = isLocked ? COLORS.gold : "#f5f5f5";
-  const dieOpacity = isVisible ? 1 : 0;
-
-  // Metal/Roughness for Gold effect
+  // Metal/Roughness for Gold effect (static, not animated)
   const metalness = isLocked ? 0.6 : 0.1;
   const roughness = isLocked ? 0.2 : 0.4;
 
-  const dieScale = isLocked ? 1.1 : 1.0;
+  // Base opacity for DieFace pips (matches animation target)
+  const pipOpacity = isRevealActive && !isContributing ? 0.3 : isVisible ? 1 : 0;
 
   return (
     <RigidBody
@@ -256,18 +365,16 @@ export const Die = ({
       position={position}
     >
       <group
+        ref={groupRef}
         onPointerDown={handlePointerDown}
-        scale={[dieScale, dieScale, dieScale]}
       >
         {/* Main die body */}
-        <mesh castShadow receiveShadow>
+        <mesh ref={meshRef} castShadow receiveShadow>
           <boxGeometry args={[DIE_SIZE, DIE_SIZE, DIE_SIZE]} />
           <meshStandardMaterial
-            color={dieColor}
             metalness={metalness}
             roughness={roughness}
             transparent
-            opacity={dieOpacity}
           />
         </mesh>
 
@@ -276,7 +383,7 @@ export const Die = ({
           faceValue={1}
           rotation={[0, Math.PI / 2, 0]}
           position={[FACE_OFFSET, 0, 0]}
-          opacity={dieOpacity}
+          opacity={pipOpacity}
         />
 
         {/* Face 6 - Left (-X) */}
@@ -284,7 +391,7 @@ export const Die = ({
           faceValue={6}
           rotation={[0, -Math.PI / 2, 0]}
           position={[-FACE_OFFSET, 0, 0]}
-          opacity={dieOpacity}
+          opacity={pipOpacity}
         />
 
         {/* Face 3 - Top (+Y) */}
@@ -292,7 +399,7 @@ export const Die = ({
           faceValue={3}
           rotation={[-Math.PI / 2, 0, 0]}
           position={[0, FACE_OFFSET, 0]}
-          opacity={dieOpacity}
+          opacity={pipOpacity}
         />
 
         {/* Face 4 - Bottom (-Y) */}
@@ -300,7 +407,7 @@ export const Die = ({
           faceValue={4}
           rotation={[Math.PI / 2, 0, 0]}
           position={[0, -FACE_OFFSET, 0]}
-          opacity={dieOpacity}
+          opacity={pipOpacity}
         />
 
         {/* Face 2 - Front (+Z) */}
@@ -308,7 +415,7 @@ export const Die = ({
           faceValue={2}
           rotation={[0, 0, 0]}
           position={[0, 0, FACE_OFFSET]}
-          opacity={dieOpacity}
+          opacity={pipOpacity}
         />
 
         {/* Face 5 - Back (-Z) */}
@@ -316,7 +423,7 @@ export const Die = ({
           faceValue={5}
           rotation={[0, Math.PI, 0]}
           position={[0, 0, -FACE_OFFSET]}
-          opacity={dieOpacity}
+          opacity={pipOpacity}
         />
       </group>
     </RigidBody>

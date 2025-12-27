@@ -14,6 +14,7 @@ export interface PrimaryButtonProps {
   variant?: PrimaryButtonVariant;
   onPress: () => void;
   style?: StyleProp<ViewStyle>;
+  compact?: boolean;
 }
 
 const DEPTH = 6;
@@ -35,6 +36,7 @@ export const PrimaryButton = ({
   variant = "cyan",
   onPress,
   style,
+  compact = false,
 }: PrimaryButtonProps) => {
   const colors = VARIANT_COLORS[variant];
   const faceColor = disabled ? COLORS.surface2 : colors[0];
@@ -83,7 +85,13 @@ export const PrimaryButton = ({
       <View style={styles.content}>
         {icon && <View style={styles.iconWrapper}>{icon}</View>}
         <View style={styles.textStack}>
-          <Text style={[styles.label, disabled && styles.labelDisabled]}>
+          <Text
+            style={[
+              styles.label,
+              compact && styles.labelCompact,
+              disabled && styles.labelDisabled,
+            ]}
+          >
             {label}
           </Text>
           {subLabel && <Text style={styles.subLabel}>{subLabel}</Text>}
@@ -125,6 +133,9 @@ const styles = StyleSheet.create({
     ...TYPOGRAPHY.displayMedium,
     fontSize: 28,
     color: COLORS.textDark,
+  },
+  labelCompact: {
+    fontSize: 20,
   },
   labelDisabled: {
     color: COLORS.textMuted,

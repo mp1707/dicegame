@@ -95,12 +95,14 @@ export const FooterControls = () => {
             onPress={handleCashOut}
             label="CASH OUT"
             variant="mint"
+            compact
             style={[styles.button, styles.halfButton]}
           />
           <PrimaryButton
             onPress={handlePressOn}
             label="PRESS ON"
             variant="cyan"
+            compact
             style={[styles.button, styles.halfButton]}
           />
         </View>

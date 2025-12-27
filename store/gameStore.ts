@@ -215,9 +215,15 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   completeRoll: (values: number[]) => {
+    const { rollsRemaining } = get();
+
     set({
       diceValues: values,
       isRolling: false,
+      // Auto-unlock dice when no rolls remain (locks become useless)
+      ...(rollsRemaining === 0 && {
+        selectedDice: [false, false, false, false, false],
+      }),
     });
   },
 
@@ -282,8 +288,9 @@ export const useGameStore = create<GameState>((set, get) => ({
     const level = handLevels[selectedHandId];
     const breakdown = getScoringBreakdown(selectedHandId, level, diceValues);
 
-    // Start reveal animation
+    // Start reveal animation and unlock all dice (locks no longer needed during scoring)
     set({
+      selectedDice: [false, false, false, false, false],
       revealState: {
         active: true,
         breakdown,
