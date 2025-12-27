@@ -49,9 +49,6 @@ const LowerSlot = ({ categoryId }: LowerSlotProps) => {
     (phase === "rolling" || phase === "scoring") &&
     hasRolledThisRound &&
     !isRolling;
-  const hasPendingSelection =
-    pendingCategoryId !== null || pendingScratchCategoryId !== null;
-  const hasPendingScratch = pendingScratchCategoryId !== null;
   const isScratchable = canScore && scratchMode && !isFilled;
 
   const isPossibleBase =
@@ -60,13 +57,11 @@ const LowerSlot = ({ categoryId }: LowerSlotProps) => {
     !isFilled &&
     validCategories.includes(categoryId);
 
-  const isPossible = isPossibleBase && !hasPendingSelection;
+  const isPossible = isPossibleBase;
   const isScoreSelected = pendingCategoryId === categoryId;
   const isScratchSelected = pendingScratchCategoryId === categoryId;
   const isSelected = scratchMode ? isScratchSelected : isScoreSelected;
-  const isPressable =
-    (isScratchable && (!hasPendingScratch || isScratchSelected)) ||
-    (isPossibleBase && (!hasPendingSelection || isScoreSelected));
+  const isPressable = isScratchable || isPossibleBase;
 
   let variant: TileButtonVariant = "default";
   if (isFilled) variant = "filled";
@@ -88,7 +83,7 @@ const LowerSlot = ({ categoryId }: LowerSlotProps) => {
       if (isScratchSelected) {
         triggerSelectionHaptic();
         clearPendingScratchCategory();
-      } else if (!hasPendingScratch) {
+      } else {
         triggerSelectionHaptic();
         setPendingScratchCategory(categoryId);
       }
@@ -96,7 +91,7 @@ const LowerSlot = ({ categoryId }: LowerSlotProps) => {
       if (isScoreSelected) {
         triggerSelectionHaptic();
         clearPendingCategory();
-      } else if (!hasPendingSelection) {
+      } else {
         triggerSelectionHaptic();
         setPendingCategory(categoryId);
       }

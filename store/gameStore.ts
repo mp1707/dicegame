@@ -226,23 +226,14 @@ export const useGameStore = create<GameState>((set, get) => ({
     }),
 
   setPendingCategory: (categoryId) => {
-    const {
-      categories,
-      phase,
-      hasRolledThisRound,
-      isRolling,
-      scratchMode,
-      pendingCategoryId,
-      pendingScratchCategoryId,
-    } = get();
+    const { categories, phase, hasRolledThisRound, isRolling, scratchMode } =
+      get();
     const canScore =
       (phase === "rolling" || phase === "scoring") &&
       hasRolledThisRound &&
       !isRolling &&
       !scratchMode;
     if (!canScore) return;
-    if (pendingCategoryId) return;
-    if (pendingScratchCategoryId) return;
     if (categories[categoryId].score !== null) return;
 
     set({ pendingCategoryId: categoryId, scratchMode: false });
@@ -251,22 +242,14 @@ export const useGameStore = create<GameState>((set, get) => ({
   clearPendingCategory: () => set({ pendingCategoryId: null }),
 
   setPendingScratchCategory: (categoryId) => {
-    const {
-      categories,
-      phase,
-      hasRolledThisRound,
-      isRolling,
-      scratchMode,
-      pendingCategoryId,
-      pendingScratchCategoryId,
-    } = get();
+    const { categories, phase, hasRolledThisRound, isRolling, scratchMode } =
+      get();
     const canScratch =
       (phase === "rolling" || phase === "scoring") &&
       hasRolledThisRound &&
       !isRolling &&
       scratchMode;
     if (!canScratch) return;
-    if (pendingCategoryId || pendingScratchCategoryId) return;
     if (categories[categoryId].score !== null) return;
 
     set({ pendingScratchCategoryId: categoryId });
