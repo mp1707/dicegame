@@ -4,9 +4,7 @@ import { COLORS, TYPOGRAPHY, DIMENSIONS, SPACING } from "../../constants/theme";
 import { useGameStore } from "../../store/gameStore";
 import { CATEGORIES } from "../../utils/yahtzeeScoring";
 import { CategoryIcon } from "../ui/CategoryIcon";
-import { triggerSelectionHaptic } from "../../utils/haptics";
-import { ModalShell } from "../ui/ModalShell";
-import { CTA3DButton } from "../ui/Button3DVariants";
+import { Modal, PrimaryButton } from "../shared";
 
 interface OverviewModalProps {
   visible: boolean;
@@ -15,14 +13,9 @@ interface OverviewModalProps {
 
 export const OverviewModal = ({ visible, onClose }: OverviewModalProps) => {
   const categories = useGameStore((s) => s.categories);
-  const handleClose = () => {
-    // triggerSelectionHaptic(); // ModalShell close button (X) handles haptics. BUT bottom button should too.
-    // PrimaryCTAButton handles haptics automatically.
-    onClose();
-  };
 
   return (
-    <ModalShell visible={visible} onClose={handleClose} title="Übersicht">
+    <Modal visible={visible} onClose={onClose} title="Übersicht">
       <View style={styles.container}>
         <View style={styles.listWrapper}>
           <ScrollView
@@ -66,25 +59,23 @@ export const OverviewModal = ({ visible, onClose }: OverviewModalProps) => {
           </ScrollView>
         </View>
 
-        <CTA3DButton
-          onPress={handleClose}
+        <PrimaryButton
+          onPress={onClose}
           label="SCHLIEßEN"
-          colors={[COLORS.surfaceHighlight, COLORS.surface]}
+          variant="cyan"
           style={styles.closeButton}
         />
       </View>
-    </ModalShell>
+    </Modal>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     width: "100%",
-    // flexShrink: 1, // Container just wraps. Children shrink.
   },
   listWrapper: {
-    // flex: 1, // REMOVED: Caused collapse in auto-height container
-    flexShrink: 1, // Allow shrinking when parent hits max height
+    flexShrink: 1,
     marginBottom: SPACING.sectionGap,
     backgroundColor: "rgba(0,0,0,0.1)",
     borderRadius: DIMENSIONS.borderRadiusSmall,
@@ -94,7 +85,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   list: {
-    flexGrow: 0, // Render full content height naturally
+    flexGrow: 0,
   },
   listContent: {
     padding: 12,
@@ -118,7 +109,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   score: {
-    ...TYPOGRAPHY.scoreValue, // Tabular numbers
+    ...TYPOGRAPHY.scoreValue,
     fontSize: 16,
   },
   closeButton: {

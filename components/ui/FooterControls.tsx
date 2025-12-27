@@ -1,7 +1,7 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
-import { CTA3DButton } from "./Button3DVariants";
-import { COLORS, SPACING, TYPOGRAPHY } from "../../constants/theme";
+import { PrimaryButton } from "../shared";
+import { COLORS, SPACING } from "../../constants/theme";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useGameStore } from "../../store/gameStore";
 import {
@@ -23,9 +23,7 @@ export const FooterControls = () => {
     (s) => s.pendingScratchCategoryId
   );
   const submitCategory = useGameStore((s) => s.submitCategory);
-  // const isRoundOver = useGameStore((s) => s.isRoundOver); // Removed if not existing
 
-  // Determine button state
   const canRoll =
     rollsRemaining > 0 &&
     !isRolling &&
@@ -36,7 +34,6 @@ export const FooterControls = () => {
   const isScratchConfirming = !!pendingScratchCategoryId;
 
   const handleGoToShop = () => {
-    // Haptics handled by button
     goToShop();
   };
 
@@ -48,7 +45,6 @@ export const FooterControls = () => {
     if (isConfirming && pendingCategoryId) {
       submitCategory(pendingCategoryId);
       triggerSelectionHaptic();
-      return;
     }
   };
 
@@ -66,35 +62,34 @@ export const FooterControls = () => {
   };
 
   const renderContent = () => {
-    // Different button modes based on phase
     if (phase === "won") {
       return (
-        <CTA3DButton
+        <PrimaryButton
           onPress={handleGoToShop}
           label="SHOP"
-          colors={[COLORS.mint, "#00A36C"] as const}
-          style={styles.shopButton}
+          variant="mint"
+          style={styles.button}
         />
       );
     }
 
     if (phase === "lost") {
       return (
-        <CTA3DButton
+        <PrimaryButton
           onPress={handleRetryRun}
           label="NOCHMAL"
-          colors={[COLORS.coral, "#C24466"] as const}
-          style={styles.retryButton}
+          variant="coral"
+          style={styles.button}
         />
       );
     }
 
     if (isScratchConfirming) {
       return (
-        <CTA3DButton
+        <PrimaryButton
           onPress={handleConfirmScratch}
           label="STREICHEN"
-          colors={[COLORS.coral, "#C24466"] as const}
+          variant="coral"
           icon={
             <MaterialCommunityIcons
               name="close-thick"
@@ -102,18 +97,17 @@ export const FooterControls = () => {
               color={COLORS.textDark}
             />
           }
-          style={styles.scratchConfirmButton}
+          style={styles.button}
         />
       );
     }
 
-    // Confirmation Button State
     if (isConfirming) {
       return (
-        <CTA3DButton
+        <PrimaryButton
           onPress={handleConfirmCategory}
           label="ANNEHMEN"
-          colors={[COLORS.cyan, "#0098B3"]}
+          variant="cyan"
           icon={
             <MaterialCommunityIcons
               name="pencil-outline"
@@ -121,26 +115,21 @@ export const FooterControls = () => {
               color={COLORS.textDark}
             />
           }
-          style={styles.confirmButton}
-          // Removed textStyle
+          style={styles.button}
         />
       );
     }
 
-    // Main Roll Button
     const label = isRolling ? "WÜRFELT..." : "WURF";
-    const buttonColors = [COLORS.cyan, "#0098B3"] as const;
 
     return (
       <View style={styles.mainControlWrapper}>
-        {/* Roll Counter Pill placed above button */}
         <RollCounter remaining={rollsRemaining} />
-
-        <CTA3DButton
+        <PrimaryButton
           onPress={onPressRoll}
           label={label}
-          disabled={!canRoll} // removed invalid !isRoundOver
-          colors={buttonColors}
+          disabled={!canRoll}
+          variant="cyan"
           icon={
             canRoll ? (
               <MaterialCommunityIcons
@@ -150,7 +139,6 @@ export const FooterControls = () => {
               />
             ) : undefined
           }
-          // Removed textStyle
         />
       </View>
     );
@@ -170,20 +158,7 @@ const styles = StyleSheet.create({
     width: "100%",
     alignItems: "center",
   },
-  shopButton: {
-    shadowColor: COLORS.mint,
-    shadowOpacity: 0.6,
-  },
-  retryButton: {
-    shadowColor: COLORS.coral,
-    shadowOpacity: 0.6,
-  },
-  scratchConfirmButton: {
-    shadowColor: COLORS.coral,
-    shadowOpacity: 0.6,
-  },
-  confirmButton: {
-    shadowColor: COLORS.cyan,
+  button: {
     shadowOpacity: 0.6,
   },
 });

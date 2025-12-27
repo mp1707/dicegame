@@ -1,39 +1,60 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableWithoutFeedback } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableWithoutFeedback,
+  ViewStyle,
+  StyleProp,
+} from "react-native";
 import Animated, { FadeIn, SlideInUp } from "react-native-reanimated";
-import { COLORS, DIMENSIONS, SPACING } from "../../constants/theme";
-import { IconButton } from "./ButtonVariants";
 import { X } from "lucide-react-native";
+import { COLORS, DIMENSIONS, SPACING } from "../../constants/theme";
 import { triggerLightImpact } from "../../utils/haptics";
 
-interface ModalShellProps {
+export type ModalVariant = "default" | "success" | "danger";
+
+export interface ModalProps {
   visible: boolean;
   onClose?: () => void;
   title?: string;
   children: React.ReactNode;
-  cardStyle?: any; // Using any for simplicity in ViewStyle
-  titleStyle?: any; // Using any for simplicity in TextStyle
+  variant?: ModalVariant;
+  showCloseButton?: boolean;
+  contentStyle?: StyleProp<ViewStyle>;
 }
 
-export const ModalShell = ({
+const VARIANT_BORDER_COLORS: Record<ModalVariant, string> = {
+  default: COLORS.border,
+  success: COLORS.mint,
+  danger: COLORS.coral,
+};
+
+export const Modal = ({
   visible,
   onClose,
   title,
   children,
-  cardStyle,
-  titleStyle,
-}: ModalShellProps) => {
+  variant = "default",
+  showCloseButton = true,
+  contentStyle,
+}: ModalProps) => {
   if (!visible) return null;
+
+  const borderColor = VARIANT_BORDER_COLORS[variant];
+
+  const handleClose = () => {
+    if (onClose) {
+      triggerLightImpact();
+      onClose();
+    }
+  };
 
   return (
     <View style={styles.absoluteFill} pointerEvents="auto">
       {/* Scrim */}
-      <Animated.View
-        entering={FadeIn.duration(100)}
-        // No exiting animation for instant dismissal
-        style={styles.scrim}
-      >
-        <TouchableWithoutFeedback onPress={onClose}>
+      <Animated.View entering={FadeIn.duration(100)} style={styles.scrim}>
+        <TouchableWithoutFeedback onPress={handleClose}>
           <View style={StyleSheet.absoluteFill} />
         </TouchableWithoutFeedback>
       </Animated.View>
@@ -45,27 +66,25 @@ export const ModalShell = ({
             .damping(25)
             .stiffness(400)
             .mass(0.8)
-            .damping(35)} // Ensuring it's snappy but not too bouncy
-          // No exiting animation
-          style={[styles.card, cardStyle]}
+            .damping(35)}
+          style={[styles.card, { borderColor }]}
         >
           {/* Header */}
-          <View style={styles.header}>
-            <Text style={[styles.title, titleStyle]}>{title || ""}</Text>
-            {onClose && (
-              <IconButton
-                onPress={() => {
-                  triggerLightImpact();
-                  onClose();
-                }}
-                style={styles.closeBtn}
-                icon={<X size={20} color={COLORS.textMuted} />}
-              />
-            )}
-          </View>
+          {(title || (showCloseButton && onClose)) && (
+            <View style={styles.header}>
+              <Text style={styles.title}>{title || ""}</Text>
+              {showCloseButton && onClose && (
+                <TouchableWithoutFeedback onPress={handleClose}>
+                  <View style={styles.closeBtn}>
+                    <X size={20} color={COLORS.textMuted} />
+                  </View>
+                </TouchableWithoutFeedback>
+              )}
+            </View>
+          )}
 
           {/* Content */}
-          <View style={styles.content}>{children}</View>
+          <View style={[styles.content, contentStyle]}>{children}</View>
         </Animated.View>
       </View>
     </View>
@@ -81,7 +100,7 @@ const styles = StyleSheet.create({
   },
   scrim: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(42, 34, 66, 0.6)", // Purple tinted scrim
+    backgroundColor: "rgba(42, 34, 66, 0.6)",
   },
   centerContainer: {
     flex: 1,
@@ -96,7 +115,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     borderRadius: DIMENSIONS.borderRadius,
     borderWidth: DIMENSIONS.borderWidth,
-    borderColor: COLORS.border,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.5,
@@ -125,6 +143,8 @@ const styles = StyleSheet.create({
     height: 36,
     backgroundColor: "rgba(255,255,255,0.05)",
     borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
   },
   content: {
     padding: 20,
