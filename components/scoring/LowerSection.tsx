@@ -39,8 +39,7 @@ const LowerSlot = ({ handId }: LowerSlotProps) => {
 
   // Determine states
   const isUsed = usedHandsThisLevel.includes(handId);
-  const canInteract =
-    phase === "LEVEL_PLAY" && hasRolledThisHand && !isRolling;
+  const canInteract = phase === "LEVEL_PLAY" && hasRolledThisHand && !isRolling;
   const isValid = canInteract && !isUsed && validHands.includes(handId);
   const isSelected = selectedHandId === handId;
   const isPressable = isValid;
@@ -72,9 +71,7 @@ const LowerSlot = ({ handId }: LowerSlotProps) => {
 
   return (
     <TileButton
-      icon={
-        <CategoryIcon categoryId={handId} size={14} color={iconColor} />
-      }
+      icon={<CategoryIcon categoryId={handId} size={14} color={iconColor} />}
       label={label}
       level={handLevel}
       variant={variant}
@@ -168,7 +165,7 @@ export const LowerSection = () => {
 
   // Calculate spacer count based on what buttons are shown
   // 7 hand slots + buttons should fill to ~10 columns
-  let spacerCount = showCashOut ? 1 : 2;
+  let spacerCount = showCashOut ? 3 : 4;
 
   return (
     <View style={styles.container}>

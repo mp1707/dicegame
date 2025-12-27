@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
   },
   finalScore: {
     color: COLORS.gold,
-    fontSize: 32,
+    fontSize: 24,
     fontFamily: "Bungee-Regular",
     textShadowColor: "rgba(255, 200, 87, 0.4)",
     textShadowOffset: { width: 0, height: 0 },
