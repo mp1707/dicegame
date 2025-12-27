@@ -1,204 +1,234 @@
 import { create } from "zustand";
 import {
-  CategoryId,
-  CATEGORIES,
-  calculateScore,
-  getValidCategories,
-} from "../utils/yahtzeeScoring";
+  HandId,
+  LEVEL_CONFIG,
+  MAX_HANDS_PER_LEVEL,
+  MAX_ROLLS_PER_HAND,
+  getInitialHandLevels,
+  getValidHands,
+  calculateHandScore,
+  getScoringBreakdown,
+  calculateRewards,
+  getRandomUpgradeOptions,
+  getUpgradeCost,
+  ScoringBreakdown,
+} from "../utils/gameCore";
+import { CATEGORIES } from "../utils/yahtzeeScoring";
 
-// Game phases
+// ─────────────────────────────────────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────────────────────────────────────
+
 export type GamePhase =
-  | "rolling" // Player can roll/lock dice (and may score/scratch after a roll)
-  | "scoring" // No rolls left; player must score or scratch
-  | "won" // Game won, awaiting shop
-  | "lost" // Game lost, awaiting retry
-  | "shop"; // In shop view
+  | "LEVEL_PLAY" // Rolling/selecting/accepting (also when levelWon=true but pressing on)
+  | "CASHOUT_CHOICE" // Modal: Cash Out or Press On (after reveal completes)
+  | "LEVEL_RESULT" // Result screen with rewards
+  | "SHOP_MAIN" // Shop grid (3 placeholder + 1 upgrade)
+  | "SHOP_PICK_UPGRADE" // Pick 1 of 3 hands to upgrade
+  | "WIN_SCREEN" // Beat level 8
+  | "LOSE_SCREEN"; // Ran out of hands with score < goal
 
-// Category slot state
-export interface CategorySlot {
-  score: number | null; // null = unfilled, number = filled
-  scratched: boolean; // true if player entered 0 by scratching
+export interface RevealState {
+  active: boolean;
+  breakdown: ScoringBreakdown | null;
+  currentPips: number;
+  animationComplete: boolean;
 }
 
 interface GameState {
-  // Core game state
-  round: number; // 1-13
-  rollsRemaining: number; // 0-3 (3 = fresh round, 0 = must score)
-  hasRolledThisRound: boolean; // Track if player has rolled at least once
+  // Run state (persists across levels)
+  currentLevelIndex: number; // 0-7
+  money: number;
+  handLevels: Record<HandId, number>;
+
+  // Level state (resets each level)
+  levelScore: number;
+  levelGoal: number;
+  handsRemaining: number;
+  usedHandsThisLevel: HandId[];
+  rollsUsedThisLevel: number;
+  levelWon: boolean;
+
+  // Hand attempt state (resets each hand)
+  rollsRemaining: number;
+  hasRolledThisHand: boolean;
 
   // Dice state
-  diceValues: number[]; // Current face values [1-6]
-  selectedDice: boolean[]; // true = locked (won't reroll)
-  isRolling: boolean; // Animation in progress
-  rollTrigger: number; // Increment to trigger physics
-  diceVisible: boolean; // Controls dice opacity for the player
+  diceValues: number[];
+  selectedDice: boolean[];
+  isRolling: boolean;
+  rollTrigger: number;
+  diceVisible: boolean;
 
-  // Categories
-  categories: Record<CategoryId, CategorySlot>;
-
-  // Score tracking
-  currentScore: number;
-  targetScore: number;
-  money: number;
-
-  // Game phase
+  // UI state
   phase: GamePhase;
+  selectedHandId: HandId | null;
   overviewVisible: boolean;
-  scratchMode: boolean;
-  pendingCategoryId: CategoryId | null;
-  pendingScratchCategoryId: CategoryId | null;
+
+  // Score reveal animation state
+  revealState: RevealState | null;
+
+  // Shop state
+  upgradeOptions: HandId[];
 
   // Actions
+  startNewRun: () => void;
+  startLevel: (levelIndex: number) => void;
+
+  // Dice actions
   triggerRoll: () => void;
   completeRoll: (values: number[]) => void;
   setRolling: (isRolling: boolean) => void;
-  setDiceValues: (values: number[]) => void;
   toggleDiceLock: (index: number) => void;
-  setPendingCategory: (categoryId: CategoryId) => void;
-  clearPendingCategory: () => void;
-  setPendingScratchCategory: (categoryId: CategoryId) => void;
-  clearPendingScratchCategory: () => void;
-  submitCategory: (categoryId: CategoryId) => void;
-  scratchCategory: (categoryId: CategoryId) => void;
-  goToShop: () => void;
-  startNextRun: () => void;
-  retryRun: () => void;
-  forceWin: () => void;
-  resetForNewRound: () => void;
+
+  // Hand selection
+  selectHand: (handId: HandId) => void;
+  deselectHand: () => void;
+  acceptHand: () => void;
+  finalizeHand: () => void;
+
+  // Cash out flow
+  cashOutNow: () => void;
+  pressOn: () => void;
+
+  // Shop actions
+  openShop: () => void;
+  selectUpgradeItem: () => void;
+  pickUpgradeHand: (handId: HandId) => void;
+  closeShopNextLevel: () => void;
+
+  // Utility
   toggleOverview: () => void;
-  toggleScratchMode: () => void;
+  forceWin: () => void;
 }
 
-// Initial categories state
-function getInitialCategories(): Record<CategoryId, CategorySlot> {
-  const categories: Partial<Record<CategoryId, CategorySlot>> = {};
-  for (const cat of CATEGORIES) {
-    categories[cat.id] = { score: null, scratched: false };
-  }
-  return categories as Record<CategoryId, CategorySlot>;
-}
+// ─────────────────────────────────────────────────────────────────────────────
+// Initial States
+// ─────────────────────────────────────────────────────────────────────────────
 
-// Check if all categories are filled
-function allCategoriesFilled(
-  categories: Record<CategoryId, CategorySlot>
-): boolean {
-  return CATEGORIES.every((cat) => categories[cat.id].score !== null);
-}
+const getInitialRunState = () => ({
+  currentLevelIndex: 0,
+  money: 0,
+  handLevels: getInitialHandLevels(),
+});
 
-// Calculate total score from categories
-function calculateTotalScore(
-  categories: Record<CategoryId, CategorySlot>
-): number {
-  let total = 0;
-  let upperTotal = 0;
+const getInitialLevelState = (levelIndex: number) => ({
+  levelScore: 0,
+  levelGoal: LEVEL_CONFIG[levelIndex]?.goal ?? 50,
+  handsRemaining: MAX_HANDS_PER_LEVEL,
+  usedHandsThisLevel: [] as HandId[],
+  rollsUsedThisLevel: 0,
+  levelWon: false,
+});
 
-  for (const cat of CATEGORIES) {
-    const slot = categories[cat.id];
-    if (slot.score !== null) {
-      total += slot.score;
-      if (cat.section === "upper") {
-        upperTotal += slot.score;
-      }
-    }
-  }
+const getInitialHandState = () => ({
+  rollsRemaining: MAX_ROLLS_PER_HAND,
+  hasRolledThisHand: false,
+});
 
-  // Upper section bonus
-  if (upperTotal >= 63) {
-    total += 35;
-  }
-
-  return total;
-}
-
-const INITIAL_TARGET = 200;
-const TARGET_MULTIPLIER = 1.5;
-const MONEY_PER_UNUSED_ROLL = 3;
-
-export const useGameStore = create<GameState>((set, get) => ({
-  // Initial state
-  round: 1,
-  rollsRemaining: 3,
-  hasRolledThisRound: false,
+const getInitialDiceState = () => ({
   diceValues: [1, 1, 1, 1, 1],
   selectedDice: [false, false, false, false, false],
   isRolling: false,
   rollTrigger: 0,
   diceVisible: false,
-  categories: getInitialCategories(),
-  currentScore: 0,
-  targetScore: INITIAL_TARGET,
-  money: 0,
-  phase: "rolling",
-  overviewVisible: false,
-  scratchMode: false,
-  pendingCategoryId: null,
-  pendingScratchCategoryId: null,
+});
 
-  // Roll dice
+const getInitialUIState = () => ({
+  phase: "LEVEL_PLAY" as GamePhase,
+  selectedHandId: null as HandId | null,
+  overviewVisible: false,
+  revealState: null as RevealState | null,
+  upgradeOptions: [] as HandId[],
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Store
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const useGameStore = create<GameState>((set, get) => ({
+  // Initial state
+  ...getInitialRunState(),
+  ...getInitialLevelState(0),
+  ...getInitialHandState(),
+  ...getInitialDiceState(),
+  ...getInitialUIState(),
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Run Lifecycle
+  // ───────────────────────────────────────────────────────────────────────────
+
+  startNewRun: () => {
+    set({
+      ...getInitialRunState(),
+      ...getInitialLevelState(0),
+      ...getInitialHandState(),
+      ...getInitialDiceState(),
+      ...getInitialUIState(),
+    });
+  },
+
+  startLevel: (levelIndex: number) => {
+    const { handLevels, money } = get();
+    set({
+      currentLevelIndex: levelIndex,
+      money,
+      handLevels,
+      ...getInitialLevelState(levelIndex),
+      ...getInitialHandState(),
+      ...getInitialDiceState(),
+      phase: "LEVEL_PLAY",
+      selectedHandId: null,
+      revealState: null,
+      upgradeOptions: [],
+    });
+  },
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Dice Actions
+  // ───────────────────────────────────────────────────────────────────────────
+
   triggerRoll: () => {
-    const { rollsRemaining, phase, pendingCategoryId, pendingScratchCategoryId } =
-      get();
-    const canRollPhase = phase === "rolling";
+    const { rollsRemaining, phase, selectedHandId, isRolling } = get();
+
+    // Can only roll in LEVEL_PLAY phase, with rolls remaining, no hand selected
     if (
+      phase !== "LEVEL_PLAY" ||
       rollsRemaining <= 0 ||
-      !canRollPhase ||
-      pendingCategoryId ||
-      pendingScratchCategoryId
-    )
+      selectedHandId !== null ||
+      isRolling
+    ) {
       return;
+    }
 
     set((state) => ({
       rollTrigger: state.rollTrigger + 1,
       isRolling: true,
       rollsRemaining: state.rollsRemaining - 1,
-      hasRolledThisRound: true,
+      rollsUsedThisLevel: state.rollsUsedThisLevel + 1,
+      hasRolledThisHand: true,
       diceVisible: true,
-      phase: "rolling",
-      scratchMode: false,
-      pendingCategoryId: null,
-      pendingScratchCategoryId: null,
     }));
   },
 
-  // Complete roll with final dice values (batch update for performance)
   completeRoll: (values: number[]) => {
-    const { phase, rollsRemaining } = get();
-    const canUpdatePhase = phase === "rolling";
-    const nextPhase = canUpdatePhase
-      ? rollsRemaining === 0
-        ? "scoring"
-        : "rolling"
-      : phase;
-
     set({
       diceValues: values,
       isRolling: false,
-      phase: nextPhase,
-      scratchMode: false,
-      pendingScratchCategoryId: null,
     });
   },
 
-  setRolling: (isRolling) => set({ isRolling }),
+  setRolling: (isRolling: boolean) => {
+    set({ isRolling });
+  },
 
-  setDiceValues: (values) => set({ diceValues: values }),
+  toggleDiceLock: (index: number) => {
+    const { hasRolledThisHand, isRolling, selectedHandId } = get();
 
-  // Toggle die lock/unlock
-  toggleDiceLock: (index) => {
-    const {
-      hasRolledThisRound,
-      isRolling,
-      pendingCategoryId,
-      pendingScratchCategoryId,
-    } = get();
-    // Can only lock after first roll and when not rolling
-    if (
-      !hasRolledThisRound ||
-      isRolling ||
-      pendingCategoryId ||
-      pendingScratchCategoryId
-    )
+    // Can only lock after first roll, when not rolling, and no hand selected
+    if (!hasRolledThisHand || isRolling || selectedHandId !== null) {
       return;
+    }
 
     set((state) => {
       const newSelected = [...state.selectedDice];
@@ -207,266 +237,282 @@ export const useGameStore = create<GameState>((set, get) => ({
     });
   },
 
-  toggleOverview: () => set((s) => ({ overviewVisible: !s.overviewVisible })),
-  toggleScratchMode: () =>
-    set((s) => {
-      const canScore =
-        (s.phase === "rolling" || s.phase === "scoring") &&
-        s.hasRolledThisRound &&
-        !s.isRolling &&
-        !s.pendingCategoryId &&
-        !s.pendingScratchCategoryId;
-      if (!canScore) {
-        return { scratchMode: false, pendingScratchCategoryId: null };
-      }
-      if (s.scratchMode) {
-        return { scratchMode: false, pendingScratchCategoryId: null };
-      }
-      return { scratchMode: true };
-    }),
+  // ───────────────────────────────────────────────────────────────────────────
+  // Hand Selection
+  // ───────────────────────────────────────────────────────────────────────────
 
-  setPendingCategory: (categoryId) => {
-    const { categories, phase, hasRolledThisRound, isRolling, scratchMode } =
-      get();
-    const canScore =
-      (phase === "rolling" || phase === "scoring") &&
-      hasRolledThisRound &&
-      !isRolling &&
-      !scratchMode;
-    if (!canScore) return;
-    if (categories[categoryId].score !== null) return;
-
-    set({ pendingCategoryId: categoryId, scratchMode: false });
-  },
-
-  clearPendingCategory: () => set({ pendingCategoryId: null }),
-
-  setPendingScratchCategory: (categoryId) => {
-    const { categories, phase, hasRolledThisRound, isRolling, scratchMode } =
-      get();
-    const canScratch =
-      (phase === "rolling" || phase === "scoring") &&
-      hasRolledThisRound &&
-      !isRolling &&
-      scratchMode;
-    if (!canScratch) return;
-    if (categories[categoryId].score !== null) return;
-
-    set({ pendingScratchCategoryId: categoryId });
-  },
-
-  clearPendingScratchCategory: () => set({ pendingScratchCategoryId: null }),
-
-  // Submit score to a category
-  submitCategory: (categoryId) => {
+  selectHand: (handId: HandId) => {
     const {
-      diceValues,
-      categories,
-      round,
-      hasRolledThisRound,
-      rollsRemaining,
-    } = get();
-
-    // Can't submit if hasn't rolled or category already filled
-    if (!hasRolledThisRound) return;
-    if (categories[categoryId].score !== null) return;
-
-    const score = calculateScore(diceValues, categoryId);
-
-    const newCategories = { ...categories };
-    newCategories[categoryId] = { score, scratched: false };
-
-    const newCurrentScore = calculateTotalScore(newCategories);
-    const newRound = round + 1;
-
-    // Check if game is over
-    if (newRound > 13 || allCategoriesFilled(newCategories)) {
-      // Calculate bonus money from unused rolls
-      const bonusMoney = rollsRemaining * MONEY_PER_UNUSED_ROLL;
-      const targetScore = get().targetScore;
-      const won = newCurrentScore >= targetScore;
-
-      set({
-        categories: newCategories,
-        currentScore: newCurrentScore,
-        round: 13,
-        phase: won ? "won" : "lost",
-        money: get().money + bonusMoney,
-        selectedDice: [false, false, false, false, false],
-        diceVisible: false,
-        scratchMode: false,
-        pendingCategoryId: null,
-        pendingScratchCategoryId: null,
-      });
-    } else {
-      // Next round
-      set({
-        categories: newCategories,
-        currentScore: newCurrentScore,
-        round: newRound,
-        rollsRemaining: 3,
-        hasRolledThisRound: false,
-        selectedDice: [false, false, false, false, false],
-        phase: "rolling",
-        diceVisible: false,
-        scratchMode: false,
-        pendingCategoryId: null,
-        pendingScratchCategoryId: null,
-      });
-    }
-  },
-
-  // Scratch a category (enter 0)
-  scratchCategory: (categoryId) => {
-    const {
-      categories,
-      round,
-      rollsRemaining,
       phase,
-      hasRolledThisRound,
+      hasRolledThisHand,
       isRolling,
+      usedHandsThisLevel,
+      diceValues,
     } = get();
 
-    const canScore =
-      (phase === "rolling" || phase === "scoring") &&
-      hasRolledThisRound &&
-      !isRolling;
+    // Can only select in LEVEL_PLAY after rolling
+    if (phase !== "LEVEL_PLAY" || !hasRolledThisHand || isRolling) {
+      return;
+    }
 
-    if (!canScore) return;
+    // Check if hand is valid and not used
+    const validHands = getValidHands(diceValues, new Set(usedHandsThisLevel));
+    if (!validHands.includes(handId)) {
+      return;
+    }
 
-    if (categories[categoryId].score !== null) return;
+    set({ selectedHandId: handId });
+  },
 
-    const newCategories = { ...categories };
-    newCategories[categoryId] = { score: 0, scratched: true };
+  deselectHand: () => {
+    set({ selectedHandId: null });
+  },
 
-    const newCurrentScore = calculateTotalScore(newCategories);
-    const newRound = round + 1;
+  acceptHand: () => {
+    const { selectedHandId, handLevels, diceValues, phase } = get();
 
-    // Check if game is over
-    if (newRound > 13 || allCategoriesFilled(newCategories)) {
-      const bonusMoney = rollsRemaining * MONEY_PER_UNUSED_ROLL;
-      const targetScore = get().targetScore;
-      const won = newCurrentScore >= targetScore;
+    if (phase !== "LEVEL_PLAY" || !selectedHandId) {
+      return;
+    }
 
+    // Get scoring breakdown for animation
+    const level = handLevels[selectedHandId];
+    const breakdown = getScoringBreakdown(selectedHandId, level, diceValues);
+
+    // Start reveal animation
+    set({
+      revealState: {
+        active: true,
+        breakdown,
+        currentPips: 0,
+        animationComplete: false,
+      },
+    });
+  },
+
+  finalizeHand: () => {
+    const {
+      revealState,
+      selectedHandId,
+      levelScore,
+      levelGoal,
+      handsRemaining,
+      usedHandsThisLevel,
+    } = get();
+
+    if (!revealState?.breakdown || !selectedHandId) {
+      return;
+    }
+
+    const newScore = levelScore + revealState.breakdown.finalScore;
+    const newHandsRemaining = handsRemaining - 1;
+    const newUsedHands = [...usedHandsThisLevel, selectedHandId];
+    const nowWon = newScore >= levelGoal;
+
+    // Check for level end conditions
+    if (newHandsRemaining === 0 && !nowWon) {
+      // Lost - no hands remaining and didn't reach goal
       set({
-        categories: newCategories,
-        currentScore: newCurrentScore,
-        round: 13,
-        phase: won ? "won" : "lost",
-        money: get().money + bonusMoney,
-        selectedDice: [false, false, false, false, false],
+        levelScore: newScore,
+        handsRemaining: newHandsRemaining,
+        usedHandsThisLevel: newUsedHands,
+        phase: "LOSE_SCREEN",
+        revealState: null,
+        selectedHandId: null,
         diceVisible: false,
-        scratchMode: false,
-        pendingCategoryId: null,
-        pendingScratchCategoryId: null,
       });
+      return;
+    }
+
+    // Check if this is the first time winning (just crossed goal)
+    const { levelWon: wasAlreadyWon } = get();
+    const justWon = nowWon && !wasAlreadyWon;
+
+    if (justWon) {
+      // Show cash out choice
+      set({
+        levelScore: newScore,
+        handsRemaining: newHandsRemaining,
+        usedHandsThisLevel: newUsedHands,
+        levelWon: true,
+        phase: "CASHOUT_CHOICE",
+        revealState: null,
+        selectedHandId: null,
+      });
+      return;
+    }
+
+    // Player is pressing on (already won) and just used another hand
+    if (nowWon && newHandsRemaining === 0) {
+      // Auto cash out - no more hands
+      set({
+        levelScore: newScore,
+        handsRemaining: newHandsRemaining,
+        usedHandsThisLevel: newUsedHands,
+        levelWon: true,
+        phase: "LEVEL_RESULT",
+        revealState: null,
+        selectedHandId: null,
+        diceVisible: false,
+      });
+      return;
+    }
+
+    // Continue playing - reset for next hand attempt
+    set({
+      levelScore: newScore,
+      handsRemaining: newHandsRemaining,
+      usedHandsThisLevel: newUsedHands,
+      levelWon: nowWon,
+      ...getInitialHandState(),
+      selectedDice: [false, false, false, false, false],
+      diceVisible: false,
+      phase: "LEVEL_PLAY",
+      revealState: null,
+      selectedHandId: null,
+    });
+  },
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Cash Out Flow
+  // ───────────────────────────────────────────────────────────────────────────
+
+  cashOutNow: () => {
+    set({
+      phase: "LEVEL_RESULT",
+      diceVisible: false,
+    });
+  },
+
+  pressOn: () => {
+    // Continue playing with remaining hands
+    set({
+      ...getInitialHandState(),
+      selectedDice: [false, false, false, false, false],
+      diceVisible: false,
+      phase: "LEVEL_PLAY",
+      selectedHandId: null,
+      revealState: null,
+    });
+  },
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Shop Actions
+  // ───────────────────────────────────────────────────────────────────────────
+
+  openShop: () => {
+    // Calculate and apply rewards before entering shop
+    const {
+      money,
+      levelScore,
+      levelGoal,
+      handsRemaining,
+      rollsUsedThisLevel,
+    } = get();
+
+    const rewards = calculateRewards({
+      currentMoney: money,
+      score: levelScore,
+      goal: levelGoal,
+      handsRemaining,
+      rollsUsedThisLevel,
+    });
+
+    set({
+      money: rewards.newMoney,
+      phase: "SHOP_MAIN",
+    });
+  },
+
+  selectUpgradeItem: () => {
+    const options = getRandomUpgradeOptions();
+    set({
+      upgradeOptions: options,
+      phase: "SHOP_PICK_UPGRADE",
+    });
+  },
+
+  pickUpgradeHand: (handId: HandId) => {
+    const { money, handLevels } = get();
+    const currentLevel = handLevels[handId];
+    const cost = getUpgradeCost(currentLevel);
+
+    if (money < cost) {
+      return; // Can't afford
+    }
+
+    const newHandLevels = { ...handLevels };
+    newHandLevels[handId] = currentLevel + 1;
+
+    set({
+      money: money - cost,
+      handLevels: newHandLevels,
+      phase: "SHOP_MAIN",
+    });
+  },
+
+  closeShopNextLevel: () => {
+    const { currentLevelIndex } = get();
+    const nextLevelIndex = currentLevelIndex + 1;
+
+    if (nextLevelIndex >= LEVEL_CONFIG.length) {
+      // Completed all 8 levels - show win screen
+      set({ phase: "WIN_SCREEN" });
     } else {
-      set({
-        categories: newCategories,
-        currentScore: newCurrentScore,
-        round: newRound,
-        rollsRemaining: 3,
-        hasRolledThisRound: false,
-        selectedDice: [false, false, false, false, false],
-        phase: "rolling",
-        diceVisible: false,
-        scratchMode: false,
-        pendingCategoryId: null,
-        pendingScratchCategoryId: null,
-      });
+      // Start next level
+      get().startLevel(nextLevelIndex);
     }
   },
 
-  // Go to shop after winning
-  goToShop: () => {
-    set({ phase: "shop" });
+  // ───────────────────────────────────────────────────────────────────────────
+  // Utility
+  // ───────────────────────────────────────────────────────────────────────────
+
+  toggleOverview: () => {
+    set((state) => ({ overviewVisible: !state.overviewVisible }));
   },
 
-  // Start next run with higher target
-  startNextRun: () => {
-    const { targetScore } = get();
-    set({
-      round: 1,
-      rollsRemaining: 3,
-      hasRolledThisRound: false,
-      diceValues: [1, 1, 1, 1, 1],
-      selectedDice: [false, false, false, false, false],
-      isRolling: false,
-      diceVisible: false,
-      categories: getInitialCategories(),
-      currentScore: 0,
-      targetScore: Math.round(targetScore * TARGET_MULTIPLIER),
-      phase: "rolling",
-      scratchMode: false,
-      pendingCategoryId: null,
-      pendingScratchCategoryId: null,
-      // Keep money
-    });
-  },
-
-  // Retry after losing
-  retryRun: () => {
-    set({
-      round: 1,
-      rollsRemaining: 3,
-      hasRolledThisRound: false,
-      diceValues: [1, 1, 1, 1, 1],
-      selectedDice: [false, false, false, false, false],
-      isRolling: false,
-      diceVisible: false,
-      categories: getInitialCategories(),
-      currentScore: 0,
-      targetScore: INITIAL_TARGET,
-      money: 0, // Reset money on loss
-      phase: "rolling",
-      scratchMode: false,
-      pendingCategoryId: null,
-      pendingScratchCategoryId: null,
-    });
-  },
-
-  // Debug: force a win state
   forceWin: () => {
+    // Debug helper
+    const { levelGoal } = get();
     set({
-      phase: "won",
-      isRolling: false,
-      diceVisible: false,
-      scratchMode: false,
-      pendingCategoryId: null,
-      pendingScratchCategoryId: null,
-      selectedDice: [false, false, false, false, false],
-    });
-  },
-
-  // Reset for new round (utility)
-  resetForNewRound: () => {
-    set({
-      rollsRemaining: 3,
-      hasRolledThisRound: false,
-      selectedDice: [false, false, false, false, false],
-      scratchMode: false,
-      pendingCategoryId: null,
-      pendingScratchCategoryId: null,
+      levelScore: levelGoal,
+      levelWon: true,
+      phase: "CASHOUT_CHOICE",
     });
   },
 }));
 
-// Selector helpers
-export const useValidCategories = () => {
+// ─────────────────────────────────────────────────────────────────────────────
+// Selectors
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const useValidHands = () => {
   const diceValues = useGameStore((s) => s.diceValues);
-  const categories = useGameStore((s) => s.categories);
-  const hasRolled = useGameStore((s) => s.hasRolledThisRound);
+  const usedHandsThisLevel = useGameStore((s) => s.usedHandsThisLevel);
+  const hasRolled = useGameStore((s) => s.hasRolledThisHand);
   const isRolling = useGameStore((s) => s.isRolling);
 
   if (!hasRolled || isRolling) return [];
 
-  const filledSet = new Set<CategoryId>(
-    CATEGORIES.filter((c) => categories[c.id].score !== null).map((c) => c.id)
-  );
-
-  return getValidCategories(diceValues, filledSet);
+  return getValidHands(diceValues, new Set(usedHandsThisLevel));
 };
 
-export const useHasValidCategories = () => {
-  return useValidCategories().length > 0;
+export const useRewardBreakdown = () => {
+  const money = useGameStore((s) => s.money);
+  const levelScore = useGameStore((s) => s.levelScore);
+  const levelGoal = useGameStore((s) => s.levelGoal);
+  const handsRemaining = useGameStore((s) => s.handsRemaining);
+  const rollsUsedThisLevel = useGameStore((s) => s.rollsUsedThisLevel);
+
+  return calculateRewards({
+    currentMoney: money,
+    score: levelScore,
+    goal: levelGoal,
+    handsRemaining,
+    rollsUsedThisLevel,
+  });
 };
+
+// Re-export types for convenience
+export type { HandId };

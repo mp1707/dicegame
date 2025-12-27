@@ -1,110 +1,82 @@
 import React from "react";
 import { View, StyleSheet, Text } from "react-native";
-import { ScrollText, Check, X } from "lucide-react-native";
+import { ScrollText, DollarSign, Check } from "lucide-react-native";
 import { TileButton, TileButtonVariant } from "../shared";
 import { Pressable3DBase } from "../ui/Pressable3DBase";
 import { COLORS, SPACING, DIMENSIONS, TYPOGRAPHY } from "../../constants/theme";
-import { useGameStore, useValidCategories } from "../../store/gameStore";
-import { CategoryId, CATEGORIES } from "../../utils/yahtzeeScoring";
+import { useGameStore, useValidHands, HandId } from "../../store/gameStore";
+import { CATEGORIES } from "../../utils/yahtzeeScoring";
 import { CategoryIcon } from "../ui/CategoryIcon";
 import { triggerSelectionHaptic } from "../../utils/haptics";
 
-const LOWER_CATEGORIES = CATEGORIES.filter((c) => c.section === "lower");
+const LOWER_HANDS = CATEGORIES.filter((c) => c.section === "lower");
 
 interface LowerSlotProps {
-  categoryId: CategoryId;
+  handId: HandId;
 }
 
-const LowerSlot = ({ categoryId }: LowerSlotProps) => {
-  const categories = useGameStore((s) => s.categories);
-  const setPendingCategory = useGameStore((s) => s.setPendingCategory);
-  const setPendingScratchCategory = useGameStore(
-    (s) => s.setPendingScratchCategory
-  );
-  const scratchMode = useGameStore((s) => s.scratchMode);
+const LowerSlot = ({ handId }: LowerSlotProps) => {
+  const handLevels = useGameStore((s) => s.handLevels);
+  const usedHandsThisLevel = useGameStore((s) => s.usedHandsThisLevel);
+  const selectedHandId = useGameStore((s) => s.selectedHandId);
+  const selectHand = useGameStore((s) => s.selectHand);
+  const deselectHand = useGameStore((s) => s.deselectHand);
   const phase = useGameStore((s) => s.phase);
-  const hasRolledThisRound = useGameStore((s) => s.hasRolledThisRound);
+  const hasRolledThisHand = useGameStore((s) => s.hasRolledThisHand);
   const isRolling = useGameStore((s) => s.isRolling);
-  const validCategories = useValidCategories();
-  const pendingCategoryId = useGameStore((s) => s.pendingCategoryId);
-  const pendingScratchCategoryId = useGameStore(
-    (s) => s.pendingScratchCategoryId
-  );
-  const clearPendingCategory = useGameStore((s) => s.clearPendingCategory);
-  const clearPendingScratchCategory = useGameStore(
-    (s) => s.clearPendingScratchCategory
-  );
+  const validHands = useValidHands();
 
-  const categoryDef = CATEGORIES.find((c) => c.id === categoryId);
-  let label = categoryDef?.labelDe || categoryId;
+  const categoryDef = CATEGORIES.find((c) => c.id === handId);
+  let label = categoryDef?.labelDe || handId;
+  // Shorten long labels
   if (label === "Dreier Pasch") label = "3er P.";
   if (label === "Vierer Pasch") label = "4er P.";
   if (label === "Kleine Straße") label = "Kl.Str";
   if (label === "Große Straße") label = "Gr.Str";
   if (label === "Full House") label = "Full H.";
 
-  const slot = categories[categoryId];
-  const isFilled = slot.score !== null;
-  const canScore =
-    (phase === "rolling" || phase === "scoring") &&
-    hasRolledThisRound &&
-    !isRolling;
-  const isScratchable = canScore && scratchMode && !isFilled;
+  const handLevel = handLevels[handId];
 
-  const isPossibleBase =
-    canScore &&
-    !scratchMode &&
-    !isFilled &&
-    validCategories.includes(categoryId);
+  // Determine states
+  const isUsed = usedHandsThisLevel.includes(handId);
+  const canInteract =
+    phase === "LEVEL_PLAY" && hasRolledThisHand && !isRolling;
+  const isValid = canInteract && !isUsed && validHands.includes(handId);
+  const isSelected = selectedHandId === handId;
+  const isPressable = isValid;
 
-  const isPossible = isPossibleBase;
-  const isScoreSelected = pendingCategoryId === categoryId;
-  const isScratchSelected = pendingScratchCategoryId === categoryId;
-  const isSelected = scratchMode ? isScratchSelected : isScoreSelected;
-  const isPressable = isScratchable || isPossibleBase;
-
+  // Determine variant
   let variant: TileButtonVariant = "default";
-  if (isFilled) variant = "filled";
-  else if (isScratchable) variant = "scratch";
-  else if (isPossible) variant = "active";
+  if (isUsed) variant = "filled";
+  else if (isValid) variant = "active";
 
-  const iconColor = isFilled
+  const iconColor = isUsed
     ? COLORS.text
-    : isScratchable
-    ? COLORS.coral
     : isSelected
     ? COLORS.cyan
-    : isPossible
+    : isValid
     ? COLORS.cyan
     : COLORS.textMuted;
 
   const handlePress = () => {
-    if (isScratchable) {
-      if (isScratchSelected) {
-        triggerSelectionHaptic();
-        clearPendingScratchCategory();
-      } else {
-        triggerSelectionHaptic();
-        setPendingScratchCategory(categoryId);
-      }
-    } else if (isPossibleBase) {
-      if (isScoreSelected) {
-        triggerSelectionHaptic();
-        clearPendingCategory();
-      } else {
-        triggerSelectionHaptic();
-        setPendingCategory(categoryId);
-      }
+    if (!isPressable) return;
+
+    if (isSelected) {
+      triggerSelectionHaptic();
+      deselectHand();
+    } else {
+      triggerSelectionHaptic();
+      selectHand(handId);
     }
   };
 
   return (
     <TileButton
       icon={
-        <CategoryIcon categoryId={categoryId} size={14} color={iconColor} />
+        <CategoryIcon categoryId={handId} size={14} color={iconColor} />
       }
       label={label}
-      level={1}
+      level={handLevel}
       variant={variant}
       selected={isSelected}
       disabled={!isPressable}
@@ -137,6 +109,31 @@ const OverviewButton = () => {
   );
 };
 
+const CashOutButton = () => {
+  const cashOutNow = useGameStore((s) => s.cashOutNow);
+
+  return (
+    <Pressable3DBase
+      onPress={() => {
+        triggerSelectionHaptic();
+        cashOutNow();
+      }}
+      depth={4}
+      borderRadius={DIMENSIONS.borderRadiusSmall}
+      showLighting={false}
+      style={styles.slotStyle}
+      face={<View style={styles.cashOutFace} />}
+    >
+      <View style={styles.actionContent}>
+        <DollarSign size={20} color={COLORS.textDark} strokeWidth={3} />
+        <Text style={[styles.actionLabel, { color: COLORS.textDark }]}>
+          CASH OUT
+        </Text>
+      </View>
+    </Pressable3DBase>
+  );
+};
+
 const WinButton = () => {
   const forceWin = useGameStore((s) => s.forceWin);
 
@@ -162,81 +159,38 @@ const WinButton = () => {
   );
 };
 
-const ScratchButton = () => {
-  const scratchMode = useGameStore((s) => s.scratchMode);
-  const phase = useGameStore((s) => s.phase);
-  const hasRolledThisRound = useGameStore((s) => s.hasRolledThisRound);
-  const isRolling = useGameStore((s) => s.isRolling);
-  const pendingCategoryId = useGameStore((s) => s.pendingCategoryId);
-  const pendingScratchCategoryId = useGameStore(
-    (s) => s.pendingScratchCategoryId
-  );
-  const toggleScratchMode = useGameStore((s) => s.toggleScratchMode);
-  const canScratch =
-    (phase === "rolling" || phase === "scoring") &&
-    hasRolledThisRound &&
-    !isRolling &&
-    !pendingCategoryId &&
-    !pendingScratchCategoryId;
-
-  const isActive = scratchMode;
-  const iconColor = isActive
-    ? COLORS.textWhite
-    : canScratch
-    ? COLORS.coral
-    : COLORS.textMuted;
-  const labelColor = iconColor;
-  const label = isActive ? "ZURÜCK" : "STREICHEN";
-
-  return (
-    <Pressable3DBase
-      onPress={() => {
-        triggerSelectionHaptic();
-        toggleScratchMode();
-      }}
-      disabled={!canScratch}
-      depth={4}
-      borderRadius={DIMENSIONS.borderRadiusSmall}
-      showLighting={false}
-      style={[styles.slotStyle, !canScratch && { opacity: 0.5 }]}
-      face={
-        <View
-          style={[styles.actionFace, isActive && styles.scratchActiveFace]}
-        />
-      }
-    >
-      <View style={styles.actionContent}>
-        <X size={20} color={iconColor} strokeWidth={3} />
-        <Text style={[styles.actionLabel, { color: labelColor }]}>{label}</Text>
-      </View>
-    </Pressable3DBase>
-  );
-};
-
 export const LowerSection = () => {
-  const scratchMode = useGameStore((s) => s.scratchMode);
-  const spacerCount = scratchMode ? 2 : 3;
+  const levelWon = useGameStore((s) => s.levelWon);
+  const phase = useGameStore((s) => s.phase);
+
+  // Show Cash Out button if level is won and still in LEVEL_PLAY (pressed on)
+  const showCashOut = levelWon && phase === "LEVEL_PLAY";
+
+  // Calculate spacer count based on what buttons are shown
+  // 7 hand slots + buttons should fill to ~10 columns
+  let spacerCount = showCashOut ? 1 : 2;
 
   return (
     <View style={styles.container}>
-      {LOWER_CATEGORIES.map((cat) => (
+      {LOWER_HANDS.map((cat) => (
         <View key={cat.id} style={styles.slotWrapper}>
-          <LowerSlot categoryId={cat.id} />
+          <LowerSlot handId={cat.id} />
         </View>
       ))}
 
+      {/* Spacers */}
       {[...Array(spacerCount)].map((_, i) => (
         <View key={`spacer-${i}`} style={styles.slotWrapper} />
       ))}
 
-      {scratchMode && (
+      {/* Cash Out button (shown when level is won and pressing on) */}
+      {showCashOut && (
         <View style={styles.slotWrapper}>
-          <WinButton />
+          <CashOutButton />
         </View>
       )}
-      <View style={styles.slotWrapper}>
-        <ScratchButton />
-      </View>
+
+      {/* Overview button */}
       <View style={styles.slotWrapper}>
         <OverviewButton />
       </View>
@@ -258,11 +212,6 @@ const styles = StyleSheet.create({
     width: "100%",
     borderRadius: DIMENSIONS.borderRadiusSmall,
   },
-  actionBase: {
-    flex: 1,
-    borderRadius: DIMENSIONS.borderRadiusSmall,
-    backgroundColor: COLORS.shadow,
-  },
   actionFace: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: COLORS.surface2,
@@ -274,7 +223,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 3,
     borderBottomColor: "rgba(0,0,0,0.3)",
   },
-  winFace: {
+  cashOutFace: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: COLORS.mint,
     borderRadius: DIMENSIONS.borderRadiusSmall,
@@ -285,12 +234,16 @@ const styles = StyleSheet.create({
     borderBottomWidth: 4,
     borderBottomColor: "rgba(0,0,0,0.25)",
   },
-  scratchActiveFace: {
-    backgroundColor: COLORS.coral,
-    borderColor: COLORS.coral,
-    borderWidth: 0,
+  winFace: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: COLORS.gold,
+    borderRadius: DIMENSIONS.borderRadiusSmall,
+    borderWidth: 1,
+    borderColor: COLORS.gold,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.2)",
     borderBottomWidth: 4,
-    borderBottomColor: "rgba(0,0,0,0.2)",
+    borderBottomColor: "rgba(0,0,0,0.25)",
   },
   actionContent: {
     flex: 1,

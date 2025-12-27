@@ -14,45 +14,44 @@ export const FooterControls = () => {
   const rollsRemaining = useGameStore((s) => s.rollsRemaining);
   const isRolling = useGameStore((s) => s.isRolling);
   const triggerRoll = useGameStore((s) => s.triggerRoll);
-  const scratchCategory = useGameStore((s) => s.scratchCategory);
   const phase = useGameStore((s) => s.phase);
-  const goToShop = useGameStore((s) => s.goToShop);
-  const retryRun = useGameStore((s) => s.retryRun);
-  const pendingCategoryId = useGameStore((s) => s.pendingCategoryId);
-  const pendingScratchCategoryId = useGameStore(
-    (s) => s.pendingScratchCategoryId
-  );
-  const submitCategory = useGameStore((s) => s.submitCategory);
+  const selectedHandId = useGameStore((s) => s.selectedHandId);
+  const acceptHand = useGameStore((s) => s.acceptHand);
+  const revealState = useGameStore((s) => s.revealState);
+  const cashOutNow = useGameStore((s) => s.cashOutNow);
+  const pressOn = useGameStore((s) => s.pressOn);
+  const startNewRun = useGameStore((s) => s.startNewRun);
 
   const canRoll =
     rollsRemaining > 0 &&
     !isRolling &&
-    phase === "rolling" &&
-    !pendingCategoryId;
+    phase === "LEVEL_PLAY" &&
+    !selectedHandId &&
+    !revealState?.active;
 
-  const isConfirming = !!pendingCategoryId;
-  const isScratchConfirming = !!pendingScratchCategoryId;
+  const isHandSelected = !!selectedHandId && !revealState?.active;
+  const isRevealing = !!revealState?.active;
 
-  const handleGoToShop = () => {
-    goToShop();
-  };
-
-  const handleRetryRun = () => {
-    retryRun();
-  };
-
-  const handleConfirmCategory = () => {
-    if (isConfirming && pendingCategoryId) {
-      submitCategory(pendingCategoryId);
+  const handleAcceptHand = () => {
+    if (isHandSelected) {
+      acceptHand();
       triggerSelectionHaptic();
     }
   };
 
-  const handleConfirmScratch = () => {
-    if (isScratchConfirming && pendingScratchCategoryId) {
-      scratchCategory(pendingScratchCategoryId);
-      triggerSelectionHaptic();
-    }
+  const handleCashOut = () => {
+    cashOutNow();
+    triggerSelectionHaptic();
+  };
+
+  const handlePressOn = () => {
+    pressOn();
+    triggerSelectionHaptic();
+  };
+
+  const handleNewRun = () => {
+    startNewRun();
+    triggerSelectionHaptic();
   };
 
   const onPressRoll = () => {
@@ -62,21 +61,23 @@ export const FooterControls = () => {
   };
 
   const renderContent = () => {
-    if (phase === "won") {
+    // Win screen - New Run button
+    if (phase === "WIN_SCREEN") {
       return (
         <PrimaryButton
-          onPress={handleGoToShop}
-          label="SHOP"
+          onPress={handleNewRun}
+          label="NEUER RUN"
           variant="mint"
           style={styles.button}
         />
       );
     }
 
-    if (phase === "lost") {
+    // Lose screen - New Run button
+    if (phase === "LOSE_SCREEN") {
       return (
         <PrimaryButton
-          onPress={handleRetryRun}
+          onPress={handleNewRun}
           label="NOCHMAL"
           variant="coral"
           style={styles.button}
@@ -84,28 +85,44 @@ export const FooterControls = () => {
       );
     }
 
-    if (isScratchConfirming) {
+    // Cash out choice - Two buttons
+    if (phase === "CASHOUT_CHOICE") {
+      return (
+        <View style={styles.dualButtonContainer}>
+          <PrimaryButton
+            onPress={handleCashOut}
+            label="CASH OUT"
+            variant="mint"
+            style={[styles.button, styles.halfButton]}
+          />
+          <PrimaryButton
+            onPress={handlePressOn}
+            label="PRESS ON"
+            variant="cyan"
+            style={[styles.button, styles.halfButton]}
+          />
+        </View>
+      );
+    }
+
+    // Reveal animation in progress - show "..." indicator
+    if (isRevealing) {
       return (
         <PrimaryButton
-          onPress={handleConfirmScratch}
-          label="STREICHEN"
-          variant="coral"
-          icon={
-            <MaterialCommunityIcons
-              name="close-thick"
-              size={24}
-              color={COLORS.textDark}
-            />
-          }
+          onPress={() => {}}
+          label="..."
+          disabled={true}
+          variant="cyan"
           style={styles.button}
         />
       );
     }
 
-    if (isConfirming) {
+    // Hand selected - Accept button
+    if (isHandSelected) {
       return (
         <PrimaryButton
-          onPress={handleConfirmCategory}
+          onPress={handleAcceptHand}
           label="ANNEHMEN"
           variant="cyan"
           icon={
@@ -120,7 +137,8 @@ export const FooterControls = () => {
       );
     }
 
-    const label = isRolling ? "WÜRFELT..." : "WURF";
+    // Default: Roll button
+    const label = isRolling ? "ROLL..." : "WURF";
 
     return (
       <View style={styles.mainControlWrapper}>
@@ -144,6 +162,15 @@ export const FooterControls = () => {
     );
   };
 
+  // Don't show footer in certain phases
+  if (
+    phase === "LEVEL_RESULT" ||
+    phase === "SHOP_MAIN" ||
+    phase === "SHOP_PICK_UPGRADE"
+  ) {
+    return null;
+  }
+
   return <View style={styles.container}>{renderContent()}</View>;
 };
 
@@ -160,5 +187,15 @@ const styles = StyleSheet.create({
   },
   button: {
     shadowOpacity: 0.6,
+  },
+  dualButtonContainer: {
+    flexDirection: "row",
+    gap: 12,
+    width: "100%",
+    justifyContent: "center",
+  },
+  halfButton: {
+    flex: 1,
+    maxWidth: 160,
   },
 });

@@ -1,50 +1,60 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
-import { COLORS, TYPOGRAPHY, SPACING, DIMENSIONS } from "../../constants/theme";
+import { View, Text, StyleSheet, Platform } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { COLORS, TYPOGRAPHY, SPACING } from "../../constants/theme";
 import { useGameStore } from "../../store/gameStore";
 import { formatNumber } from "../../utils/yahtzeeScoring";
 
-// Mock progress for now or calculate from store if available.
-// Assuming "Ziel" is a target score for the level/round.
-// Since it's a "Boss Bar", it usually implies Health vs Boss, but here it's likely Score vs Target.
-
 export const GlassHeader = () => {
-  const currentScore = useGameStore((s) => s.currentScore);
-  const targetScore = useGameStore((s) => s.targetScore);
-  const progress = Math.min(Math.max(currentScore / targetScore, 0), 1);
+  const insets = useSafeAreaInsets();
+  const currentLevelIndex = useGameStore((s) => s.currentLevelIndex);
+  const money = useGameStore((s) => s.money);
+  const levelScore = useGameStore((s) => s.levelScore);
+  const levelGoal = useGameStore((s) => s.levelGoal);
+  const handsRemaining = useGameStore((s) => s.handsRemaining);
+
+  const levelNumber = currentLevelIndex + 1;
 
   return (
     <View style={styles.container}>
-      <View style={styles.bossBar}>
-        {/* Left: STAND */}
+      {/* Row 1: Level + Money (overlays notch area) */}
+      <View
+        style={[
+          styles.topRow,
+          {
+            paddingTop: Platform.OS === "ios" ? 8 : insets.top + 4,
+            // Leave space in center for notch/Dynamic Island
+            paddingHorizontal: SPACING.containerPaddingHorizontal,
+          },
+        ]}
+      >
+        <View style={styles.levelContainer}>
+          <Text style={styles.levelLabel}>LEVEL</Text>
+          <Text style={styles.levelValue}>{levelNumber}</Text>
+        </View>
+
+        <View style={styles.handsContainer}>
+          <Text style={styles.handsLabel}>HANDS</Text>
+          <Text style={styles.handsValue}>{handsRemaining}</Text>
+        </View>
+
+        <View style={styles.moneyContainer}>
+          <Text style={styles.moneyValue}>${formatNumber(money)}</Text>
+        </View>
+      </View>
+
+      {/* Row 2: Score + Goal (in safe area) */}
+      <View style={styles.scoreRow}>
+        {/* Left: STAND (current score) */}
         <View style={styles.statBlock}>
           <Text style={styles.label}>STAND</Text>
-          <Text style={styles.value}>{currentScore}</Text>
+          <Text style={styles.value}>{levelScore}</Text>
         </View>
 
-        {/* Middle: Progress Bar */}
-        <View style={styles.progressContainer}>
-          <View style={styles.progressBarBg}>
-            <View
-              style={[styles.progressBarFill, { width: `${progress * 100}%` }]}
-            />
-            {/* Top Bevel Highlight */}
-            <View style={styles.progressBarHighlight} />
-
-            {/* Ticks/Grid lines on progress bar */}
-            {Array.from({ length: 9 }).map((_, i) => (
-              <View
-                key={i}
-                style={[styles.tickMk, { left: `${(i + 1) * 10}%` }]}
-              />
-            ))}
-          </View>
-        </View>
-
-        {/* Right: ZIEL */}
+        {/* Right: ZIEL (goal) */}
         <View style={[styles.statBlock, { alignItems: "flex-end" }]}>
           <Text style={styles.label}>ZIEL</Text>
-          <Text style={styles.value}>{targetScore}</Text>
+          <Text style={styles.value}>{levelGoal}</Text>
         </View>
       </View>
     </View>
@@ -54,19 +64,69 @@ export const GlassHeader = () => {
 const styles = StyleSheet.create({
   container: {
     width: "100%",
+  },
+  // Row 1: Level + Money
+  topRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingBottom: 8,
+  },
+  levelContainer: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 6,
+  },
+  levelLabel: {
+    color: COLORS.textMuted,
+    fontSize: 12,
+    fontFamily: "Inter-SemiBold",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  levelValue: {
+    color: COLORS.cyan,
+    fontSize: 20,
+    fontFamily: "Bungee-Regular",
+  },
+  handsContainer: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 6,
+  },
+  handsLabel: {
+    color: COLORS.textMuted,
+    fontSize: 10,
+    fontFamily: "Inter-SemiBold",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  handsValue: {
+    color: COLORS.text,
+    fontSize: 16,
+    fontFamily: "Bungee-Regular",
+  },
+  moneyContainer: {
+    alignItems: "flex-end",
+  },
+  moneyValue: {
+    color: COLORS.gold,
+    fontSize: 20,
+    fontFamily: "Bungee-Regular",
+    textShadowColor: "rgba(255, 200, 87, 0.3)",
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 8,
+  },
+  // Row 2: Score display
+  scoreRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
     paddingHorizontal: SPACING.containerPaddingHorizontal,
     paddingVertical: 12,
-    marginTop: 4,
-    // Dark strip/panel vibe
     backgroundColor: "rgba(0,0,0,0.2)",
     borderBottomWidth: 1,
     borderBottomColor: "rgba(255,255,255,0.05)",
-  },
-  bossBar: {
-    flexDirection: "row",
-    alignItems: "flex-end", // Align baselines
-    justifyContent: "space-between",
-    gap: 12,
   },
   statBlock: {
     minWidth: 70,
@@ -78,52 +138,15 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: "Inter-Medium",
     textTransform: "uppercase",
-    letterSpacing: 1.5, // +15-20 range (~1.5-2px)
+    letterSpacing: 1.5,
     opacity: 0.8,
     marginBottom: 4,
   },
   value: {
     color: COLORS.text,
-    fontSize: 36, // 36-44pt
-    fontFamily: "Bungee-Regular", // Display font
-    lineHeight: 36, // Tight line height for Bungee
-    // tabular-nums is handled by font variant if supported, or monospace fallback
+    fontSize: 36,
+    fontFamily: "Bungee-Regular",
+    lineHeight: 36,
     fontVariant: ["tabular-nums"],
-  },
-  progressContainer: {
-    flex: 1,
-    height: 40, // Container height to align with big numbers
-    justifyContent: "center",
-    paddingBottom: 4, // Visual alignment correction
-  },
-  progressBarBg: {
-    height: 10,
-    backgroundColor: "rgba(0,0,0,0.3)", // Slightly lighter/darker track
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
-    overflow: "hidden",
-    position: "relative",
-  },
-  progressBarFill: {
-    height: "100%",
-    backgroundColor: COLORS.gold, // Gold fill
-  },
-  // Fake bevel highlight on top
-  progressBarHighlight: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 3,
-    backgroundColor: "rgba(255,255,255,0.3)",
-  },
-  tickMk: {
-    position: "absolute",
-    top: 0,
-    bottom: 0,
-    width: 2, // Slightly thicker for "lamps" vibe
-    backgroundColor: "rgba(0,0,0,0.2)", // Dark ticks on gold looks cool
-    zIndex: 2,
   },
 });

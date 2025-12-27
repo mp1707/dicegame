@@ -2,12 +2,12 @@ import React from "react";
 import { View, StyleSheet } from "react-native";
 import { TileButton, TileButtonVariant } from "../shared";
 import { COLORS, SPACING, DIMENSIONS } from "../../constants/theme";
-import { useGameStore, useValidCategories } from "../../store/gameStore";
-import { CategoryId, CATEGORIES } from "../../utils/yahtzeeScoring";
+import { useGameStore, useValidHands, HandId } from "../../store/gameStore";
+import { CATEGORIES } from "../../utils/yahtzeeScoring";
 import { CategoryIcon } from "../ui/CategoryIcon";
 import { triggerSelectionHaptic } from "../../utils/haptics";
 
-const UPPER_CATEGORIES: CategoryId[] = [
+const UPPER_HANDS: HandId[] = [
   "ones",
   "twos",
   "threes",
@@ -17,86 +17,55 @@ const UPPER_CATEGORIES: CategoryId[] = [
 ];
 
 interface UpperSlotProps {
-  categoryId: CategoryId;
+  handId: HandId;
 }
 
-const UpperSlot = ({ categoryId }: UpperSlotProps) => {
-  const categories = useGameStore((s) => s.categories);
-  const setPendingCategory = useGameStore((s) => s.setPendingCategory);
-  const setPendingScratchCategory = useGameStore(
-    (s) => s.setPendingScratchCategory
-  );
-  const scratchMode = useGameStore((s) => s.scratchMode);
+const UpperSlot = ({ handId }: UpperSlotProps) => {
+  const handLevels = useGameStore((s) => s.handLevels);
+  const usedHandsThisLevel = useGameStore((s) => s.usedHandsThisLevel);
+  const selectedHandId = useGameStore((s) => s.selectedHandId);
+  const selectHand = useGameStore((s) => s.selectHand);
+  const deselectHand = useGameStore((s) => s.deselectHand);
   const phase = useGameStore((s) => s.phase);
-  const hasRolledThisRound = useGameStore((s) => s.hasRolledThisRound);
+  const hasRolledThisHand = useGameStore((s) => s.hasRolledThisHand);
   const isRolling = useGameStore((s) => s.isRolling);
-  const validCategories = useValidCategories();
-  const pendingCategoryId = useGameStore((s) => s.pendingCategoryId);
-  const pendingScratchCategoryId = useGameStore(
-    (s) => s.pendingScratchCategoryId
-  );
-  const clearPendingCategory = useGameStore((s) => s.clearPendingCategory);
-  const clearPendingScratchCategory = useGameStore(
-    (s) => s.clearPendingScratchCategory
-  );
+  const validHands = useValidHands();
 
-  const categoryDef = CATEGORIES.find((c) => c.id === categoryId);
-  const label = categoryDef?.labelDe || categoryId;
+  const categoryDef = CATEGORIES.find((c) => c.id === handId);
+  const label = categoryDef?.labelDe || handId;
+  const handLevel = handLevels[handId];
 
-  const slot = categories[categoryId];
-  const isFilled = slot.score !== null;
-  const canScore =
-    (phase === "rolling" || phase === "scoring") &&
-    hasRolledThisRound &&
-    !isRolling;
-  const isScratchable = canScore && scratchMode && !isFilled;
-
-  const isPossibleBase =
-    canScore &&
-    !scratchMode &&
-    !isFilled &&
-    validCategories.includes(categoryId);
-
-  const isPossible = isPossibleBase;
-  const isScoreSelected = pendingCategoryId === categoryId;
-  const isScratchSelected = pendingScratchCategoryId === categoryId;
-  const isSelected = scratchMode ? isScratchSelected : isScoreSelected;
-  const isPressable = isScratchable || isPossibleBase;
+  // Determine states
+  const isUsed = usedHandsThisLevel.includes(handId);
+  const canInteract =
+    phase === "LEVEL_PLAY" && hasRolledThisHand && !isRolling;
+  const isValid = canInteract && !isUsed && validHands.includes(handId);
+  const isSelected = selectedHandId === handId;
+  const isPressable = isValid;
 
   // Determine variant
   let variant: TileButtonVariant = "default";
-  if (isFilled) variant = "filled";
-  else if (isScratchable) variant = "scratch";
-  else if (isPossible) variant = "active";
+  if (isUsed) variant = "filled";
+  else if (isValid) variant = "active";
 
   // Icon color based on state
-  const iconColor = isFilled
+  const iconColor = isUsed
     ? COLORS.text
-    : isScratchable
-    ? COLORS.coral
     : isSelected
     ? COLORS.cyan
-    : isPossible
+    : isValid
     ? COLORS.cyan
     : COLORS.textMuted;
 
   const handlePress = () => {
-    if (isScratchable) {
-      if (isScratchSelected) {
-        triggerSelectionHaptic();
-        clearPendingScratchCategory();
-      } else {
-        triggerSelectionHaptic();
-        setPendingScratchCategory(categoryId);
-      }
-    } else if (isPossibleBase) {
-      if (isScoreSelected) {
-        triggerSelectionHaptic();
-        clearPendingCategory();
-      } else {
-        triggerSelectionHaptic();
-        setPendingCategory(categoryId);
-      }
+    if (!isPressable) return;
+
+    if (isSelected) {
+      triggerSelectionHaptic();
+      deselectHand();
+    } else {
+      triggerSelectionHaptic();
+      selectHand(handId);
     }
   };
 
@@ -104,14 +73,14 @@ const UpperSlot = ({ categoryId }: UpperSlotProps) => {
     <TileButton
       icon={
         <CategoryIcon
-          categoryId={categoryId}
+          categoryId={handId}
           size={16}
           strokeWidth={2.5}
           color={iconColor}
         />
       }
       label={label}
-      level={1}
+      level={handLevel}
       variant={variant}
       selected={isSelected}
       disabled={!isPressable}
@@ -125,9 +94,9 @@ export const UpperSection = () => {
   return (
     <View style={styles.wrapper}>
       <View style={styles.container}>
-        {UPPER_CATEGORIES.map((id) => (
+        {UPPER_HANDS.map((id) => (
           <View key={id} style={styles.slotWrapper}>
-            <UpperSlot categoryId={id} />
+            <UpperSlot handId={id} />
           </View>
         ))}
       </View>

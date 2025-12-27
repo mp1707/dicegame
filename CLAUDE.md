@@ -81,42 +81,76 @@ module.exports = config;
 ```
 dice-game/
 ├── index.ts                 # Entry point with polyfills
-├── App.tsx                  # Main layout composition
+├── App.tsx                  # Main layout + screen routing
 ├── constants/theme.ts       # Colors, typography, spacing
-├── utils/yahtzeeScoring.ts  # All 13 category scoring logic
-├── store/gameStore.ts       # Zustand state (rounds, categories, phases)
+├── utils/
+│   ├── yahtzeeScoring.ts    # Hand validation logic
+│   └── gameCore.ts          # Scoring, levels, rewards (pure TS)
+├── store/gameStore.ts       # Zustand state (run/level/hand model)
 ├── components/
 │   ├── Die.tsx              # 3D die with tap-to-lock
-│   ├── DiceTray.tsx         # 3D scene + game end overlay
+│   ├── DiceTray.tsx         # 3D scene with physics
 │   ├── ui/
-│   │   ├── GlassHeader.tsx  # Round, progress bar, money
+│   │   ├── GlassHeader.tsx  # Level, score, money
+│   │   ├── ScoreRow.tsx     # Selected hand + reveal animation
 │   │   └── FooterControls.tsx
 │   ├── scoring/
 │   │   ├── UpperSection.tsx # 6 dice slots (1-6)
 │   │   └── LowerSection.tsx # 7 poker hand slots
+│   ├── screens/
+│   │   ├── ResultScreen.tsx # Level complete rewards
+│   │   ├── ShopScreen.tsx   # Shop with upgrades
+│   │   ├── UpgradePickerScreen.tsx
+│   │   └── EndScreen.tsx    # Win/Lose screens
 │   └── modals/
-│       ├── ScratchModal.tsx # Zero out a category
-│       └── ShopModal.tsx    # Placeholder for upgrades
+│       └── OverviewModal.tsx # Hand levels + formulas
 ```
 
 ### Game State (`store/gameStore.ts`)
 
 Key state properties:
 
-- `round` (1-13), `rollsRemaining` (0-3)
-- `categories`: Record of 13 slots with score/filled status
-- `selectedDice`: 5 booleans for locked dice
-- `phase`: `'rolling' | 'scoring' | 'won' | 'lost' | 'shop'` (see phase model below)
+- **Run state** (persists across levels):
+  - `currentLevelIndex` (0-7), `money`, `handLevels` (Record<HandId, number>)
+- **Level state** (resets each level):
+  - `levelScore`, `levelGoal`, `handsRemaining` (4→0), `usedHandsThisLevel`
+- **Hand attempt state** (resets each hand):
+  - `rollsRemaining` (3→0), `hasRolledThisHand`
+- **Dice state**: `diceValues`, `selectedDice`, `isRolling`, `rollTrigger`
+- **UI state**: `phase`, `selectedHandId`, `revealState`
 
-Key actions: `triggerRoll`, `toggleDiceLock`, `submitCategory`, `scratchCategory`
+Key actions: `rollDice`, `selectHand`, `acceptHand`, `finalizeHand`, `cashOutNow`, `pressOn`, `startNewRun`, `startLevel`
 
 ### Game Phase Model
 
-- `rolling`: Default round state. Player can roll while `rollsRemaining > 0` and `isRolling === false`; can lock/unlock dice after the first roll. Scoring or scratching is allowed after any settled roll and ends the round early.
-- `scoring`: Entered automatically when `rollsRemaining` reaches 0 after a roll. Player must submit a category or scratch. Rolling is disabled.
-- `won`: Run complete; wait for shop entry.
-- `lost`: Run failed; wait for retry.
-- `shop`: Shop modal is open.
+- `LEVEL_PLAY`: Main gameplay. Roll dice (up to 3 per hand), lock/unlock, select a hand, press ANNEHMEN to accept. When `levelWon === true`, CASH OUT button appears in grid.
+- `CASHOUT_CHOICE`: Modal after reveal animation if score >= goal. Choose CASH OUT or PRESS ON.
+- `LEVEL_RESULT`: Shows reward breakdown (base win, unused hands/rolls, tier bonus). CTA: SHOP.
+- `SHOP_MAIN`: Shop grid with 3 placeholder items + UPGRADE HAND. CTA: NEXT LEVEL.
+- `SHOP_PICK_UPGRADE`: Pick 1 of 3 random hands to upgrade. Cost: $6 + handLevel.
+- `WIN_SCREEN`: Beat all 8 levels. CTA: NEW RUN.
+- `LOSE_SCREEN`: Ran out of hands with score < goal. CTA: NEW RUN.
+
+### Scoring System (`utils/gameCore.ts`)
+
+Balatro-style formula: `score = (basePoints + pips) × mult`
+
+- **Base Points**: Start at hand's base value, +5 per hand level upgrade
+- **Pips**: Upper section = sum of matching dice; Lower section = sum of all dice
+- **Mult**: Fixed per hand type (1× for upper, 2-4× for lower)
+
+Level goals: 50 → 80 → 120 → 180 → 250 → 350 → 480 → 650
+
+### Reward System
+
+On level complete:
+- Base win: $10
+- Per unused hand: $2
+- Per unused roll: $1
+- Tier 1 bonus (≥125% goal): $5
+- Tier 2 bonus (≥150% goal): $10
+
+Hand upgrade cost: $6 + current hand level
 
 ### Dice Locking Pattern
 
@@ -129,11 +163,11 @@ if (rollTrigger > prevRollTrigger.current && !isSelected) {
 
 ### Slot Visual States
 
-All 13 category slots use 3 states defined in `theme.ts`:
+All 13 hand slots use 3 states defined in `theme.ts`:
 
-- **Active**: Cyan glow, tappable (valid category for current dice)
-- **Filled**: Muted gold, not tappable
-- **Empty**: Grey dash, not tappable
+- **Active**: Cyan glow, tappable (valid hand for current dice, not used this level)
+- **Used**: Muted gold, not tappable (already used this level, resets each level)
+- **Invalid**: Grey dash, not tappable (doesn't match current dice)
 
 ### Dice Tray Sizing
 
