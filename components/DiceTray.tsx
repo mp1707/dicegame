@@ -1,8 +1,9 @@
-import React, { Suspense, useRef, useCallback, useEffect } from "react";
+import React, { Suspense, useRef, useCallback, useEffect, useMemo } from "react";
 import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
-import { Canvas, useThree } from "@react-three/fiber";
+import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import { Physics, RigidBody, CuboidCollider } from "@react-three/rapier";
 import { ContactShadows, Environment } from "@react-three/drei";
+import * as THREE from "three";
 import { Die } from "./Die";
 import { useGameStore } from "../store/gameStore";
 import { COLORS } from "../constants/theme";
@@ -72,6 +73,44 @@ const RenderWarmup = ({ rollTrigger }: { rollTrigger: number }) => {
   return null;
 };
 
+// Camera controller for zoom animation during reveal
+interface CameraControllerProps {
+  defaultHeight: number;
+  isRevealing: boolean;
+}
+
+const CameraController = ({ defaultHeight, isRevealing }: CameraControllerProps) => {
+  const { camera, invalidate } = useThree();
+  const currentHeightRef = useRef(defaultHeight);
+  const targetHeightRef = useRef(defaultHeight);
+
+  // Calculate zoom height (closer to dice during reveal)
+  const zoomHeight = defaultHeight * 0.6; // 40% closer
+
+  useEffect(() => {
+    targetHeightRef.current = isRevealing ? zoomHeight : defaultHeight;
+  }, [isRevealing, zoomHeight, defaultHeight]);
+
+  useFrame((state, delta) => {
+    const target = targetHeightRef.current;
+    const current = currentHeightRef.current;
+
+    // Smooth lerp toward target
+    const lerpSpeed = 4; // Adjust for faster/slower zoom
+    const newHeight = THREE.MathUtils.lerp(current, target, 1 - Math.exp(-lerpSpeed * delta));
+
+    // Only update if there's meaningful change
+    if (Math.abs(newHeight - current) > 0.001) {
+      currentHeightRef.current = newHeight;
+      camera.position.y = newHeight;
+      camera.updateProjectionMatrix();
+      invalidate();
+    }
+  });
+
+  return null;
+};
+
 interface DiceTrayProps {
   containerHeight: number;
   containerWidth: number;
@@ -103,6 +142,9 @@ export const DiceTray = ({
       : []);
   const contributingSet = new Set(contributingIndices);
 
+  // Reveal state tracking
+  const isRevealing = !!revealState?.active;
+
   // Calculate scene scaling based on container height
   const BASE_HEIGHT = 180;
   const BASE_WIDTH = 360;
@@ -127,6 +169,39 @@ export const DiceTray = ({
   const fitWidth = floorWidth / 2 / (halfFovTan * aspect);
   const cameraHeight = Math.max(fitHeight, fitWidth) + 0.4;
 
+  // Calculate arranged positions for reveal animation
+  // Dice line up in center with consistent spacing
+  const DIE_SIZE = 0.7;
+  const arrangedY = 0.25 + DIE_SIZE / 2; // Floor top + half die height
+  const arrangedSpacing = DIE_SIZE * 1.4; // Gap between dice
+  const arrangedSlots = useMemo(() => {
+    return [-2, -1, 0, 1, 2].map((x) => [
+      x * arrangedSpacing,
+      arrangedY,
+      0,
+    ] as [number, number, number]);
+  }, [arrangedSpacing, arrangedY]);
+
+  // Track dice X positions for sorted slot assignment
+  const diceXPositionsRef = useRef<number[]>([0, 0, 0, 0, 0]);
+  const slotAssignmentsRef = useRef<number[]>([0, 1, 2, 3, 4]); // die index -> slot index
+  const wasRevealingRef = useRef(false);
+
+  // When reveal starts, compute slot assignments based on current X positions
+  if (isRevealing && !wasRevealingRef.current) {
+    // Sort dice indices by their X position (left to right)
+    const sortedIndices = [0, 1, 2, 3, 4]
+      .map(i => ({ index: i, x: diceXPositionsRef.current[i] }))
+      .sort((a, b) => a.x - b.x)
+      .map(item => item.index);
+
+    // Assign slots: leftmost die gets slot 0, next gets slot 1, etc.
+    sortedIndices.forEach((dieIndex, slotIndex) => {
+      slotAssignmentsRef.current[dieIndex] = slotIndex;
+    });
+  }
+  wasRevealingRef.current = isRevealing;
+
   // Track settled values and sleep state
   const settledValuesRef = useRef<number[]>([...diceValues]);
   // Track which dice are currently "sleeping" (stopped moving)
@@ -150,6 +225,11 @@ export const DiceTray = ({
   // Callback: Die woke up (started moving)
   const handleDieWake = useCallback((index: number) => {
     isSleepingRef.current[index] = false;
+  }, []);
+
+  // Callback: Die reports its position (called when settling)
+  const handleDiePositionUpdate = useCallback((index: number, x: number) => {
+    diceXPositionsRef.current[index] = x;
   }, []);
 
   // Callback: Die settled (stopped moving)
@@ -217,6 +297,7 @@ export const DiceTray = ({
 
         <Suspense fallback={null}>
           <RenderWarmup rollTrigger={rollTrigger} />
+          <CameraController defaultHeight={cameraHeight} isRevealing={isRevealing} />
           <Physics gravity={[0, -18, 0]} updateLoop="independent">
             {/* Floor - scaled based on container height */}
             <RigidBody type="fixed" restitution={0.05} friction={1}>
@@ -256,10 +337,12 @@ export const DiceTray = ({
                 key={i}
                 index={i}
                 position={[x * diceSpacing, diceSpawnY, 0]}
+                arrangedPosition={arrangedSlots[slotAssignmentsRef.current[i]]}
                 isLocked={selectedDice[i]}
                 isVisible={diceVisible}
                 rollTrigger={rollTrigger}
                 onSettle={handleDieSettle}
+                onPositionUpdate={handleDiePositionUpdate}
                 onWake={handleDieWake}
                 onTap={handleDieTap}
                 isHighlighted={!!revealState?.active && revealState.currentDieIndex === i}

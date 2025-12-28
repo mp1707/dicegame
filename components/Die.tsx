@@ -83,11 +83,13 @@ const DieFace = ({
 
 interface DieProps {
   position: [number, number, number];
+  arrangedPosition: [number, number, number];
   index: number;
   isLocked: boolean;
   isVisible: boolean;
   rollTrigger: number;
   onSettle: (index: number, value: number) => void;
+  onPositionUpdate: (index: number, x: number) => void;
   onTap: (index: number) => void;
   // Animation props for scoring reveal
   isHighlighted: boolean;
@@ -97,11 +99,13 @@ interface DieProps {
 
 export const Die = ({
   position,
+  arrangedPosition,
   index,
   isLocked,
   isVisible,
   rollTrigger,
   onSettle,
+  onPositionUpdate,
   onWake,
   onTap,
   isHighlighted,
@@ -120,6 +124,18 @@ export const Die = ({
   const animatedScaleRef = useRef(1.0);
   const animatedColorRef = useRef(new THREE.Color("#f5f5f5"));
   const animatedOpacityRef = useRef(1.0);
+
+  // Arranged position animation refs
+  const animatedPositionRef = useRef(new THREE.Vector3(...position));
+  const animatedQuaternionRef = useRef(new THREE.Quaternion());
+  const targetQuaternionRef = useRef(new THREE.Quaternion());
+  const targetPositionRef = useRef(new THREE.Vector3());
+  const wasRevealActiveRef = useRef(false);
+  const capturedPhysicsQuaternionRef = useRef(new THREE.Quaternion());
+
+  // Cached color refs to avoid per-frame allocations
+  const goldColorRef = useRef(new THREE.Color(COLORS.gold));
+  const whiteColorRef = useRef(new THREE.Color("#f5f5f5"));
 
   // Highlight pulse tracking
   const wasHighlightedRef = useRef(false);
@@ -212,6 +228,10 @@ export const Die = ({
       }
     });
 
+    // Report position for slot sorting
+    const pos = rigidBody.current.translation();
+    onPositionUpdate(index, pos.x);
+
     // Report settled value to parent
     onSettle(index, resultFace);
   };
@@ -235,15 +255,89 @@ export const Die = ({
 
   // Combined useFrame for settle detection + animation + locked freeze
   useFrame((state, delta) => {
+    // ARRANGED POSITION ANIMATION during reveal
+    if (isRevealActive && rigidBody.current) {
+      // Capture physics state on FIRST reveal frame (before any animation)
+      // This must happen in useFrame, not useEffect, to avoid timing issues
+      if (!wasRevealActiveRef.current) {
+        // Capture current physics position
+        const pos = rigidBody.current.translation();
+        animatedPositionRef.current.set(pos.x, pos.y, pos.z);
+
+        // Capture current physics rotation
+        const rot = rigidBody.current.rotation();
+        capturedPhysicsQuaternionRef.current.set(rot.x, rot.y, rot.z, rot.w);
+        animatedQuaternionRef.current.copy(capturedPhysicsQuaternionRef.current);
+
+        // Calculate target quaternion to show top face upward
+        const upVector = new THREE.Vector3(0, 1, 0);
+        let bestDot = -1;
+        let bestFaceNormal = new THREE.Vector3(0, 1, 0);
+
+        FACE_NORMALS.forEach(({ normal }) => {
+          const worldNormal = normal.clone().applyQuaternion(capturedPhysicsQuaternionRef.current);
+          const dot = worldNormal.dot(upVector);
+          if (dot > bestDot) {
+            bestDot = dot;
+            bestFaceNormal = normal.clone();
+          }
+        });
+
+        // Create quaternion that rotates the best face to point up
+        const rotationToUp = new THREE.Quaternion();
+        rotationToUp.setFromUnitVectors(bestFaceNormal, upVector);
+        targetQuaternionRef.current.copy(rotationToUp);
+
+        wasRevealActiveRef.current = true;
+      }
+
+      // Smooth lerp position toward arranged position (using cached ref)
+      targetPositionRef.current.set(arrangedPosition[0], arrangedPosition[1], arrangedPosition[2]);
+      const posLerpSpeed = 8; // Balanced speed for smooth but snappy movement
+      const posT = 1 - Math.exp(-posLerpSpeed * delta);
+      animatedPositionRef.current.lerp(targetPositionRef.current, posT);
+
+      // Smooth slerp rotation toward target (top face up)
+      animatedQuaternionRef.current.slerp(targetQuaternionRef.current, posT);
+
+      // Apply to RigidBody (disable physics movement)
+      rigidBody.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
+      rigidBody.current.setAngvel({ x: 0, y: 0, z: 0 }, true);
+      rigidBody.current.setTranslation(
+        {
+          x: animatedPositionRef.current.x,
+          y: animatedPositionRef.current.y,
+          z: animatedPositionRef.current.z,
+        },
+        true
+      );
+      rigidBody.current.setRotation(
+        {
+          x: animatedQuaternionRef.current.x,
+          y: animatedQuaternionRef.current.y,
+          z: animatedQuaternionRef.current.z,
+          w: animatedQuaternionRef.current.w,
+        },
+        true
+      );
+    } else if (!isRevealActive) {
+      // Reset tracking when reveal ends
+      wasRevealActiveRef.current = false;
+    }
     // LOCKED DICE: Freeze in place by zeroing velocities every frame
     // This is more stable than changing RigidBody type between fixed/dynamic
-    if (isLocked && rigidBody.current) {
+    else if (isLocked && rigidBody.current) {
       rigidBody.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
       rigidBody.current.setAngvel({ x: 0, y: 0, z: 0 }, true);
     }
 
-    // Settle detection (only for unlocked, unsettled dice)
-    if (!isLocked && !settleReportedRef.current && rigidBody.current) {
+    // Continuously report position for slot sorting (ensures positions are current before reveal)
+    if (!isRevealActive && rigidBody.current && isVisible) {
+      onPositionUpdate(index, rigidBody.current.translation().x);
+    }
+
+    // Settle detection (only for unlocked, unsettled dice, and not during reveal)
+    if (!isLocked && !settleReportedRef.current && rigidBody.current && !isRevealActive) {
       const linvel = rigidBody.current.linvel();
       const angvel = rigidBody.current.angvel();
       const speed = Math.hypot(linvel.x, linvel.y, linvel.z);
@@ -259,21 +353,20 @@ export const Die = ({
       }
     }
 
-    // Animation logic
-    const WHITE = "#f5f5f5";
-    const GOLD = COLORS.gold;
-    const lerpFactor = 1 - Math.pow(0.001, delta);
+    // Animation logic - using proper exponential decay for smooth transitions
+    const lerpFactor = 1 - Math.exp(-12 * delta);
 
     // Calculate target values based on state
     let targetScale: number;
-    let targetColor: string;
     let targetOpacity: number;
+    let useGoldColor: boolean;
+    let applyDirectly = false; // For highlight pulse - apply directly without lerp
 
     if (isHighlighted) {
       // Snappy pulse: quick grow, fast return
       const elapsed = performance.now() - highlightStartTimeRef.current;
       const pulseDuration = 200; // Faster pulse
-      const peakScale = 1.08; // Subtler scale for premium feel
+      const peakScale = 1.12; // Slightly more pronounced for visibility
 
       if (elapsed < pulseDuration * 0.35) {
         // Fast attack (35% of duration)
@@ -290,45 +383,52 @@ export const Die = ({
       } else {
         targetScale = 1.0;
       }
-      targetColor = GOLD;
+      useGoldColor = true;
       targetOpacity = 1.0;
+      applyDirectly = true; // Pulse already has easing, don't re-lerp
     } else if (isRevealActive && !isContributing) {
       // Non-contributing during reveal: dimmed
       targetScale = 1.0;
-      targetColor = WHITE;
+      useGoldColor = false;
       targetOpacity = 0.3;
     } else if (isRevealActive && isContributing) {
       // Contributing but not currently highlighted
       targetScale = 1.0;
-      targetColor = WHITE;
+      useGoldColor = false;
       targetOpacity = 1.0;
     } else if (isLocked) {
       // Normal locked state
       targetScale = 1.1;
-      targetColor = GOLD;
+      useGoldColor = true;
       targetOpacity = 1.0;
     } else {
       // Normal unlocked state
       targetScale = 1.0;
-      targetColor = WHITE;
+      useGoldColor = false;
       targetOpacity = isVisible ? 1.0 : 0.0;
     }
 
-    // Lerp toward targets - faster for snappier feel
-    animatedScaleRef.current = THREE.MathUtils.lerp(
-      animatedScaleRef.current,
-      targetScale,
-      lerpFactor * 18 // Faster scale response
-    );
-    animatedColorRef.current.lerp(
-      new THREE.Color(targetColor),
-      lerpFactor * 12
-    );
-    animatedOpacityRef.current = THREE.MathUtils.lerp(
-      animatedOpacityRef.current,
-      targetOpacity,
-      lerpFactor * 14 // Faster opacity transitions
-    );
+    // Apply animations - direct for highlight, lerped for others
+    if (applyDirectly) {
+      // Direct application - pulse already has its own easing
+      animatedScaleRef.current = targetScale;
+      animatedColorRef.current.copy(goldColorRef.current);
+      animatedOpacityRef.current = targetOpacity;
+    } else {
+      // Smooth lerp transitions
+      animatedScaleRef.current = THREE.MathUtils.lerp(
+        animatedScaleRef.current,
+        targetScale,
+        lerpFactor * 1.5
+      );
+      const colorTarget = useGoldColor ? goldColorRef.current : whiteColorRef.current;
+      animatedColorRef.current.lerp(colorTarget, lerpFactor * 1.2);
+      animatedOpacityRef.current = THREE.MathUtils.lerp(
+        animatedOpacityRef.current,
+        targetOpacity,
+        lerpFactor * 1.4
+      );
+    }
 
     // Apply to refs
     if (groupRef.current) {
