@@ -503,10 +503,8 @@ export const ScoreRow = () => {
     transform: [{ scale: plaqueScale.value }],
   }));
 
-  const plaqueGlowStyle = useAnimatedStyle(() => ({
-    shadowOpacity: plaqueGlow.value * 0.8,
-    shadowRadius: 12 + plaqueGlow.value * 8,
-  }));
+  // Removed shadow glow - plaque is now a flat welded plate
+  const plaqueGlowStyle = useAnimatedStyle(() => ({}));
 
   const seamFlashStyle = useAnimatedStyle(() => ({
     opacity: seamFlash.value,
@@ -636,15 +634,18 @@ export const ScoreRow = () => {
                 %
               </Animated.Text>
             ) : (
-              // Normal: show target icon + goal number
+              // Normal: icon left, stacked GOAL label + number right
               <>
                 <Image
                   source={require("../../assets/icons/target.png")}
                   style={styles.goalIcon}
                 />
-                <Text style={styles.goalNumber}>
-                  {formatCompactNumber(levelGoal)}
-                </Text>
+                <View style={styles.goalTextStack}>
+                  <Text style={styles.goalLabel}>GOAL</Text>
+                  <Text style={styles.goalNumber}>
+                    {formatCompactNumber(levelGoal)}
+                  </Text>
+                </View>
               </>
             )}
           </Animated.View>
@@ -907,9 +908,9 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
 
-  // Seam between bar and plaque - welded endcap look
+  // Seam between bar and plaque - subtle weld groove
   seamLine: {
-    width: 2, // Visible seam for "welded" effect
+    width: 1, // Subtle seam for welded effect
     height: 28,
     backgroundColor: "rgba(0, 0, 0, 0.4)",
     position: "relative",
@@ -927,18 +928,22 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
   },
 
-  // Goal Plaque - flat label at end of progress bar
+  // Goal Plaque - welded endcap plate at end of progress bar
   goalPlaque: {
     width: 70,
     height: 28,
-    backgroundColor: COLORS.surface2, // Neutral surface
+    backgroundColor: COLORS.surface2,
     borderRadius: 8,
     borderTopLeftRadius: 0,
     borderBottomLeftRadius: 0,
-    // Subtle border to define edge without elevation
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.15)",
+    // Inset bevel for plate look (not button)
+    borderTopWidth: 1,
+    borderTopColor: "rgba(0, 0, 0, 0.25)", // Darker top = recessed
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255, 255, 255, 0.1)", // Lighter bottom = raised edge
     borderLeftWidth: 0, // Flush with seam
+    borderRightWidth: 1,
+    borderRightColor: "rgba(255, 255, 255, 0.08)",
     position: "relative",
     overflow: "hidden",
   },
@@ -959,18 +964,23 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 3,
+    gap: 4,
     paddingHorizontal: 6,
   },
   goalIcon: {
-    width: 24, // Same size as coin icon in header
-    height: 24,
+    width: 16, // Smaller to fit stacked layout
+    height: 16,
+  },
+  goalTextStack: {
+    flexDirection: "column",
+    alignItems: "flex-start",
   },
   goalLabel: {
-    fontSize: 8,
+    fontSize: 7,
     fontFamily: "M6x11-Regular",
     color: COLORS.textMuted,
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
+    lineHeight: 8,
   },
   // Overshoot percentage text (shown when bar is fully filled)
   overshootPercent: {
@@ -986,6 +996,7 @@ const styles = StyleSheet.create({
     fontFamily: "M6x11-Regular",
     color: COLORS.text,
     fontVariant: ["tabular-nums"],
+    lineHeight: 14,
     // Shadow for scanline contrast
     textShadowColor: "rgba(0, 0, 0, 0.6)",
     textShadowOffset: { width: 0, height: 1 },

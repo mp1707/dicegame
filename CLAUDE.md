@@ -268,3 +268,188 @@ npx expo run:ios --device
 ```
 
 > **Note**: Must use development build (`expo run:ios`), not Expo Go, due to native modules like `react-native-reanimated` and `react-native-get-random-values`.
+
+---
+
+## Theme System (`constants/theme.ts`)
+
+The app uses a centralized theme with a single font (M6x11 pixel font) and no dark/light mode switching.
+
+### Font
+
+```typescript
+import { FONT_FAMILY } from "../constants/theme";
+// FONT_FAMILY = "M6x11-Regular"
+```
+
+Only one font is loaded in `App.tsx`. All text must use this font.
+
+### GameText Component
+
+Use `GameText` instead of `Text` for all UI text:
+
+```typescript
+import { GameText } from "../shared";
+
+<GameText variant="displayLarge" color={COLORS.gold}>
+  SCORE: 1234
+</GameText>
+
+<GameText variant="bodyMedium" color={COLORS.textMuted}>
+  Select a hand
+</GameText>
+```
+
+**Available variants:**
+- Display: `displayHuge` (44px), `displayLarge` (32px), `displayMedium` (24px), `displaySmall` (20px)
+- Scoreboard: `scoreboardLarge` (28px), `scoreboardMedium` (22px), `scoreboardSmall` (18px) - with tabular nums
+- Body: `bodyLarge` (16px), `bodyMedium` (14px), `bodySmall` (12px)
+- Labels: `label` (11px, uppercase), `labelSmall` (10px, uppercase), `caption` (8px)
+- Buttons: `buttonLarge` (28px), `buttonMedium` (20px), `buttonSmall` (14px)
+
+### Color System
+
+```typescript
+import { COLORS } from "../constants/theme";
+
+// Core colors
+COLORS.bg          // #2A2242 - Main background
+COLORS.surface     // #352B58 - Panel/card background
+COLORS.text        // #FFFFFF - Primary text
+COLORS.textMuted   // #AA9ECF - Secondary text
+COLORS.textDark    // #1A1528 - Text on bright backgrounds
+
+// Accent colors
+COLORS.cyan        // #4DEEEA - Selection, info, neutral
+COLORS.gold        // #FFC857 - Goals, progress, money
+COLORS.coral       // #FF5A7A - Danger, cancel, locked
+COLORS.mint        // #6CFFB8 - Success, confirm, buy
+```
+
+### Overlay Colors
+
+Use these for borders, bevels, and semi-transparent backgrounds instead of hardcoding rgba:
+
+```typescript
+// White overlays (for highlights, top bevels)
+COLORS.overlays.whiteSubtle   // rgba(255,255,255,0.05)
+COLORS.overlays.whiteMild     // rgba(255,255,255,0.1)
+COLORS.overlays.whiteMedium   // rgba(255,255,255,0.15)
+COLORS.overlays.whiteStrong   // rgba(255,255,255,0.2)
+
+// Black overlays (for shadows, bottom bevels)
+COLORS.overlays.blackSubtle   // rgba(0,0,0,0.1)
+COLORS.overlays.blackMild     // rgba(0,0,0,0.2)
+COLORS.overlays.blackMedium   // rgba(0,0,0,0.3)
+COLORS.overlays.backdrop      // rgba(0,0,0,0.7) - Modal backdrops
+
+// Accent overlays
+COLORS.overlays.cyanSubtle    // rgba(77,238,234,0.1)
+COLORS.overlays.cyanMild      // rgba(77,238,234,0.15)
+COLORS.overlays.goldSubtle    // rgba(255,200,87,0.15)
+COLORS.overlays.coralSubtle   // rgba(255,90,122,0.15)
+```
+
+### Shadow Colors (for text glow effects)
+
+```typescript
+COLORS.shadows.gold       // rgba(255,200,87,0.3)
+COLORS.shadows.goldStrong // rgba(255,200,87,0.5)
+COLORS.shadows.cyan       // rgba(77,238,234,0.4)
+COLORS.shadows.black      // rgba(0,0,0,0.6)
+```
+
+### Spacing
+
+```typescript
+import { SPACING } from "../constants/theme";
+
+// Base scale
+SPACING.xxs  // 2
+SPACING.xs   // 4
+SPACING.sm   // 8
+SPACING.md   // 12
+SPACING.lg   // 16
+SPACING.xl   // 20
+SPACING.xxl  // 24
+
+// Semantic
+SPACING.sectionGap              // 16
+SPACING.containerPaddingHorizontal  // 16
+SPACING.modalPadding            // 20
+```
+
+### Dimensions
+
+```typescript
+import { DIMENSIONS } from "../constants/theme";
+
+// Border radii
+DIMENSIONS.borderRadius       // 12 (default)
+DIMENSIONS.borderRadiusSmall  // 8
+DIMENSIONS.borderRadiusLarge  // 16
+
+// Border widths
+DIMENSIONS.borderWidthThin    // 1
+DIMENSIONS.borderWidth        // 2
+DIMENSIONS.borderWidthThick   // 3
+
+// Icon sizes
+DIMENSIONS.iconSize.xs  // 14
+DIMENSIONS.iconSize.sm  // 18
+DIMENSIONS.iconSize.md  // 24
+DIMENSIONS.iconSize.lg  // 28
+DIMENSIONS.iconSize.xl  // 32
+```
+
+### Animation Constants
+
+```typescript
+import { ANIMATION } from "../constants/theme";
+
+// Durations
+ANIMATION.duration.fast    // 75ms
+ANIMATION.duration.normal  // 100ms
+ANIMATION.duration.slow    // 200ms
+
+// Counting animation (ScoreRow)
+ANIMATION.counting.initialDelay      // 640ms
+ANIMATION.counting.perDieDelay       // 560ms
+ANIMATION.counting.handScoreDisplay  // 1000ms
+ANIMATION.counting.totalScoreDisplay // 1600ms
+
+// Spring configs (for reanimated)
+ANIMATION.springs.button  // { damping: 20, stiffness: 400 }
+ANIMATION.springs.modal   // { damping: 25, stiffness: 400, mass: 0.8 }
+```
+
+### Physics Constants
+
+```typescript
+import { PHYSICS } from "../constants/theme";
+
+PHYSICS.die.size          // 0.8
+PHYSICS.reveal.positionLerpSpeed  // 8
+PHYSICS.settle.speedThreshold     // 0.05
+```
+
+### Bevel Pattern (3D Button Effect)
+
+Standard bevel for cards and buttons:
+
+```typescript
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: COLORS.surface,
+    borderRadius: DIMENSIONS.borderRadius,
+    borderWidth: DIMENSIONS.borderWidth,
+    borderColor: COLORS.cyan,
+    // Top highlight
+    borderTopWidth: DIMENSIONS.borderWidthThin,
+    borderTopColor: COLORS.overlays.whiteStrong,
+    // Bottom shadow
+    borderBottomWidth: DIMENSIONS.borderWidthThick,
+    borderBottomColor: COLORS.overlays.blackMedium,
+  },
+})
+```
