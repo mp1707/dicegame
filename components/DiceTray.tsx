@@ -1,4 +1,10 @@
-import React, { Suspense, useRef, useCallback, useEffect, useMemo } from "react";
+import React, {
+  Suspense,
+  useRef,
+  useCallback,
+  useEffect,
+  useMemo,
+} from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import { Physics, RigidBody, CuboidCollider } from "@react-three/rapier";
@@ -68,33 +74,62 @@ const RenderWarmup = ({ rollTrigger }: { rollTrigger: number }) => {
 // Camera controller for zoom animation during reveal
 interface CameraControllerProps {
   defaultHeight: number;
+  defaultFOV: number;
   isRevealing: boolean;
 }
 
-const CameraController = ({ defaultHeight, isRevealing }: CameraControllerProps) => {
+const CameraController = ({
+  defaultHeight,
+  defaultFOV,
+  isRevealing,
+}: CameraControllerProps) => {
   const { camera, invalidate } = useThree();
-  const currentHeightRef = useRef(defaultHeight);
-  const targetHeightRef = useRef(defaultHeight);
+  // Track a single progress value (0 = normal, 1 = reveal)
+  const progressRef = useRef(0);
+  const targetProgressRef = useRef(0);
 
-  // Calculate zoom height (closer to dice during reveal)
-  const zoomHeight = defaultHeight * 0.6; // 40% closer
+  // Target FOV for reveal (narrow = less perspective distortion)
+  const revealFOV = 15;
+  // Zoom factor (< 1 means zoom in slightly on top of the FOV change)
+  const zoomFactor = 0.85;
 
   useEffect(() => {
-    targetHeightRef.current = isRevealing ? zoomHeight : defaultHeight;
-  }, [isRevealing, zoomHeight, defaultHeight]);
+    targetProgressRef.current = isRevealing ? 1 : 0;
+  }, [isRevealing]);
 
   useFrame((state, delta) => {
-    const target = targetHeightRef.current;
-    const current = currentHeightRef.current;
+    const target = targetProgressRef.current;
+    const current = progressRef.current;
 
     // Smooth lerp toward target
-    const lerpSpeed = 4; // Adjust for faster/slower zoom
-    const newHeight = THREE.MathUtils.lerp(current, target, 1 - Math.exp(-lerpSpeed * delta));
+    const lerpSpeed = 4;
+    const newProgress = THREE.MathUtils.lerp(
+      current,
+      target,
+      1 - Math.exp(-lerpSpeed * delta)
+    );
 
     // Only update if there's meaningful change
-    if (Math.abs(newHeight - current) > 0.001) {
-      currentHeightRef.current = newHeight;
-      camera.position.y = newHeight;
+    if (Math.abs(newProgress - current) > 0.0001) {
+      progressRef.current = newProgress;
+
+      // Interpolate FOV
+      const currentFOV = THREE.MathUtils.lerp(
+        defaultFOV,
+        revealFOV,
+        newProgress
+      );
+
+      // Calculate height to maintain CONSTANT visible floor size at each FOV
+      // Plus apply zoom factor for slight zoom-in effect
+      const baseHeight =
+        (defaultHeight * Math.tan((defaultFOV * Math.PI) / 360)) /
+        Math.tan((currentFOV * Math.PI) / 360);
+      const zoomAdjust = THREE.MathUtils.lerp(1, zoomFactor, newProgress);
+      const currentHeight = baseHeight * zoomAdjust;
+
+      camera.position.y = currentHeight;
+      (camera as THREE.PerspectiveCamera).fov = currentFOV;
       camera.updateProjectionMatrix();
       invalidate();
     }
@@ -163,13 +198,11 @@ export const DiceTray = ({
   // Dice line up in center with consistent spacing
   const DIE_SIZE = 0.7;
   const arrangedY = 0.25 + DIE_SIZE / 2; // Floor top + half die height
-  const arrangedSpacing = DIE_SIZE * 1.4; // Gap between dice
+  const arrangedSpacing = DIE_SIZE * 1.8; // Gap between dice (increased for readability)
   const arrangedSlots = useMemo(() => {
-    return [-2, -1, 0, 1, 2].map((x) => [
-      x * arrangedSpacing,
-      arrangedY,
-      0,
-    ] as [number, number, number]);
+    return [-2, -1, 0, 1, 2].map(
+      (x) => [x * arrangedSpacing, arrangedY, 0] as [number, number, number]
+    );
   }, [arrangedSpacing, arrangedY]);
 
   // Track dice X positions for sorted slot assignment
@@ -181,9 +214,9 @@ export const DiceTray = ({
   if (isRevealing && !wasRevealingRef.current) {
     // Sort dice indices by their X position (left to right)
     const sortedIndices = [0, 1, 2, 3, 4]
-      .map(i => ({ index: i, x: diceXPositionsRef.current[i] }))
+      .map((i) => ({ index: i, x: diceXPositionsRef.current[i] }))
       .sort((a, b) => a.x - b.x)
-      .map(item => item.index);
+      .map((item) => item.index);
 
     // Assign slots: leftmost die gets slot 0, next gets slot 1, etc.
     sortedIndices.forEach((dieIndex, slotIndex) => {
@@ -287,7 +320,11 @@ export const DiceTray = ({
 
         <Suspense fallback={null}>
           <RenderWarmup rollTrigger={rollTrigger} />
-          <CameraController defaultHeight={cameraHeight} isRevealing={isRevealing} />
+          <CameraController
+            defaultHeight={cameraHeight}
+            defaultFOV={adjustedFOV}
+            isRevealing={isRevealing}
+          />
           <Physics gravity={[0, -18, 0]} updateLoop="independent">
             {/* Floor - scaled based on container height */}
             <RigidBody type="fixed" restitution={0.05} friction={1}>
@@ -335,7 +372,9 @@ export const DiceTray = ({
                 onPositionUpdate={handleDiePositionUpdate}
                 onWake={handleDieWake}
                 onTap={handleDieTap}
-                isHighlighted={!!revealState?.active && revealState.currentDieIndex === i}
+                isHighlighted={
+                  !!revealState?.active && revealState.currentDieIndex === i
+                }
                 isContributing={contributingSet.has(i)}
                 isRevealActive={!!revealState?.active}
               />
@@ -356,7 +395,6 @@ export const DiceTray = ({
           </Text>
         </Text>
       </View>
-
 
       {/* Game End Overlay */}
       <GameEndOverlay />
