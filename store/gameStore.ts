@@ -32,9 +32,10 @@ export interface RevealState {
   active: boolean;
   breakdown: ScoringBreakdown | null;
   // Animation tracking
-  animationPhase: "counting" | "final";
+  animationPhase: "counting" | "final" | "total";
   currentDieIndex: number; // Which die is being animated (-1 = none yet)
   accumulatedPips: number; // Running total of pips counted so far
+  displayTotal?: number; // The total level score to display in "total" phase
 }
 
 interface GameState {
@@ -425,13 +426,8 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   openShop: () => {
     // Calculate and apply rewards before entering shop
-    const {
-      money,
-      levelScore,
-      levelGoal,
-      handsRemaining,
-      rollsUsedThisLevel,
-    } = get();
+    const { money, levelScore, levelGoal, handsRemaining, rollsUsedThisLevel } =
+      get();
 
     const rewards = calculateRewards({
       currentMoney: money,

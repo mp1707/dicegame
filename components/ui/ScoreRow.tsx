@@ -5,7 +5,9 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   withSequence,
+  withDelay,
   Easing,
+  interpolateColor,
   SharedValue,
 } from "react-native-reanimated";
 import { COLORS, SPACING } from "../../constants/theme";
@@ -16,6 +18,10 @@ import {
   getBasePoints,
   getContributingDiceIndices,
 } from "../../utils/gameCore";
+import {
+  triggerSelectionHaptic,
+  triggerLightImpact,
+} from "../../utils/haptics";
 
 export const ScoreRow = () => {
   const selectedHandId = useGameStore((s) => s.selectedHandId);
@@ -26,9 +32,10 @@ export const ScoreRow = () => {
   const updateRevealAnimation = useGameStore((s) => s.updateRevealAnimation);
 
   // Animation values
-  // Animation values
   const pointsScale = useSharedValue(1);
   const finalScoreScale = useSharedValue(1);
+  const totalScoreScale = useSharedValue(1);
+  const totalColorProgress = useSharedValue(0); // 0 = gold, 1 = white
 
   // Track animation in progress
   const animationInProgress = useRef(false);
@@ -47,8 +54,8 @@ export const ScoreRow = () => {
   const mult = selectedHandId ? HAND_BASE_CONFIG[selectedHandId].mult : 1;
 
   // Snappy timing config - fast attack, quick settle
-  const snapTiming = { duration: 120, easing: Easing.out(Easing.cubic) };
-  const returnTiming = { duration: 100, easing: Easing.inOut(Easing.quad) };
+  const snapTiming = { duration: 100, easing: Easing.out(Easing.cubic) };
+  const returnTiming = { duration: 80, easing: Easing.inOut(Easing.quad) };
 
   // Run reveal animation when revealState becomes active
   useEffect(() => {
@@ -61,28 +68,69 @@ export const ScoreRow = () => {
     }
 
     animationInProgress.current = true;
-    const { contributingIndices, basePoints: bp } = revealState.breakdown;
+    const {
+      contributingIndices,
+      basePoints: bp,
+      finalScore,
+    } = revealState.breakdown;
     const currentDiceValues = useGameStore.getState().diceValues;
+    const currentLevelScore = useGameStore.getState().levelScore;
 
     let accumulatedPips = 0;
     let dieIdx = 0;
 
     const animateNextDie = () => {
       if (dieIdx >= contributingIndices.length) {
-        // All dice counted - show final score, clear highlight
+        // All dice counted - show hand score (white), clear highlight
         updateRevealAnimation({ animationPhase: "final", currentDieIndex: -1 });
 
-        // Snappy pop for final score - quick scale up, fast settle
+        // Haptic for hand score reveal
+        triggerSelectionHaptic();
+
+        // Snappy pop for hand score
         finalScoreScale.value = withSequence(
-          withTiming(1.08, { duration: 100, easing: Easing.out(Easing.back(1.5)) }),
-          withTiming(1, { duration: 80, easing: Easing.out(Easing.quad) })
+          withTiming(1.08, {
+            duration: 80,
+            easing: Easing.out(Easing.back(1.5)),
+          }),
+          withTiming(1, { duration: 64, easing: Easing.out(Easing.quad) })
         );
 
-        // Hold for 2 seconds then finalize
+        // After 560ms (matching dice tick timing), transition to total score phase
         setTimeout(() => {
-          animationInProgress.current = false;
-          finalizeHand();
-        }, 2000);
+          // Update to total phase with new total
+          updateRevealAnimation({
+            animationPhase: "total",
+            displayTotal: currentLevelScore + finalScore,
+          });
+
+          // Haptic for total score reveal (slightly stronger)
+          triggerLightImpact();
+
+          // Reset color progress for gold start
+          totalColorProgress.value = 0;
+
+          // Snappy pop for total score
+          totalScoreScale.value = withSequence(
+            withTiming(1.08, {
+              duration: 80,
+              easing: Easing.out(Easing.back(1.5)),
+            }),
+            withTiming(1, { duration: 64, easing: Easing.out(Easing.quad) })
+          );
+
+          // Fade from gold to white over 1 second
+          totalColorProgress.value = withDelay(
+            200, // Start after the scale pop
+            withTiming(1, { duration: 800, easing: Easing.out(Easing.quad) })
+          );
+
+          // Hold for 1.6 seconds total, then finalize
+          setTimeout(() => {
+            animationInProgress.current = false;
+            finalizeHand();
+          }, 1600);
+        }, 560);
         return;
       }
 
@@ -98,21 +146,24 @@ export const ScoreRow = () => {
         accumulatedPips,
       });
 
+      // Subtle haptic on each counting tick
+      triggerSelectionHaptic();
+
       // Snappy pop on points update
       pointsScale.value = withSequence(
         withTiming(1.06, snapTiming),
         withTiming(1, returnTiming)
       );
 
-      // Wait then animate next die
+      // Wait then animate next die (20% faster: 700ms -> 560ms)
       setTimeout(() => {
         dieIdx++;
         animateNextDie();
-      }, 700);
+      }, 560);
     };
 
-    // Start animation after short delay
-    setTimeout(animateNextDie, 800);
+    // Start animation after short delay (20% faster: 800ms -> 640ms)
+    setTimeout(animateNextDie, 640);
   }, [revealState?.active]);
 
   // Reset animation when reveal ends
@@ -120,6 +171,8 @@ export const ScoreRow = () => {
     if (!revealState?.active) {
       pointsScale.value = 1;
       finalScoreScale.value = 1;
+      totalScoreScale.value = 1;
+      totalColorProgress.value = 0;
       animationInProgress.current = false;
     }
   }, [revealState?.active]);
@@ -131,6 +184,15 @@ export const ScoreRow = () => {
 
   const finalScoreAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: finalScoreScale.value }],
+  }));
+
+  const totalScoreAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: totalScoreScale.value }],
+    color: interpolateColor(
+      totalColorProgress.value,
+      [0, 1],
+      [COLORS.gold, COLORS.text]
+    ),
   }));
 
   // Determine contributing indices (from breakdown during reveal, or calculate from selected hand)
@@ -153,10 +215,17 @@ export const ScoreRow = () => {
   if (!selectedHandId) {
     // Case: No hand selected -> Show total level score
     scoreComponent = <Text style={styles.standScore}>{levelScore}</Text>;
-  } else if (revealState?.active && revealState.animationPhase === "final") {
-    // Case: Reveal finished -> Show final score
+  } else if (revealState?.active && revealState.animationPhase === "total") {
+    // Case: Total phase -> Show total score (gold fading to white)
     scoreComponent = (
-      <Animated.Text style={[styles.finalScore, finalScoreAnimatedStyle]}>
+      <Animated.Text style={[styles.totalScore, totalScoreAnimatedStyle]}>
+        {revealState.displayTotal}
+      </Animated.Text>
+    );
+  } else if (revealState?.active && revealState.animationPhase === "final") {
+    // Case: Hand score phase -> Show hand score (white)
+    scoreComponent = (
+      <Animated.Text style={[styles.handScore, finalScoreAnimatedStyle]}>
         {revealState.breakdown?.finalScore}
       </Animated.Text>
     );
@@ -274,6 +343,20 @@ const styles = StyleSheet.create({
     textShadowColor: "rgba(255, 200, 87, 0.4)",
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 10,
+  },
+  // Hand score (shown after dice counting) - white
+  handScore: {
+    color: COLORS.text,
+    fontSize: 24,
+    fontFamily: "Bungee-Regular",
+  },
+  // Total score (animated gold -> white)
+  totalScore: {
+    fontSize: 24,
+    fontFamily: "Bungee-Regular",
+    textShadowColor: "rgba(255, 200, 87, 0.3)",
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 8,
   },
   standScore: {
     color: COLORS.text,

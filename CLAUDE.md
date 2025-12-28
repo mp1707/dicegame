@@ -201,12 +201,16 @@ When a player accepts a hand, a coordinated reveal animation plays across multip
   - Slerps rotation toward flat orientation
   - Physics disabled by zeroing velocities while animation runs
 
-**4. ScoreRow counting animation**
+**4. ScoreRow counting animation (3 phases)**
 
-- Iterates through `contributingIndices` one by one
-- Updates `currentDieIndex` to highlight each die in turn
-- Accumulates pips and animates score display
-- After all dice counted, shows final score for 2 seconds, then calls `finalizeHand()`
+- **Counting phase**: Iterates through `contributingIndices` one by one
+  - Updates `currentDieIndex` to highlight each die in turn
+  - Accumulates pips and animates score display
+  - Per-die delay: 560ms (was 700ms, 20% faster)
+- **Final phase** (1s): Shows hand score in white (e.g., "120")
+- **Total phase** (1.6s): Shows new total score, starting gold with glow, fading to white over 1s
+  - This ensures the total is always visible before phase transitions (e.g., LEVEL_RESULT)
+  - After total phase completes, calls `finalizeHand()`
 
 **5. Die visual states during reveal**
 
@@ -219,8 +223,10 @@ When a player accepts a hand, a coordinated reveal animation plays across multip
 - Position lerp speed: 8 (exponential decay)
 - Delta cap: 33ms (prevents instant jumps after frame gaps)
 - Highlight pulse: 200ms (35% attack, 65% settle)
-- Per-die counting delay: 700ms
-- Final score display: 2000ms
+- Per-die counting delay: 560ms
+- Initial delay before counting: 640ms
+- Hand score display: 1000ms
+- Total score display: 1600ms
 
 ### Slot Visual States
 
