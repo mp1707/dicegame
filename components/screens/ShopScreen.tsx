@@ -1,9 +1,9 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { ArrowUp, Lock, ShoppingBag } from "lucide-react-native";
 import { Pressable3DBase } from "../ui/Pressable3DBase";
-import { PrimaryButton } from "../shared";
-import { COLORS, SPACING, DIMENSIONS, TYPOGRAPHY } from "../../constants/theme";
+import { PrimaryButton, GameText } from "../shared";
+import { COLORS, SPACING, DIMENSIONS } from "../../constants/theme";
 import { useGameStore } from "../../store/gameStore";
 import { formatNumber } from "../../utils/yahtzeeScoring";
 import { triggerSelectionHaptic } from "../../utils/haptics";
@@ -46,18 +46,22 @@ const ShopItem = ({
   >
     <View style={styles.shopItemContent}>
       {icon}
-      <Text
-        style={[styles.shopItemLabel, disabled && styles.disabledText]}
+      <GameText
+        variant="bodySmall"
+        color={disabled ? COLORS.textMuted : COLORS.text}
         numberOfLines={1}
+        style={[styles.shopItemLabel, disabled && styles.disabledText]}
       >
         {label}
-      </Text>
+      </GameText>
       {sublabel && (
-        <Text
-          style={[styles.shopItemSublabel, disabled && styles.disabledText]}
+        <GameText
+          variant="labelSmall"
+          color={COLORS.textMuted}
+          style={disabled && styles.disabledText}
         >
           {sublabel}
-        </Text>
+        </GameText>
       )}
     </View>
   </Pressable3DBase>
@@ -90,18 +94,22 @@ export const ShopScreen = () => {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <ShoppingBag size={28} color={COLORS.cyan} />
-        <Text style={styles.title}>SHOP</Text>
+        <ShoppingBag size={DIMENSIONS.iconSize.lg} color={COLORS.cyan} />
+        <GameText variant="displayLarge" style={styles.title}>
+          SHOP
+        </GameText>
       </View>
 
       {/* Money display */}
-      <Text style={styles.moneyDisplay}>${formatNumber(money)}</Text>
+      <GameText variant="displayHuge" color={COLORS.gold} style={styles.moneyDisplay}>
+        ${formatNumber(money)}
+      </GameText>
 
       {/* Shop grid */}
       <View style={styles.grid}>
         {/* Upgrade Hand - Active */}
         <ShopItem
-          icon={<ArrowUp size={28} color={COLORS.mint} strokeWidth={3} />}
+          icon={<ArrowUp size={DIMENSIONS.iconSize.lg} color={COLORS.mint} strokeWidth={3} />}
           label="UPGRADE HAND"
           sublabel="Boost a hand's power"
           onPress={handleUpgrade}
@@ -109,21 +117,21 @@ export const ShopScreen = () => {
 
         {/* Placeholder items - Disabled */}
         <ShopItem
-          icon={<Lock size={24} color={COLORS.textMuted} />}
+          icon={<Lock size={DIMENSIONS.iconSize.md} color={COLORS.textMuted} />}
           label="COMING SOON"
           sublabel="Joker cards"
           disabled
         />
 
         <ShopItem
-          icon={<Lock size={24} color={COLORS.textMuted} />}
+          icon={<Lock size={DIMENSIONS.iconSize.md} color={COLORS.textMuted} />}
           label="COMING SOON"
           sublabel="Extra dice"
           disabled
         />
 
         <ShopItem
-          icon={<Lock size={24} color={COLORS.textMuted} />}
+          icon={<Lock size={DIMENSIONS.iconSize.md} color={COLORS.textMuted} />}
           label="COMING SOON"
           sublabel="Special powers"
           disabled
@@ -147,36 +155,30 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: SPACING.containerPaddingHorizontal,
-    paddingTop: 16,
-    paddingBottom: 24,
+    paddingTop: SPACING.lg,
+    paddingBottom: SPACING.xxl,
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 10,
-    marginBottom: 16,
+    gap: SPACING.sm + 2,
+    marginBottom: SPACING.lg,
   },
   title: {
-    color: COLORS.text,
-    fontSize: 28,
-    fontFamily: "Bungee-Regular",
     letterSpacing: 2,
   },
   moneyDisplay: {
-    color: COLORS.gold,
-    fontSize: 40,
-    fontFamily: "Bungee-Regular",
     textAlign: "center",
-    marginBottom: 24,
-    textShadowColor: "rgba(255, 200, 87, 0.4)",
+    marginBottom: SPACING.xxl,
+    textShadowColor: COLORS.shadows.goldStrong,
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 15,
   },
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 12,
+    gap: SPACING.md,
     justifyContent: "center",
     flex: 1,
   },
@@ -192,44 +194,34 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: COLORS.surface,
     borderRadius: DIMENSIONS.borderRadius,
-    borderWidth: 2,
+    borderWidth: DIMENSIONS.borderWidth,
     borderColor: COLORS.border,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.15)",
-    borderBottomWidth: 4,
-    borderBottomColor: "rgba(0,0,0,0.3)",
+    borderTopWidth: DIMENSIONS.borderWidthThin,
+    borderTopColor: COLORS.overlays.whiteMedium,
+    borderBottomWidth: DIMENSIONS.borderWidthThick + 1,
+    borderBottomColor: COLORS.overlays.blackMedium,
   },
   disabledItemFace: {
     backgroundColor: COLORS.bg,
-    borderColor: "rgba(255,255,255,0.05)",
+    borderColor: COLORS.overlays.whiteSubtle,
   },
   shopItemContent: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 12,
-    gap: 8,
+    padding: SPACING.md,
+    gap: SPACING.sm,
   },
   shopItemLabel: {
-    color: COLORS.text,
-    fontSize: 12,
-    fontFamily: "Inter-Bold",
     textAlign: "center",
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
-  shopItemSublabel: {
-    color: COLORS.textMuted,
-    fontSize: 10,
-    fontFamily: "Inter-Medium",
-    textAlign: "center",
-  },
   disabledText: {
-    color: COLORS.textMuted,
     opacity: 0.6,
   },
   footer: {
-    marginTop: 16,
+    marginTop: SPACING.lg,
     alignItems: "center",
   },
   button: {

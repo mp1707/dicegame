@@ -8,13 +8,7 @@ import {
   Platform,
 } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
-import { useFonts, Bungee_400Regular } from "@expo-google-fonts/bungee";
-import {
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
-} from "@expo-google-fonts/inter";
+import { useFonts } from "expo-font";
 import { DiceTray } from "./components/DiceTray";
 import { GlassHeader } from "./components/ui/GlassHeader";
 import { ScoreRow } from "./components/ui/ScoreRow";
@@ -27,16 +21,8 @@ import { useGameStore } from "./store/gameStore";
 import { COLORS, calculateDiceTrayHeight } from "./constants/theme";
 
 export default function App() {
-  // Load fonts
+  // Load single font (M6x11)
   const [fontsLoaded] = useFonts({
-    "Bungee-Regular": Bungee_400Regular,
-    "Inter-Regular": Inter_400Regular,
-    "Inter-Medium": Inter_500Medium,
-    "Inter-SemiBold": Inter_600SemiBold,
-    "Inter-Bold": Inter_700Bold,
-    "RobotoMono-Regular": require("./assets/fonts/RobotoMono-Regular.ttf"),
-    "RobotoMono-Bold": require("./assets/fonts/RobotoMono-Regular.ttf"),
-    "PressStart2P-Regular": require("./assets/fonts/PressStart2P-Regular.ttf"),
     "M6x11-Regular": require("./assets/fonts/m6x11.ttf"),
   });
 

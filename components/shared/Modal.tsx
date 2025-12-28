@@ -1,7 +1,6 @@
 import React from "react";
 import {
   View,
-  Text,
   StyleSheet,
   TouchableWithoutFeedback,
   ViewStyle,
@@ -9,7 +8,13 @@ import {
 } from "react-native";
 import Animated, { FadeIn, SlideInUp } from "react-native-reanimated";
 import { X } from "lucide-react-native";
-import { COLORS, DIMENSIONS, SPACING } from "../../constants/theme";
+import {
+  COLORS,
+  DIMENSIONS,
+  SPACING,
+  ANIMATION,
+} from "../../constants/theme";
+import { GameText } from "./GameText";
 import { triggerLightImpact } from "../../utils/haptics";
 
 export type ModalVariant = "default" | "success" | "danger";
@@ -53,7 +58,7 @@ export const Modal = ({
   return (
     <View style={styles.absoluteFill} pointerEvents="auto">
       {/* Scrim */}
-      <Animated.View entering={FadeIn.duration(100)} style={styles.scrim}>
+      <Animated.View entering={FadeIn.duration(ANIMATION.duration.normal)} style={styles.scrim}>
         <TouchableWithoutFeedback onPress={handleClose}>
           <View style={StyleSheet.absoluteFill} />
         </TouchableWithoutFeedback>
@@ -63,20 +68,21 @@ export const Modal = ({
       <View style={styles.centerContainer} pointerEvents="box-none">
         <Animated.View
           entering={SlideInUp.springify()
-            .damping(25)
-            .stiffness(400)
-            .mass(0.8)
-            .damping(35)}
+            .damping(ANIMATION.springs.modal.damping)
+            .stiffness(ANIMATION.springs.modal.stiffness)
+            .mass(ANIMATION.springs.modal.mass)}
           style={[styles.card, { borderColor }]}
         >
           {/* Header */}
           {(title || (showCloseButton && onClose)) && (
             <View style={styles.header}>
-              <Text style={styles.title}>{title || ""}</Text>
+              <GameText variant="displaySmall" style={styles.title}>
+                {title || ""}
+              </GameText>
               {showCloseButton && onClose && (
                 <TouchableWithoutFeedback onPress={handleClose}>
                   <View style={styles.closeBtn}>
-                    <X size={20} color={COLORS.textMuted} />
+                    <X size={DIMENSIONS.iconSize.sm + 2} color={COLORS.textMuted} />
                   </View>
                 </TouchableWithoutFeedback>
               )}
@@ -100,7 +106,7 @@ const styles = StyleSheet.create({
   },
   scrim: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(42, 34, 66, 0.6)",
+    backgroundColor: COLORS.overlays.backdrop,
   },
   centerContainer: {
     flex: 1,
@@ -127,26 +133,23 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.05)",
+    paddingHorizontal: SPACING.modalPadding,
+    paddingVertical: SPACING.modalHeaderPadding,
+    borderBottomWidth: DIMENSIONS.borderWidthThin,
+    borderBottomColor: COLORS.overlays.whiteSubtle,
   },
   title: {
-    fontFamily: "Bungee-Regular",
-    fontSize: 20,
-    color: COLORS.text,
     letterSpacing: 1,
   },
   closeBtn: {
     width: 36,
     height: 36,
-    backgroundColor: "rgba(255,255,255,0.05)",
-    borderRadius: 8,
+    backgroundColor: COLORS.overlays.whiteSubtle,
+    borderRadius: DIMENSIONS.borderRadiusSmall,
     justifyContent: "center",
     alignItems: "center",
   },
   content: {
-    padding: 20,
+    padding: SPACING.modalPadding,
   },
 });

@@ -48,103 +48,225 @@ export const COLORS = {
   magenta: "#FF3CF2",
   amber: "#FFC857",
   cyanGlow: "rgba(77, 238, 234, 0.4)",
+
+  // Overlay colors (for borders, bevels, backgrounds)
+  overlays: {
+    whiteSubtle: "rgba(255,255,255,0.05)",
+    whiteMild: "rgba(255,255,255,0.1)",
+    whiteMedium: "rgba(255,255,255,0.15)",
+    whiteStrong: "rgba(255,255,255,0.2)",
+    blackSubtle: "rgba(0,0,0,0.1)",
+    blackMild: "rgba(0,0,0,0.2)",
+    blackMedium: "rgba(0,0,0,0.3)",
+    blackStrong: "rgba(0,0,0,0.4)",
+    backdrop: "rgba(0,0,0,0.7)",
+    backdropStrong: "rgba(0,0,0,0.75)",
+    cyanSubtle: "rgba(77, 238, 234, 0.1)",
+    cyanMild: "rgba(77, 238, 234, 0.15)",
+    goldSubtle: "rgba(255, 200, 87, 0.15)",
+    goldMild: "rgba(255, 200, 87, 0.3)",
+    coralSubtle: "rgba(255, 90, 122, 0.15)",
+    coralMild: "rgba(255, 90, 122, 0.3)",
+  },
+
+  // Shadow colors for text glows
+  shadows: {
+    gold: "rgba(255, 200, 87, 0.3)",
+    goldStrong: "rgba(255, 200, 87, 0.5)",
+    cyan: "rgba(77, 238, 234, 0.4)",
+    black: "rgba(0, 0, 0, 0.6)",
+  },
 } as const;
 
-// Typography - Split into Display (Bungee) and UI (Inter)
+// Font family constant
+export const FONT_FAMILY = "M6x11-Regular";
+
+// Typography - All M6x11 pixel font
 export const TYPOGRAPHY = {
   // Display - Big numbers, Headers, "WURF"
   displayHuge: {
-    fontFamily: "Bungee-Regular",
+    fontFamily: FONT_FAMILY,
     fontSize: 44,
     color: COLORS.text,
   },
   displayLarge: {
-    fontFamily: "Bungee-Regular",
+    fontFamily: FONT_FAMILY,
     fontSize: 32,
     color: COLORS.text,
   },
   displayMedium: {
-    fontFamily: "Bungee-Regular",
-    fontSize: 24, // Use for "WURF"
+    fontFamily: FONT_FAMILY,
+    fontSize: 24,
     color: COLORS.text,
   },
   displaySmall: {
-    fontFamily: "Bungee-Regular",
-    fontSize: 16,
+    fontFamily: FONT_FAMILY,
+    fontSize: 20,
     color: COLORS.text,
   },
 
-  // Scoreboard - VT323 for retro LED scoreboard numbers
+  // Scoreboard - retro LED scoreboard numbers
   scoreboardLarge: {
-    fontFamily: "Bungee-Regular",
+    fontFamily: FONT_FAMILY,
     fontSize: 28,
     color: COLORS.text,
     fontVariant: ["tabular-nums"] as any,
   },
   scoreboardMedium: {
-    fontFamily: "Bungee-Regular",
+    fontFamily: FONT_FAMILY,
     fontSize: 22,
     color: COLORS.text,
     fontVariant: ["tabular-nums"] as any,
   },
   scoreboardSmall: {
-    fontFamily: "Bungee-Regular",
+    fontFamily: FONT_FAMILY,
     fontSize: 18,
     color: COLORS.text,
     fontVariant: ["tabular-nums"] as any,
   },
 
-  // UI - Labels, readable numbers, body
-  // Inter supports tabular numbers (tnum) by default features usually, or we ensure mono-look
-  scoreValue: {
-    fontFamily: "Inter-Bold",
-    fontSize: 14, // Slightly bigger
+  // Body text sizes
+  bodyLarge: {
+    fontFamily: FONT_FAMILY,
+    fontSize: 16,
     color: COLORS.text,
-    fontVariant: ["tabular-nums"] as any, // Tabular numbers! Cast to any to avoid readonly issues
   },
+  bodyMedium: {
+    fontFamily: FONT_FAMILY,
+    fontSize: 14,
+    color: COLORS.text,
+  },
+  bodySmall: {
+    fontFamily: FONT_FAMILY,
+    fontSize: 12,
+    color: COLORS.textMuted,
+  },
+
+  // Labels and captions
   label: {
-    fontFamily: "Inter-SemiBold",
+    fontFamily: FONT_FAMILY,
     fontSize: 11,
     color: COLORS.textMuted,
     textTransform: "uppercase" as const,
     letterSpacing: 0.5,
   },
+  labelSmall: {
+    fontFamily: FONT_FAMILY,
+    fontSize: 10,
+    color: COLORS.textMuted,
+    textTransform: "uppercase" as const,
+    letterSpacing: 0.5,
+  },
+  caption: {
+    fontFamily: FONT_FAMILY,
+    fontSize: 8,
+    color: COLORS.textMuted,
+  },
+
+  // Button text
+  buttonLarge: {
+    fontFamily: FONT_FAMILY,
+    fontSize: 28,
+    color: COLORS.textDark,
+  },
+  buttonMedium: {
+    fontFamily: FONT_FAMILY,
+    fontSize: 20,
+    color: COLORS.textDark,
+  },
+  buttonSmall: {
+    fontFamily: FONT_FAMILY,
+    fontSize: 14,
+    color: COLORS.textDark,
+  },
+
+  // Legacy aliases (for backwards compatibility)
+  scoreValue: {
+    fontFamily: FONT_FAMILY,
+    fontSize: 14,
+    color: COLORS.text,
+    fontVariant: ["tabular-nums"] as any,
+  },
   body: {
-    fontFamily: "Inter-Medium",
+    fontFamily: FONT_FAMILY,
     fontSize: 12,
     color: COLORS.textMuted,
   },
   smallText: {
-    fontFamily: "Inter-Regular",
+    fontFamily: FONT_FAMILY,
     fontSize: 10,
     color: COLORS.textMuted,
   },
   button: {
-    fontFamily: "Bungee-Regular",
+    fontFamily: FONT_FAMILY,
     fontSize: 18,
     color: COLORS.textDark,
   },
 } as const;
 
-// Spacing
+// Spacing - Base scale with semantic aliases
 export const SPACING = {
+  // Base scale (4px increments)
+  xxs: 2,
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  xxl: 24,
+
+  // Semantic spacing
   screenPadding: 8,
   sectionGap: 16,
-  slotGapHorizontal: 8,
-  slotGapVertical: 8,
   containerPaddingHorizontal: 16,
   containerPaddingVertical: 12,
+
+  // Grid/Slot spacing
+  slotGapHorizontal: 8,
+  slotGapVertical: 8,
+
+  // Button spacing
   buttonPaddingVertical: 16,
+  buttonPaddingHorizontal: 24,
+
+  // Modal spacing
+  modalPadding: 20,
+  modalHeaderPadding: 16,
+
+  // Icon gaps
+  iconGapSmall: 4,
+  iconGapMedium: 6,
+  iconGapLarge: 8,
 } as const;
 
 // Dimensions
 export const DIMENSIONS = {
-  headerHeight: 64,
-  rollButtonHeight: 60, // Beefy button
-  borderRadius: 12, // Compact radius
+  // Border radii
+  borderRadius: 12,
   borderRadiusSmall: 8,
+  borderRadiusLarge: 16,
+  borderRadiusRound: 60,
+
+  // Border widths
+  borderWidth: 2,
+  borderWidthThin: 1,
+  borderWidthThick: 3,
+
+  // Component heights
+  headerHeight: 64,
+  rollButtonHeight: 60,
   progressBarHeight: 20,
-  borderWidth: 2, // Thicker borders for "tactile" feel
+  tileHeight: 70,
+
+  // Icon sizes
+  iconSize: {
+    xs: 14,
+    sm: 18,
+    md: 24,
+    lg: 28,
+    xl: 32,
+    xxl: 64,
+  },
 } as const;
 
 // Responsive Helper
@@ -152,19 +274,18 @@ export const calculateDiceTrayHeight = (screenHeight: number): number => {
   return Math.round(screenHeight * 0.32); // Slightly tighter dice area
 };
 
-// Slot Visual States - Solid, Tactile, No excessive glow
-// Slot Visual States - Continuous rounded stroke, "Toy" bevels, No brackets
+// Slot Visual States - Continuous rounded stroke, "Toy" bevels
 export const SLOT_STATES = {
   empty: {
     backgroundColor: COLORS.surface2,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderColor: COLORS.overlays.whiteMild,
     borderWidth: 1,
     borderStyle: "solid",
     // Bevel effect
     borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.15)",
+    borderTopColor: COLORS.overlays.whiteMedium,
     borderBottomWidth: 3,
-    borderBottomColor: "rgba(0,0,0,0.3)",
+    borderBottomColor: COLORS.overlays.blackMedium,
     shadowColor: "transparent",
     shadowOpacity: 0,
     elevation: 0,
@@ -173,14 +294,14 @@ export const SLOT_STATES = {
   possible: {
     // Same as empty but allows for preview text updates in component
     backgroundColor: COLORS.surface2,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderColor: COLORS.overlays.whiteMild,
     borderWidth: 1,
     borderStyle: "solid",
     // Bevel
     borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.15)",
+    borderTopColor: COLORS.overlays.whiteMedium,
     borderBottomWidth: 3,
-    borderBottomColor: "rgba(0,0,0,0.3)",
+    borderBottomColor: COLORS.overlays.blackMedium,
     shadowColor: "transparent",
     shadowOpacity: 0,
     elevation: 0,
@@ -188,40 +309,40 @@ export const SLOT_STATES = {
   },
   scratch: {
     // Eligible tiles in scratch mode: Coral tint + Border
-    backgroundColor: "rgba(255, 90, 122, 0.15)",
+    backgroundColor: COLORS.overlays.coralSubtle,
     borderColor: COLORS.coral,
     borderWidth: 2,
     borderStyle: "solid",
     // Bevel
     borderTopWidth: 1,
-    borderTopColor: "rgba(255, 90, 122, 0.3)",
+    borderTopColor: COLORS.overlays.coralMild,
     borderBottomWidth: 3,
-    borderBottomColor: "rgba(0,0,0,0.2)",
+    borderBottomColor: COLORS.overlays.blackMild,
     shadowColor: "transparent",
     shadowOpacity: 0,
     elevation: 0,
     shadowRadius: 0,
   },
   selected: {
-    // Selection: Cyan border + Soft Glow, No brackets
-    backgroundColor: COLORS.surfaceHighlight, // Slightly brighter
+    // Selection: Cyan border + Soft Glow
+    backgroundColor: COLORS.surfaceHighlight,
     borderColor: COLORS.cyan,
     borderWidth: 3,
-    borderStyle: "solid", // Continuous stroke
+    borderStyle: "solid",
     shadowColor: COLORS.cyan,
     shadowOpacity: 0.5,
     shadowRadius: 10,
     elevation: 6,
     // Bevel (subtle lift)
     borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.4)",
+    borderTopColor: COLORS.overlays.whiteStrong,
     borderBottomWidth: 3,
-    borderBottomColor: "rgba(0,0,0,0.4)",
+    borderBottomColor: COLORS.overlays.blackStrong,
   },
   filled: {
     // Committed: Dim fill, Flat-ish
-    backgroundColor: COLORS.bg, // Recessed look
-    borderColor: "rgba(255,255,255,0.05)",
+    backgroundColor: COLORS.bg,
+    borderColor: COLORS.overlays.whiteSubtle,
     borderWidth: 1,
     borderStyle: "solid",
     opacity: 0.8,
@@ -234,5 +355,147 @@ export const SLOT_STATES = {
     shadowOpacity: 0,
     elevation: 0,
     shadowRadius: 0,
+  },
+} as const;
+
+// Animation timing constants
+export const ANIMATION = {
+  // Durations (ms)
+  duration: {
+    instant: 50,
+    fast: 75,
+    normal: 100,
+    medium: 150,
+    slow: 200,
+    verySlow: 400,
+    fade: 300,
+  },
+
+  // Counting animation (ScoreRow)
+  counting: {
+    initialDelay: 640,
+    perDieDelay: 560,
+    handScoreDisplay: 1000,
+    totalScoreDisplay: 1600,
+    colorFadeDelay: 200,
+    colorFadeDuration: 800,
+  },
+
+  // Button press timing
+  buttonPress: {
+    down: 75,
+    up: 120,
+  },
+
+  // Spring configurations (for reanimated)
+  springs: {
+    button: { damping: 20, stiffness: 400 },
+    modal: { damping: 25, stiffness: 400, mass: 0.8 },
+    lamp: { damping: 24, stiffness: 160 },
+    slideIn: { damping: 20, stiffness: 200 },
+    lampOut: { damping: 26, stiffness: 180 },
+  },
+
+  // Highlight/Pulse (Die)
+  highlight: {
+    pulseDuration: 200,
+    peakScale: 1.12,
+    attackRatio: 0.35,
+  },
+
+  // Goal meter (ScoreRow)
+  goalMeter: {
+    cyanBarDuration: 180,
+    cyanSettleDelay: 40,
+    cyanSettleDuration: 120,
+    goldBarDelay: 490,
+    goldBarDuration: 160,
+    goldSettleDelay: 30,
+    goldSettleDuration: 100,
+    overshootCyan: 1.03,
+    overshootGold: 1.05,
+  },
+
+  // Win overlay
+  winOverlay: {
+    fadeIn: 400,
+    fadeOut: 300,
+    pulseUp: 800,
+    pulseDown: 800,
+    pulseScaleMin: 0.98,
+    pulseScaleMax: 1.02,
+  },
+
+  // End screen stagger delays
+  endScreen: {
+    iconDelay: 200,
+    titleDelay: 400,
+    subtitleDelay: 600,
+    statsDelay: 800,
+    buttonDelay: 1000,
+    fadeDuration: 400,
+  },
+
+  // Lamp indicator
+  lamp: {
+    staggerDelay: 50,
+    fadeIn: 300,
+    colorTransition: 300,
+  },
+} as const;
+
+// Physics constants for 3D dice
+export const PHYSICS = {
+  die: {
+    size: 0.8,
+    restitution: 0.08,
+    friction: 0.9,
+    linearDamping: 0.35,
+    angularDamping: 0.6,
+    pipRadiusRatio: 0.08,
+    pipOffsetRatio: 0.25,
+    metalnessUnlocked: 0.1,
+    metalnessLocked: 0.6,
+    roughnessUnlocked: 0.4,
+    roughnessLocked: 0.2,
+  },
+
+  reveal: {
+    positionLerpSpeed: 8,
+    deltaCapMs: 33,
+    lockedScale: 1.1,
+  },
+
+  settle: {
+    speedThreshold: 0.05,
+    spinThreshold: 0.1,
+    stableTimeRequired: 0.15,
+  },
+
+  roll: {
+    impulseYMin: -2,
+    impulseYMax: -1.2,
+    impulseXZMin: -0.35,
+    impulseXZMax: 0.35,
+    torqueMin: -0.8,
+    torqueMax: 0.8,
+  },
+
+  camera: {
+    revealZoomRatio: 0.6,
+  },
+} as const;
+
+// Haptics configuration
+export const HAPTICS = {
+  actions: {
+    selection: "selection" as const,
+    buttonPress: "light" as const,
+    buttonConfirm: "medium" as const,
+    scoreTick: "selection" as const,
+    handScoreReveal: "selection" as const,
+    totalScoreReveal: "light" as const,
+    goalReached: "success" as const,
+    warning: "warning" as const,
   },
 } as const;

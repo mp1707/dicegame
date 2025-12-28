@@ -1,11 +1,13 @@
 import React from "react";
-import { View, Text, StyleSheet, ViewStyle, StyleProp } from "react-native";
+import { View, StyleSheet, ViewStyle, StyleProp } from "react-native";
 import { Pressable3DBase } from "../ui/Pressable3DBase";
+import { GameText } from "./GameText";
 import {
   COLORS,
   DIMENSIONS,
+  SPACING,
   SLOT_STATES,
-  TYPOGRAPHY,
+  FONT_FAMILY,
 } from "../../constants/theme";
 
 export type TileButtonVariant =
@@ -103,14 +105,21 @@ export const TileButton = ({
         {/* Icon + Label centered */}
         <View style={styles.centerStack}>
           {icon}
-          <Text style={[styles.label, { color: labelColor }]} numberOfLines={1}>
+          <GameText
+            variant="caption"
+            color={labelColor}
+            numberOfLines={1}
+            style={styles.label}
+          >
             {label}
-          </Text>
+          </GameText>
         </View>
 
         {/* LV Badge - top right */}
         <View style={styles.badge}>
-          <Text style={styles.badgeText}>LV {level}</Text>
+          <GameText variant="caption" style={styles.badgeText}>
+            LV {level}
+          </GameText>
         </View>
       </View>
     </Pressable3DBase>
@@ -135,30 +144,29 @@ const styles = StyleSheet.create({
     width: "100%",
     justifyContent: "center",
     alignItems: "center",
-    padding: 4,
+    padding: SPACING.xs,
   },
   centerStack: {
     alignItems: "center",
-    gap: 4,
+    gap: SPACING.xs,
   },
   label: {
-    ...TYPOGRAPHY.label,
     fontSize: 7,
     textAlign: "center",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   badge: {
     position: "absolute",
-    top: 4,
-    right: 4,
-    paddingHorizontal: 4,
+    top: SPACING.xs,
+    right: SPACING.xs,
+    paddingHorizontal: SPACING.xs,
     paddingVertical: 1,
-    borderRadius: 4,
-    backgroundColor: "rgba(255,255,255,0.15)",
+    borderRadius: SPACING.xs,
+    backgroundColor: COLORS.overlays.whiteMedium,
   },
   badgeText: {
-    fontFamily: "Inter-Bold",
     fontSize: 6,
-    color: COLORS.textMuted,
     letterSpacing: 0.3,
   },
 });

@@ -1,9 +1,14 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { Trophy, Skull } from "lucide-react-native";
 import Animated, { FadeIn, SlideInUp } from "react-native-reanimated";
-import { PrimaryButton } from "../shared";
-import { COLORS, SPACING } from "../../constants/theme";
+import { PrimaryButton, GameText } from "../shared";
+import {
+  COLORS,
+  SPACING,
+  DIMENSIONS,
+  ANIMATION,
+} from "../../constants/theme";
 import { useGameStore } from "../../store/gameStore";
 import { formatNumber } from "../../utils/yahtzeeScoring";
 import { triggerSelectionHaptic } from "../../utils/haptics";
@@ -25,64 +30,77 @@ export const EndScreen = () => {
   return (
     <View style={styles.container}>
       <Animated.View
-        entering={SlideInUp.springify().damping(20).stiffness(200)}
+        entering={SlideInUp.springify()
+          .damping(ANIMATION.springs.slideIn.damping)
+          .stiffness(ANIMATION.springs.slideIn.stiffness)}
         style={styles.content}
       >
         {/* Icon */}
         <Animated.View
-          entering={FadeIn.delay(200).duration(400)}
+          entering={FadeIn.delay(ANIMATION.endScreen.iconDelay).duration(ANIMATION.endScreen.fadeDuration)}
           style={[
             styles.iconContainer,
             isWin ? styles.iconContainerWin : styles.iconContainerLose,
           ]}
         >
           {isWin ? (
-            <Trophy size={64} color={COLORS.gold} />
+            <Trophy size={DIMENSIONS.iconSize.xxl} color={COLORS.gold} />
           ) : (
-            <Skull size={64} color={COLORS.coral} />
+            <Skull size={DIMENSIONS.iconSize.xxl} color={COLORS.coral} />
           )}
         </Animated.View>
 
         {/* Title */}
-        <Animated.Text
-          entering={FadeIn.delay(400).duration(400)}
-          style={[styles.title, isWin ? styles.titleWin : styles.titleLose]}
+        <Animated.View
+          entering={FadeIn.delay(ANIMATION.endScreen.titleDelay).duration(ANIMATION.endScreen.fadeDuration)}
         >
-          {isWin ? "GEWONNEN!" : "VERLOREN"}
-        </Animated.Text>
+          <GameText
+            variant="displayHuge"
+            style={[styles.title, isWin ? styles.titleWin : styles.titleLose]}
+          >
+            {isWin ? "GEWONNEN!" : "VERLOREN"}
+          </GameText>
+        </Animated.View>
 
         {/* Subtitle */}
-        <Animated.Text
-          entering={FadeIn.delay(600).duration(400)}
-          style={styles.subtitle}
+        <Animated.View
+          entering={FadeIn.delay(ANIMATION.endScreen.subtitleDelay).duration(ANIMATION.endScreen.fadeDuration)}
         >
-          {isWin
-            ? "All 8 levels completed!"
-            : `Failed at Level ${levelNumber}`}
-        </Animated.Text>
+          <GameText variant="bodyLarge" color={COLORS.textMuted} style={styles.subtitle}>
+            {isWin
+              ? "All 8 levels completed!"
+              : `Failed at Level ${levelNumber}`}
+          </GameText>
+        </Animated.View>
 
         {/* Stats */}
         <Animated.View
-          entering={FadeIn.delay(800).duration(400)}
+          entering={FadeIn.delay(ANIMATION.endScreen.statsDelay).duration(ANIMATION.endScreen.fadeDuration)}
           style={styles.statsContainer}
         >
           <View style={styles.statRow}>
-            <Text style={styles.statLabel}>Final Money</Text>
-            <Text style={styles.statValue}>${formatNumber(money)}</Text>
+            <GameText variant="bodyMedium" color={COLORS.textMuted}>
+              Final Money
+            </GameText>
+            <GameText variant="scoreboardSmall">
+              ${formatNumber(money)}
+            </GameText>
           </View>
 
           <View style={styles.statRow}>
-            <Text style={styles.statLabel}>Levels Completed</Text>
-            <Text style={styles.statValue}>
+            <GameText variant="bodyMedium" color={COLORS.textMuted}>
+              Levels Completed
+            </GameText>
+            <GameText variant="scoreboardSmall">
               {isWin ? 8 : currentLevelIndex} / 8
-            </Text>
+            </GameText>
           </View>
         </Animated.View>
       </Animated.View>
 
       {/* CTA Button */}
       <Animated.View
-        entering={FadeIn.delay(1000).duration(400)}
+        entering={FadeIn.delay(ANIMATION.endScreen.buttonDelay).duration(ANIMATION.endScreen.fadeDuration)}
         style={styles.footer}
       >
         <PrimaryButton
@@ -108,19 +126,19 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: 20,
+    gap: SPACING.xl,
   },
   iconContainer: {
     width: 120,
     height: 120,
-    borderRadius: 60,
+    borderRadius: DIMENSIONS.borderRadiusRound,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: SPACING.lg,
   },
   iconContainerWin: {
-    backgroundColor: "rgba(255, 200, 87, 0.15)",
-    borderWidth: 3,
+    backgroundColor: COLORS.overlays.goldSubtle,
+    borderWidth: DIMENSIONS.borderWidthThick,
     borderColor: COLORS.gold,
     shadowColor: COLORS.gold,
     shadowOffset: { width: 0, height: 0 },
@@ -128,19 +146,17 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
   },
   iconContainerLose: {
-    backgroundColor: "rgba(255, 90, 122, 0.15)",
-    borderWidth: 3,
+    backgroundColor: COLORS.overlays.coralSubtle,
+    borderWidth: DIMENSIONS.borderWidthThick,
     borderColor: COLORS.coral,
   },
   title: {
-    fontSize: 44,
-    fontFamily: "Bungee-Regular",
     textAlign: "center",
     letterSpacing: 2,
   },
   titleWin: {
     color: COLORS.gold,
-    textShadowColor: "rgba(255, 200, 87, 0.5)",
+    textShadowColor: COLORS.shadows.goldStrong,
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 20,
   },
@@ -148,35 +164,21 @@ const styles = StyleSheet.create({
     color: COLORS.coral,
   },
   subtitle: {
-    color: COLORS.textMuted,
-    fontSize: 16,
-    fontFamily: "Inter-Medium",
     textAlign: "center",
   },
   statsContainer: {
     width: "100%",
     maxWidth: 280,
-    backgroundColor: "rgba(0,0,0,0.2)",
-    borderRadius: 12,
-    padding: 16,
-    gap: 12,
-    marginTop: 24,
+    backgroundColor: COLORS.overlays.blackMild,
+    borderRadius: DIMENSIONS.borderRadius,
+    padding: SPACING.lg,
+    gap: SPACING.md,
+    marginTop: SPACING.xxl,
   },
   statRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-  },
-  statLabel: {
-    color: COLORS.textMuted,
-    fontSize: 14,
-    fontFamily: "Inter-Medium",
-  },
-  statValue: {
-    color: COLORS.text,
-    fontSize: 18,
-    fontFamily: "Inter-Bold",
-    fontVariant: ["tabular-nums"],
   },
   footer: {
     alignItems: "center",

@@ -1,15 +1,13 @@
 import React from "react";
-import { View, StyleSheet, Text } from "react-native";
-import { PrimaryButton } from "../shared";
-import { COLORS, SPACING } from "../../constants/theme";
+import { View, StyleSheet } from "react-native";
+import { PrimaryButton, GameText } from "../shared";
+import { COLORS, SPACING, DIMENSIONS } from "../../constants/theme";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useGameStore } from "../../store/gameStore";
 import {
   triggerLightImpact,
   triggerSelectionHaptic,
 } from "../../utils/haptics";
-// import { RollCounter } from "./RollCounter"; // Removed
-// import { MAX_HANDS_PER_LEVEL, MAX_ROLLS_PER_HAND } from "../../utils/gameCore";
 
 export const FooterControls = () => {
   const rollsRemaining = useGameStore((s) => s.rollsRemaining);
@@ -132,7 +130,7 @@ export const FooterControls = () => {
           icon={
             <MaterialCommunityIcons
               name="pencil-outline"
-              size={24}
+              size={DIMENSIONS.iconSize.md}
               color={COLORS.textDark}
             />
           }
@@ -148,16 +146,20 @@ export const FooterControls = () => {
       <View style={styles.mainControlWrapper}>
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
-            <Text style={styles.statLabel}>Hands:</Text>
-            <Text style={[styles.statValue, { color: COLORS.cyan }]}>
+            <GameText variant="bodyMedium" color={COLORS.textMuted}>
+              Hands:
+            </GameText>
+            <GameText variant="displaySmall" color={COLORS.cyan}>
               {handsRemaining}
-            </Text>
+            </GameText>
           </View>
           <View style={styles.statItem}>
-            <Text style={styles.statLabel}>Rolls:</Text>
-            <Text style={[styles.statValue, { color: COLORS.gold }]}>
+            <GameText variant="bodyMedium" color={COLORS.textMuted}>
+              Rolls:
+            </GameText>
+            <GameText variant="displaySmall" color={COLORS.gold}>
               {rollsRemaining}
-            </Text>
+            </GameText>
           </View>
         </View>
         <PrimaryButton
@@ -169,7 +171,7 @@ export const FooterControls = () => {
             canRoll ? (
               <MaterialCommunityIcons
                 name="dice-multiple"
-                size={24}
+                size={DIMENSIONS.iconSize.md}
                 color={COLORS.textDark}
               />
             ) : undefined
@@ -193,46 +195,34 @@ export const FooterControls = () => {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 24,
+    paddingHorizontal: SPACING.xxl,
     paddingVertical: SPACING.sectionGap,
-    gap: 8,
+    gap: SPACING.sm,
     alignItems: "center",
   },
   mainControlWrapper: {
     width: "100%",
     alignItems: "center",
-    gap: 8, // Add gap between stats and button
+    gap: SPACING.sm,
   },
   statsRow: {
     width: "100%",
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 16,
+    paddingHorizontal: SPACING.lg,
   },
   statItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-  },
-  statLabel: {
-    fontSize: 14,
-    fontFamily: "Inter-SemiBold",
-    color: COLORS.textMuted,
-    letterSpacing: 0.5,
-  },
-  statValue: {
-    fontFamily: "Bungee-Regular",
-    fontSize: 20,
-    color: COLORS.text,
-    lineHeight: 24, // Visual adjustment for Bungee
+    gap: SPACING.iconGapMedium,
   },
   button: {
     shadowOpacity: 0.6,
   },
   dualButtonContainer: {
     flexDirection: "row",
-    gap: 12,
+    gap: SPACING.md,
     width: "100%",
     justifyContent: "center",
   },

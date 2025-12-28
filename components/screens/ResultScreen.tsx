@@ -1,7 +1,7 @@
 import React from "react";
-import { View, Text, StyleSheet, ScrollView } from "react-native";
+import { View, StyleSheet, ScrollView } from "react-native";
 import { Trophy, Hand, Dices, Star } from "lucide-react-native";
-import { PrimaryButton } from "../shared";
+import { PrimaryButton, GameText } from "../shared";
 import { COLORS, SPACING, DIMENSIONS } from "../../constants/theme";
 import { useGameStore, useRewardBreakdown } from "../../store/gameStore";
 import { formatNumber } from "../../utils/yahtzeeScoring";
@@ -18,13 +18,20 @@ const RewardRow = ({ icon, label, value, highlight = false }: RewardRowProps) =>
   <View style={styles.rewardRow}>
     <View style={styles.rewardLeft}>
       {icon}
-      <Text style={[styles.rewardLabel, highlight && styles.highlightText]}>
+      <GameText
+        variant={highlight ? "bodyLarge" : "bodyMedium"}
+        color={highlight ? COLORS.text : COLORS.textMuted}
+      >
         {label}
-      </Text>
+      </GameText>
     </View>
-    <Text style={[styles.rewardValue, highlight && styles.highlightValue]}>
+    <GameText
+      variant={highlight ? "displaySmall" : "bodyLarge"}
+      color={highlight ? COLORS.gold : COLORS.text}
+      style={highlight ? styles.highlightValue : undefined}
+    >
       {value}
-    </Text>
+    </GameText>
   </View>
 );
 
@@ -55,8 +62,10 @@ export const ResultScreen = () => {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Trophy size={32} color={COLORS.gold} />
-        <Text style={styles.title}>LEVEL {levelNumber} COMPLETE</Text>
+        <Trophy size={DIMENSIONS.iconSize.xl} color={COLORS.gold} />
+        <GameText variant="displayMedium" color={COLORS.gold} style={styles.title}>
+          LEVEL {levelNumber} COMPLETE
+        </GameText>
       </View>
 
       {/* Rewards list */}
@@ -74,26 +83,26 @@ export const ResultScreen = () => {
         <View style={styles.divider} />
 
         <RewardRow
-          icon={<Trophy size={18} color={COLORS.mint} />}
+          icon={<Trophy size={DIMENSIONS.iconSize.sm} color={COLORS.mint} />}
           label="Win Reward"
           value={`+$${rewards.baseReward}`}
         />
 
         <RewardRow
-          icon={<Hand size={18} color={COLORS.cyan} />}
+          icon={<Hand size={DIMENSIONS.iconSize.sm} color={COLORS.cyan} />}
           label={`Unused Hands (${rewards.unusedHandsCount})`}
           value={`+$${rewards.unusedHandsBonus}`}
         />
 
         <RewardRow
-          icon={<Dices size={18} color={COLORS.cyan} />}
+          icon={<Dices size={DIMENSIONS.iconSize.sm} color={COLORS.cyan} />}
           label={`Unused Rolls (${rewards.unusedRollsCount})`}
           value={`+$${rewards.unusedRollsBonus}`}
         />
 
         {rewards.tierBonus > 0 && (
           <RewardRow
-            icon={<Star size={18} color={COLORS.gold} />}
+            icon={<Star size={DIMENSIONS.iconSize.sm} color={COLORS.gold} />}
             label={`${getTierLabel()} Bonus`}
             value={`+$${rewards.tierBonus}`}
           />
@@ -126,20 +135,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: SPACING.containerPaddingHorizontal,
-    paddingTop: 16,
-    paddingBottom: 24,
+    paddingTop: SPACING.lg,
+    paddingBottom: SPACING.xxl,
   },
   header: {
     alignItems: "center",
-    gap: 12,
-    marginBottom: 24,
+    gap: SPACING.md,
+    marginBottom: SPACING.xxl,
   },
   title: {
-    color: COLORS.gold,
-    fontSize: 24,
-    fontFamily: "Bungee-Regular",
     textAlign: "center",
-    textShadowColor: "rgba(255, 200, 87, 0.3)",
+    textShadowColor: COLORS.shadows.gold,
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 10,
   },
@@ -147,57 +153,38 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   rewardsList: {
-    backgroundColor: "rgba(0,0,0,0.2)",
+    backgroundColor: COLORS.overlays.blackMild,
     borderRadius: DIMENSIONS.borderRadius,
-    padding: 16,
-    gap: 12,
+    padding: SPACING.lg,
+    gap: SPACING.md,
   },
   rewardRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 4,
+    paddingVertical: SPACING.xs,
   },
   rewardLeft: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: SPACING.sm + 2,
   },
   iconPlaceholder: {
-    width: 18,
-    height: 18,
-  },
-  rewardLabel: {
-    color: COLORS.textMuted,
-    fontSize: 14,
-    fontFamily: "Inter-Medium",
-  },
-  rewardValue: {
-    color: COLORS.text,
-    fontSize: 16,
-    fontFamily: "Inter-Bold",
-    fontVariant: ["tabular-nums"],
-  },
-  highlightText: {
-    color: COLORS.text,
-    fontFamily: "Inter-Bold",
-    fontSize: 16,
+    width: DIMENSIONS.iconSize.sm,
+    height: DIMENSIONS.iconSize.sm,
   },
   highlightValue: {
-    color: COLORS.gold,
-    fontSize: 20,
-    fontFamily: "Bungee-Regular",
-    textShadowColor: "rgba(255, 200, 87, 0.3)",
+    textShadowColor: COLORS.shadows.gold,
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 8,
   },
   divider: {
     height: 1,
-    backgroundColor: "rgba(255,255,255,0.1)",
-    marginVertical: 8,
+    backgroundColor: COLORS.overlays.whiteMild,
+    marginVertical: SPACING.sm,
   },
   footer: {
-    marginTop: 16,
+    marginTop: SPACING.lg,
     alignItems: "center",
   },
   button: {

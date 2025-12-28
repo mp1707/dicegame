@@ -1,9 +1,10 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { ArrowLeft } from "lucide-react-native";
 import { Pressable3DBase } from "../ui/Pressable3DBase";
 import { CategoryIcon } from "../ui/CategoryIcon";
-import { COLORS, SPACING, DIMENSIONS, TYPOGRAPHY } from "../../constants/theme";
+import { GameText } from "../shared";
+import { COLORS, SPACING, DIMENSIONS } from "../../constants/theme";
 import { useGameStore, HandId } from "../../store/gameStore";
 import { CATEGORIES } from "../../utils/yahtzeeScoring";
 import { getUpgradeCost } from "../../utils/gameCore";
@@ -53,33 +54,42 @@ const UpgradeCard = ({
         <View style={styles.iconContainer}>
           <CategoryIcon
             categoryId={handId}
-            size={32}
+            size={DIMENSIONS.iconSize.xl}
             color={canAfford ? COLORS.cyan : COLORS.textMuted}
           />
         </View>
 
         {/* Hand name */}
-        <Text
-          style={[styles.handName, !canAfford && styles.textDisabled]}
+        <GameText
+          variant="bodyMedium"
+          color={canAfford ? COLORS.text : COLORS.textMuted}
           numberOfLines={2}
+          style={styles.handName}
         >
           {label}
-        </Text>
+        </GameText>
 
         {/* Level badge */}
         <View style={styles.levelBadge}>
-          <Text style={styles.levelText}>LV {level}</Text>
-          <Text style={styles.arrowText}> → </Text>
-          <Text style={[styles.levelText, styles.newLevel]}>LV {level + 1}</Text>
+          <GameText variant="label" color={COLORS.textMuted}>
+            LV {level}
+          </GameText>
+          <GameText variant="label" color={COLORS.textMuted}>
+            {" → "}
+          </GameText>
+          <GameText variant="label" color={COLORS.mint}>
+            LV {level + 1}
+          </GameText>
         </View>
 
         {/* Cost */}
         <View style={[styles.costBadge, !canAfford && styles.costBadgeDisabled]}>
-          <Text
-            style={[styles.costText, !canAfford && styles.costTextDisabled]}
+          <GameText
+            variant="bodyMedium"
+            color={canAfford ? COLORS.textDark : COLORS.text}
           >
             ${cost}
-          </Text>
+          </GameText>
         </View>
       </View>
     </Pressable3DBase>
@@ -109,25 +119,29 @@ export const UpgradePickerScreen = () => {
         <Pressable3DBase
           onPress={handleBack}
           depth={3}
-          borderRadius={8}
+          borderRadius={DIMENSIONS.borderRadiusSmall}
           showLighting={false}
           style={styles.backButton}
           face={<View style={styles.backButtonFace} />}
         >
-          <ArrowLeft size={20} color={COLORS.text} />
+          <ArrowLeft size={DIMENSIONS.iconSize.sm + 2} color={COLORS.text} />
         </Pressable3DBase>
 
-        <Text style={styles.title}>CHOOSE UPGRADE</Text>
+        <GameText variant="scoreboardSmall" style={styles.title}>
+          CHOOSE UPGRADE
+        </GameText>
 
         <View style={styles.moneyBadge}>
-          <Text style={styles.moneyText}>${formatNumber(money)}</Text>
+          <GameText variant="bodyMedium" color={COLORS.gold}>
+            ${formatNumber(money)}
+          </GameText>
         </View>
       </View>
 
       {/* Subtitle */}
-      <Text style={styles.subtitle}>
+      <GameText variant="bodySmall" color={COLORS.textMuted} style={styles.subtitle}>
         Select a hand to increase its base points by +5
-      </Text>
+      </GameText>
 
       {/* Upgrade options */}
       <View style={styles.optionsGrid}>
@@ -156,56 +170,45 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: SPACING.containerPaddingHorizontal,
-    paddingTop: 16,
-    paddingBottom: 24,
+    paddingTop: SPACING.lg,
+    paddingBottom: SPACING.xxl,
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 16,
+    marginBottom: SPACING.lg,
   },
   backButton: {
     width: 40,
     height: 40,
-    borderRadius: 8,
+    borderRadius: DIMENSIONS.borderRadiusSmall,
   },
   backButtonFace: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: COLORS.surface2,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderRadius: DIMENSIONS.borderRadiusSmall,
+    borderWidth: DIMENSIONS.borderWidthThin,
+    borderColor: COLORS.overlays.whiteMild,
   },
   title: {
-    color: COLORS.text,
-    fontSize: 18,
-    fontFamily: "Bungee-Regular",
     letterSpacing: 1,
   },
   moneyBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: "rgba(255, 200, 87, 0.15)",
-    borderRadius: 8,
-    borderWidth: 1,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.iconGapMedium,
+    backgroundColor: COLORS.overlays.goldSubtle,
+    borderRadius: DIMENSIONS.borderRadiusSmall,
+    borderWidth: DIMENSIONS.borderWidthThin,
     borderColor: COLORS.gold,
   },
-  moneyText: {
-    color: COLORS.gold,
-    fontSize: 14,
-    fontFamily: "Inter-Bold",
-  },
   subtitle: {
-    color: COLORS.textMuted,
-    fontSize: 12,
-    fontFamily: "Inter-Medium",
     textAlign: "center",
-    marginBottom: 24,
+    marginBottom: SPACING.xxl,
   },
   optionsGrid: {
     flex: 1,
-    gap: 16,
+    gap: SPACING.lg,
   },
   card: {
     flex: 1,
@@ -219,12 +222,12 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: COLORS.surface,
     borderRadius: DIMENSIONS.borderRadius,
-    borderWidth: 2,
+    borderWidth: DIMENSIONS.borderWidth,
     borderColor: COLORS.cyan,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.2)",
-    borderBottomWidth: 4,
-    borderBottomColor: "rgba(0,0,0,0.3)",
+    borderTopWidth: DIMENSIONS.borderWidthThin,
+    borderTopColor: COLORS.overlays.whiteStrong,
+    borderBottomWidth: DIMENSIONS.borderWidthThick + 1,
+    borderBottomColor: COLORS.overlays.blackMedium,
   },
   cardFaceDisabled: {
     borderColor: COLORS.textMuted,
@@ -234,63 +237,37 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    padding: 16,
-    gap: 12,
+    padding: SPACING.lg,
+    gap: SPACING.md,
   },
   iconContainer: {
     width: 50,
     height: 50,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.2)",
-    borderRadius: 10,
+    backgroundColor: COLORS.overlays.blackMild,
+    borderRadius: SPACING.sm + 2,
   },
   handName: {
     flex: 1,
-    color: COLORS.text,
-    fontSize: 14,
-    fontFamily: "Inter-Bold",
     textTransform: "uppercase",
-  },
-  textDisabled: {
-    color: COLORS.textMuted,
   },
   levelBadge: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    backgroundColor: "rgba(0,0,0,0.2)",
-    borderRadius: 6,
-  },
-  levelText: {
-    color: COLORS.textMuted,
-    fontSize: 11,
-    fontFamily: "Inter-Bold",
-  },
-  arrowText: {
-    color: COLORS.textMuted,
-    fontSize: 11,
-  },
-  newLevel: {
-    color: COLORS.mint,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    backgroundColor: COLORS.overlays.blackMild,
+    borderRadius: SPACING.iconGapMedium,
   },
   costBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: SPACING.sm + 2,
+    paddingVertical: SPACING.iconGapMedium,
     backgroundColor: COLORS.mint,
-    borderRadius: 6,
+    borderRadius: SPACING.iconGapMedium,
   },
   costBadgeDisabled: {
     backgroundColor: COLORS.coral,
     opacity: 0.8,
-  },
-  costText: {
-    color: COLORS.textDark,
-    fontSize: 14,
-    fontFamily: "Inter-Bold",
-  },
-  costTextDisabled: {
-    color: COLORS.text,
   },
 });

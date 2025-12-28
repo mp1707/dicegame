@@ -1,11 +1,11 @@
 import React from "react";
-import { View, Text, StyleSheet, ScrollView } from "react-native";
-import { COLORS, TYPOGRAPHY, DIMENSIONS, SPACING } from "../../constants/theme";
+import { View, StyleSheet, ScrollView } from "react-native";
+import { COLORS, DIMENSIONS, SPACING } from "../../constants/theme";
 import { useGameStore } from "../../store/gameStore";
 import { CATEGORIES } from "../../utils/yahtzeeScoring";
 import { getBasePoints, HAND_BASE_CONFIG } from "../../utils/gameCore";
 import { CategoryIcon } from "../ui/CategoryIcon";
-import { Modal, PrimaryButton } from "../shared";
+import { Modal, PrimaryButton, GameText } from "../shared";
 
 interface OverviewModalProps {
   visible: boolean;
@@ -42,34 +42,41 @@ export const OverviewModal = ({ visible, onClose }: OverviewModalProps) => {
                   <View style={styles.leftSide}>
                     {/* Level badge */}
                     <View style={styles.levelBadge}>
-                      <Text style={styles.levelText}>LV{level}</Text>
+                      <GameText
+                        variant="labelSmall"
+                        color={COLORS.cyan}
+                        style={styles.levelText}
+                      >
+                        LV{level}
+                      </GameText>
                     </View>
 
                     {/* Icon */}
                     <CategoryIcon
                       categoryId={cat.id}
-                      size={18}
+                      size={DIMENSIONS.iconSize.sm}
                       strokeWidth={2}
                       color={isUsed ? COLORS.textMuted : COLORS.cyan}
                     />
 
                     {/* Name */}
-                    <Text
-                      style={[
-                        styles.label,
-                        isUsed && { color: COLORS.textMuted, opacity: 0.6 },
-                      ]}
+                    <GameText
+                      variant="bodySmall"
+                      color={isUsed ? COLORS.textMuted : COLORS.text}
+                      style={[styles.label, isUsed && styles.labelUsed]}
                     >
                       {cat.labelDe}
-                    </Text>
+                    </GameText>
                   </View>
 
                   {/* Formula */}
-                  <Text
+                  <GameText
+                    variant="labelSmall"
+                    color={COLORS.textMuted}
                     style={[styles.formula, isUsed && styles.formulaUsed]}
                   >
                     {isUsed ? "USED" : formula}
-                  </Text>
+                  </GameText>
                 </View>
               );
             })}
@@ -94,10 +101,10 @@ const styles = StyleSheet.create({
   listWrapper: {
     flexShrink: 1,
     marginBottom: SPACING.sectionGap,
-    backgroundColor: "rgba(0,0,0,0.1)",
+    backgroundColor: COLORS.overlays.blackSubtle,
     borderRadius: DIMENSIONS.borderRadiusSmall,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.05)",
+    borderWidth: DIMENSIONS.borderWidthThin,
+    borderColor: COLORS.overlays.whiteSubtle,
     minHeight: 100,
     maxHeight: 400,
     overflow: "hidden",
@@ -106,15 +113,15 @@ const styles = StyleSheet.create({
     flexGrow: 0,
   },
   listContent: {
-    padding: 12,
+    padding: SPACING.md,
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.05)",
+    paddingVertical: SPACING.sm + 2,
+    borderBottomWidth: DIMENSIONS.borderWidthThin,
+    borderColor: COLORS.overlays.whiteSubtle,
   },
   rowUsed: {
     opacity: 0.5,
@@ -122,42 +129,35 @@ const styles = StyleSheet.create({
   leftSide: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: SPACING.sm,
     flex: 1,
   },
   levelBadge: {
-    backgroundColor: "rgba(77, 238, 234, 0.15)",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+    backgroundColor: COLORS.overlays.cyanMild,
+    paddingHorizontal: SPACING.iconGapMedium,
+    paddingVertical: SPACING.xxs,
+    borderRadius: SPACING.xs,
     minWidth: 36,
     alignItems: "center",
   },
   levelText: {
-    color: COLORS.cyan,
-    fontSize: 10,
-    fontFamily: "Inter-Bold",
     letterSpacing: 0.3,
   },
   label: {
-    ...TYPOGRAPHY.body,
-    color: COLORS.text,
-    fontSize: 13,
     flex: 1,
   },
+  labelUsed: {
+    opacity: 0.6,
+  },
   formula: {
-    color: COLORS.textMuted,
-    fontSize: 11,
-    fontFamily: "Inter-Medium",
     letterSpacing: 0.3,
   },
   formulaUsed: {
-    color: COLORS.textMuted,
     opacity: 0.6,
     fontStyle: "italic",
   },
   closeButton: {
-    shadowColor: COLORS.shadow,
+    shadowColor: COLORS.shadows.black,
     shadowOpacity: 0.3,
   },
 });
