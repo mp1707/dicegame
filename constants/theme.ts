@@ -442,6 +442,18 @@ export const ANIMATION = {
     fadeIn: 300,
     colorTransition: 300,
   },
+
+  // Phase transitions (PhaseDeck sliding panels)
+  phase: {
+    // Spring config for slide animations (uses springs.slideIn by default)
+    springConfig: { damping: 22, stiffness: 180 },
+    // Parallax ratios for HUD elements (how far they move relative to screen width)
+    parallax: {
+      scoreRow: 0.6,     // Moves 60% of screen width
+      scoringGrid: 0.75, // Moves 75% of screen width
+      footer: 0.9,       // Moves 90% of screen width (closest to viewer)
+    },
+  },
 } as const;
 
 // Physics constants for 3D dice

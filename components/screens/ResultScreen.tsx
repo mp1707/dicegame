@@ -1,7 +1,8 @@
 import React from "react";
-import { View, StyleSheet, ScrollView } from "react-native";
+import { View, StyleSheet, ScrollView, ViewStyle, StyleProp } from "react-native";
 import { Trophy, Hand, Dices, Star } from "lucide-react-native";
 import { PrimaryButton, GameText } from "../shared";
+import { HUDCard, InsetSlot, Divider, Chip } from "../ui-kit";
 import { COLORS, SPACING, DIMENSIONS } from "../../constants/theme";
 import { useGameStore, useRewardBreakdown } from "../../store/gameStore";
 import { formatNumber } from "../../utils/yahtzeeScoring";
@@ -15,27 +16,36 @@ interface RewardRowProps {
 }
 
 const RewardRow = ({ icon, label, value, highlight = false }: RewardRowProps) => (
-  <View style={styles.rewardRow}>
-    <View style={styles.rewardLeft}>
-      {icon}
+  <InsetSlot padding="sm" style={styles.rewardSlot}>
+    <View style={styles.rewardRow}>
+      <View style={styles.rewardLeft}>
+        {icon}
+        <GameText
+          variant={highlight ? "bodyLarge" : "bodyMedium"}
+          color={highlight ? COLORS.text : COLORS.textMuted}
+        >
+          {label}
+        </GameText>
+      </View>
       <GameText
-        variant={highlight ? "bodyLarge" : "bodyMedium"}
-        color={highlight ? COLORS.text : COLORS.textMuted}
+        variant={highlight ? "displaySmall" : "bodyLarge"}
+        color={highlight ? COLORS.gold : COLORS.text}
+        style={highlight ? styles.highlightValue : undefined}
       >
-        {label}
+        {value}
       </GameText>
     </View>
-    <GameText
-      variant={highlight ? "displaySmall" : "bodyLarge"}
-      color={highlight ? COLORS.gold : COLORS.text}
-      style={highlight ? styles.highlightValue : undefined}
-    >
-      {value}
-    </GameText>
-  </View>
+  </InsetSlot>
 );
 
-export const ResultScreen = () => {
+interface ResultPanelProps {
+  style?: StyleProp<ViewStyle>;
+}
+
+/**
+ * ResultPanel - The inner content of ResultScreen, extracted for PhaseDeck animation
+ */
+export const ResultPanel: React.FC<ResultPanelProps> = ({ style }) => {
   const currentLevelIndex = useGameStore((s) => s.currentLevelIndex);
   const openShop = useGameStore((s) => s.openShop);
   const rewards = useRewardBreakdown();
@@ -59,7 +69,7 @@ export const ResultScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, style]}>
       {/* Header */}
       <View style={styles.header}>
         <Trophy size={DIMENSIONS.iconSize.xl} color={COLORS.gold} />
@@ -68,54 +78,65 @@ export const ResultScreen = () => {
         </GameText>
       </View>
 
-      {/* Rewards list */}
+      {/* Rewards Card */}
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.rewardsList}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <RewardRow
-          icon={<View style={styles.iconPlaceholder} />}
-          label="Current Money"
-          value={`$${formatNumber(rewards.currentMoney)}`}
-        />
-
-        <View style={styles.divider} />
-
-        <RewardRow
-          icon={<Trophy size={DIMENSIONS.iconSize.sm} color={COLORS.mint} />}
-          label="Win Reward"
-          value={`+$${rewards.baseReward}`}
-        />
-
-        <RewardRow
-          icon={<Hand size={DIMENSIONS.iconSize.sm} color={COLORS.cyan} />}
-          label={`Unused Hands (${rewards.unusedHandsCount})`}
-          value={`+$${rewards.unusedHandsBonus}`}
-        />
-
-        <RewardRow
-          icon={<Dices size={DIMENSIONS.iconSize.sm} color={COLORS.cyan} />}
-          label={`Unused Rolls (${rewards.unusedRollsCount})`}
-          value={`+$${rewards.unusedRollsBonus}`}
-        />
-
-        {rewards.tierBonus > 0 && (
+        <HUDCard header="REWARDS" headerColor={COLORS.textMuted}>
           <RewardRow
-            icon={<Star size={DIMENSIONS.iconSize.sm} color={COLORS.gold} />}
-            label={`${getTierLabel()} Bonus`}
-            value={`+$${rewards.tierBonus}`}
+            icon={<View style={styles.iconPlaceholder} />}
+            label="Current Money"
+            value={`$${formatNumber(rewards.currentMoney)}`}
           />
-        )}
 
-        <View style={styles.divider} />
+          <Divider spacing="sm" />
 
-        <RewardRow
-          icon={<View style={styles.iconPlaceholder} />}
-          label="TOTAL PAYOUT"
-          value={`+$${rewards.totalPayout}`}
-          highlight={true}
-        />
+          <RewardRow
+            icon={<Trophy size={DIMENSIONS.iconSize.sm} color={COLORS.mint} />}
+            label="Win Reward"
+            value={`+$${rewards.baseReward}`}
+          />
+
+          <RewardRow
+            icon={<Hand size={DIMENSIONS.iconSize.sm} color={COLORS.cyan} />}
+            label={`Unused Hands (${rewards.unusedHandsCount})`}
+            value={`+$${rewards.unusedHandsBonus}`}
+          />
+
+          <RewardRow
+            icon={<Dices size={DIMENSIONS.iconSize.sm} color={COLORS.cyan} />}
+            label={`Unused Rolls (${rewards.unusedRollsCount})`}
+            value={`+$${rewards.unusedRollsBonus}`}
+          />
+
+          {rewards.tierBonus > 0 && (
+            <View style={styles.tierRow}>
+              <RewardRow
+                icon={<Star size={DIMENSIONS.iconSize.sm} color={COLORS.gold} />}
+                label="Tier Bonus"
+                value={`+$${rewards.tierBonus}`}
+              />
+              <Chip
+                label={getTierLabel()}
+                color="gold"
+                size="sm"
+                style={styles.tierChip}
+              />
+            </View>
+          )}
+
+          <Divider spacing="sm" />
+
+          {/* Total Payout - highlighted */}
+          <RewardRow
+            icon={<View style={styles.iconPlaceholder} />}
+            label="TOTAL PAYOUT"
+            value={`+$${rewards.totalPayout}`}
+            highlight={true}
+          />
+        </HUDCard>
       </ScrollView>
 
       {/* CTA Button */}
@@ -131,6 +152,13 @@ export const ResultScreen = () => {
   );
 };
 
+/**
+ * ResultScreen - Full screen wrapper (for backwards compatibility)
+ */
+export const ResultScreen = () => {
+  return <ResultPanel />;
+};
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -141,7 +169,7 @@ const styles = StyleSheet.create({
   header: {
     alignItems: "center",
     gap: SPACING.md,
-    marginBottom: SPACING.xxl,
+    marginBottom: SPACING.xl,
   },
   title: {
     textAlign: "center",
@@ -152,17 +180,16 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  rewardsList: {
-    backgroundColor: COLORS.overlays.blackMild,
-    borderRadius: DIMENSIONS.borderRadius,
-    padding: SPACING.lg,
-    gap: SPACING.md,
+  scrollContent: {
+    paddingBottom: SPACING.md,
+  },
+  rewardSlot: {
+    marginBottom: SPACING.sm,
   },
   rewardRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: SPACING.xs,
   },
   rewardLeft: {
     flexDirection: "row",
@@ -178,10 +205,13 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 8,
   },
-  divider: {
-    height: 1,
-    backgroundColor: COLORS.overlays.whiteMild,
-    marginVertical: SPACING.sm,
+  tierRow: {
+    flexDirection: "column",
+    gap: SPACING.xs,
+  },
+  tierChip: {
+    alignSelf: "flex-end",
+    marginTop: -SPACING.xs,
   },
   footer: {
     marginTop: SPACING.lg,

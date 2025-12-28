@@ -1,8 +1,9 @@
 import React from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, ViewStyle, StyleProp } from "react-native";
 import { ArrowUp, Lock, ShoppingBag } from "lucide-react-native";
 import { Pressable3DBase } from "../ui/Pressable3DBase";
 import { PrimaryButton, GameText } from "../shared";
+import { Chip } from "../ui-kit";
 import { COLORS, SPACING, DIMENSIONS } from "../../constants/theme";
 import { useGameStore } from "../../store/gameStore";
 import { formatNumber } from "../../utils/yahtzeeScoring";
@@ -55,20 +56,25 @@ const ShopItem = ({
         {label}
       </GameText>
       {sublabel && (
-        <GameText
-          variant="labelSmall"
-          color={COLORS.textMuted}
-          style={disabled && styles.disabledText}
-        >
-          {sublabel}
-        </GameText>
+        <Chip
+          label={sublabel}
+          color={disabled ? "muted" : "cyan"}
+          size="sm"
+          style={styles.sublabelChip}
+        />
       )}
     </View>
   </Pressable3DBase>
 );
 
-export const ShopScreen = () => {
-  const phase = useGameStore((s) => s.phase);
+interface ShopPanelProps {
+  style?: StyleProp<ViewStyle>;
+}
+
+/**
+ * ShopPanel - The inner content of ShopScreen, extracted for PhaseDeck animation
+ */
+export const ShopPanel: React.FC<ShopPanelProps> = ({ style }) => {
   const money = useGameStore((s) => s.money);
   const selectUpgradeItem = useGameStore((s) => s.selectUpgradeItem);
   const closeShopNextLevel = useGameStore((s) => s.closeShopNextLevel);
@@ -85,13 +91,8 @@ export const ShopScreen = () => {
     selectUpgradeItem();
   };
 
-  // Show upgrade picker if in that phase
-  if (phase === "SHOP_PICK_UPGRADE") {
-    return <UpgradePickerScreen />;
-  }
-
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, style]}>
       {/* Header */}
       <View style={styles.header}>
         <ShoppingBag size={DIMENSIONS.iconSize.lg} color={COLORS.cyan} />
@@ -111,29 +112,29 @@ export const ShopScreen = () => {
         <ShopItem
           icon={<ArrowUp size={DIMENSIONS.iconSize.lg} color={COLORS.mint} strokeWidth={3} />}
           label="UPGRADE HAND"
-          sublabel="Boost a hand's power"
+          sublabel="BOOST POWER"
           onPress={handleUpgrade}
         />
 
         {/* Placeholder items - Disabled */}
         <ShopItem
           icon={<Lock size={DIMENSIONS.iconSize.md} color={COLORS.textMuted} />}
-          label="COMING SOON"
-          sublabel="Joker cards"
+          label="JOKER CARDS"
+          sublabel="COMING SOON"
           disabled
         />
 
         <ShopItem
           icon={<Lock size={DIMENSIONS.iconSize.md} color={COLORS.textMuted} />}
-          label="COMING SOON"
-          sublabel="Extra dice"
+          label="EXTRA DICE"
+          sublabel="COMING SOON"
           disabled
         />
 
         <ShopItem
           icon={<Lock size={DIMENSIONS.iconSize.md} color={COLORS.textMuted} />}
-          label="COMING SOON"
-          sublabel="Special powers"
+          label="SPECIAL POWERS"
+          sublabel="COMING SOON"
           disabled
         />
       </View>
@@ -149,6 +150,20 @@ export const ShopScreen = () => {
       </View>
     </View>
   );
+};
+
+/**
+ * ShopScreen - Full screen wrapper with upgrade picker handling
+ */
+export const ShopScreen = () => {
+  const phase = useGameStore((s) => s.phase);
+
+  // Show upgrade picker if in that phase
+  if (phase === "SHOP_PICK_UPGRADE") {
+    return <UpgradePickerScreen />;
+  }
+
+  return <ShopPanel />;
 };
 
 const styles = StyleSheet.create({
@@ -216,6 +231,9 @@ const styles = StyleSheet.create({
     textAlign: "center",
     textTransform: "uppercase",
     letterSpacing: 0.5,
+  },
+  sublabelChip: {
+    marginTop: SPACING.xs,
   },
   disabledText: {
     opacity: 0.6,

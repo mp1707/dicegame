@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
   View,
   StyleSheet,
@@ -11,12 +11,8 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { useFonts } from "expo-font";
 import { DiceTray } from "./components/DiceTray";
 import { GlassHeader } from "./components/ui/GlassHeader";
-import { ScoreRow } from "./components/ui/ScoreRow";
-import { WinOverlay } from "./components/ui/WinOverlay";
-import { ScoringGrid } from "./components/scoring/ScoringGrid";
-import { FooterControls } from "./components/ui/FooterControls";
 import { OverviewModal } from "./components/modals/OverviewModal";
-import { ResultScreen, ShopScreen, EndScreen } from "./components/screens";
+import { PhaseDeck } from "./components/ui-kit/flow";
 import { useGameStore } from "./store/gameStore";
 import { COLORS, calculateDiceTrayHeight } from "./constants/theme";
 
@@ -27,7 +23,6 @@ export default function App() {
   });
 
   // Game states
-  const phase = useGameStore((s) => s.phase);
   const overviewVisible = useGameStore((s) => s.overviewVisible);
   const toggleOverview = useGameStore((s) => s.toggleOverview);
 
@@ -56,53 +51,6 @@ export default function App() {
     );
   }
 
-  // Render main content based on phase
-  const renderMainContent = () => {
-    // Result screen (after cash out)
-    if (phase === "LEVEL_RESULT") {
-      return <ResultScreen />;
-    }
-
-    // Shop screens
-    if (phase === "SHOP_MAIN" || phase === "SHOP_PICK_UPGRADE") {
-      return <ShopScreen />;
-    }
-
-    // Win/Lose screens
-    if (phase === "WIN_SCREEN" || phase === "LOSE_SCREEN") {
-      return <EndScreen />;
-    }
-
-    // Default: Game play view (LEVEL_PLAY, CASHOUT_CHOICE)
-    return (
-      <>
-        {/* 3D Dice Area */}
-        <View
-          style={[
-            styles.diceContainer,
-            { height: diceTrayHeight, width: "100%" },
-          ]}
-        >
-          <View style={styles.crtScreenInner}>
-            <DiceTray
-              containerHeight={diceTrayHeight}
-              containerWidth={screenWidth}
-            />
-          </View>
-          <WinOverlay />
-        </View>
-
-        {/* Score Row (selected hand + formula) */}
-        <ScoreRow />
-
-        {/* Scoring Dashboard */}
-        <View style={styles.scoringDashboard}>
-          <ScoringGrid />
-        </View>
-      </>
-    );
-  };
-
   return (
     <SafeAreaProvider>
       <View style={styles.mainContainer}>
@@ -116,14 +64,23 @@ export default function App() {
         <View style={styles.vignette} pointerEvents="none" />
 
         <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
-          {/* Top HUD - always visible */}
+          {/* Top HUD - always visible, does NOT animate */}
           <GlassHeader />
 
-          {/* Main Content Area */}
-          <View style={styles.mainContent}>{renderMainContent()}</View>
-
-          {/* Footer Controls */}
-          <FooterControls />
+          {/* Main Content Area - PhaseDeck handles all phase transitions */}
+          <View style={styles.mainContent}>
+            <PhaseDeck
+              diceTray={
+                <View style={styles.crtScreenInner}>
+                  <DiceTray
+                    containerHeight={diceTrayHeight}
+                    containerWidth={screenWidth}
+                  />
+                </View>
+              }
+              diceTrayHeight={diceTrayHeight}
+            />
+          </View>
 
           {/* Modals */}
           <OverviewModal visible={overviewVisible} onClose={toggleOverview} />
@@ -168,24 +125,8 @@ const styles = StyleSheet.create({
   mainContent: {
     flex: 1,
   },
-  diceContainer: {
-    width: "100%",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 5,
-  },
   crtScreenInner: {
     flex: 1,
     width: "100%",
-  },
-  scoringDashboard: {
-    flex: 1,
-    width: "100%",
-    marginTop: 8,
   },
 });

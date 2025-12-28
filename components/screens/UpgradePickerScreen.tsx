@@ -1,9 +1,10 @@
 import React from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, ViewStyle, StyleProp } from "react-native";
 import { ArrowLeft } from "lucide-react-native";
 import { Pressable3DBase } from "../ui/Pressable3DBase";
 import { CategoryIcon } from "../ui/CategoryIcon";
 import { GameText } from "../shared";
+import { Chip, InsetSlot } from "../ui-kit";
 import { COLORS, SPACING, DIMENSIONS } from "../../constants/theme";
 import { useGameStore, HandId } from "../../store/gameStore";
 import { CATEGORIES } from "../../utils/yahtzeeScoring";
@@ -50,14 +51,14 @@ const UpgradeCard = ({
       }
     >
       <View style={styles.cardContent}>
-        {/* Icon */}
-        <View style={styles.iconContainer}>
+        {/* Icon in InsetSlot */}
+        <InsetSlot padding="sm" style={styles.iconContainer}>
           <CategoryIcon
             categoryId={handId}
             size={DIMENSIONS.iconSize.xl}
             color={canAfford ? COLORS.cyan : COLORS.textMuted}
           />
-        </View>
+        </InsetSlot>
 
         {/* Hand name */}
         <GameText
@@ -69,20 +70,14 @@ const UpgradeCard = ({
           {label}
         </GameText>
 
-        {/* Level badge */}
-        <View style={styles.levelBadge}>
-          <GameText variant="label" color={COLORS.textMuted}>
-            LV {level}
-          </GameText>
-          <GameText variant="label" color={COLORS.textMuted}>
-            {" → "}
-          </GameText>
-          <GameText variant="label" color={COLORS.mint}>
-            LV {level + 1}
-          </GameText>
-        </View>
+        {/* Level badge using Chip */}
+        <Chip
+          label={`LV ${level} → ${level + 1}`}
+          color={canAfford ? "mint" : "muted"}
+          size="sm"
+        />
 
-        {/* Cost */}
+        {/* Cost badge */}
         <View style={[styles.costBadge, !canAfford && styles.costBadgeDisabled]}>
           <GameText
             variant="bodyMedium"
@@ -96,7 +91,14 @@ const UpgradeCard = ({
   );
 };
 
-export const UpgradePickerScreen = () => {
+interface UpgradePickerPanelProps {
+  style?: StyleProp<ViewStyle>;
+}
+
+/**
+ * UpgradePickerPanel - The inner content, extracted for PhaseDeck animation
+ */
+export const UpgradePickerPanel: React.FC<UpgradePickerPanelProps> = ({ style }) => {
   const money = useGameStore((s) => s.money);
   const handLevels = useGameStore((s) => s.handLevels);
   const upgradeOptions = useGameStore((s) => s.upgradeOptions);
@@ -113,7 +115,7 @@ export const UpgradePickerScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, style]}>
       {/* Header with back button */}
       <View style={styles.header}>
         <Pressable3DBase
@@ -164,6 +166,13 @@ export const UpgradePickerScreen = () => {
       </View>
     </View>
   );
+};
+
+/**
+ * UpgradePickerScreen - Full screen wrapper (for backwards compatibility)
+ */
+export const UpgradePickerScreen = () => {
+  return <UpgradePickerPanel />;
 };
 
 const styles = StyleSheet.create({
@@ -245,20 +254,10 @@ const styles = StyleSheet.create({
     height: 50,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: COLORS.overlays.blackMild,
-    borderRadius: SPACING.sm + 2,
   },
   handName: {
     flex: 1,
     textTransform: "uppercase",
-  },
-  levelBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    backgroundColor: COLORS.overlays.blackMild,
-    borderRadius: SPACING.iconGapMedium,
   },
   costBadge: {
     paddingHorizontal: SPACING.sm + 2,

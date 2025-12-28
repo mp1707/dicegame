@@ -20,7 +20,6 @@ export const FooterControls = () => {
   const revealState = useGameStore((s) => s.revealState);
   const cashOutNow = useGameStore((s) => s.cashOutNow);
   const pressOn = useGameStore((s) => s.pressOn);
-  const startNewRun = useGameStore((s) => s.startNewRun);
 
   const canRoll =
     rollsRemaining > 0 &&
@@ -49,11 +48,6 @@ export const FooterControls = () => {
     triggerSelectionHaptic();
   };
 
-  const handleNewRun = () => {
-    startNewRun();
-    triggerSelectionHaptic();
-  };
-
   const onPressRoll = () => {
     if (!canRoll) return;
     triggerRoll();
@@ -61,29 +55,8 @@ export const FooterControls = () => {
   };
 
   const renderContent = () => {
-    // Win screen - New Run button
-    if (phase === "WIN_SCREEN") {
-      return (
-        <PrimaryButton
-          onPress={handleNewRun}
-          label="NEUER RUN"
-          variant="mint"
-          style={styles.button}
-        />
-      );
-    }
-
-    // Lose screen - New Run button
-    if (phase === "LOSE_SCREEN") {
-      return (
-        <PrimaryButton
-          onPress={handleNewRun}
-          label="NOCHMAL"
-          variant="coral"
-          style={styles.button}
-        />
-      );
-    }
+    // Note: WIN_SCREEN and LOSE_SCREEN are handled by EndPanel
+    // PhaseDeck slides footer away for those phases
 
     // Cash out choice - Two buttons
     if (phase === "CASHOUT_CHOICE") {
@@ -181,14 +154,9 @@ export const FooterControls = () => {
     );
   };
 
-  // Don't show footer in certain phases
-  if (
-    phase === "LEVEL_RESULT" ||
-    phase === "SHOP_MAIN" ||
-    phase === "SHOP_PICK_UPGRADE"
-  ) {
-    return null;
-  }
+  // Note: PhaseDeck handles sliding the footer away for overlay phases
+  // (LEVEL_RESULT, SHOP_MAIN, SHOP_PICK_UPGRADE, WIN_SCREEN, LOSE_SCREEN)
+  // So we always render the footer content here
 
   return <View style={styles.container}>{renderContent()}</View>;
 };

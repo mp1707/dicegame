@@ -81,8 +81,8 @@ module.exports = config;
 ```
 dice-game/
 ├── index.ts                 # Entry point with polyfills
-├── App.tsx                  # Main layout + screen routing
-├── constants/theme.ts       # Colors, typography, spacing
+├── App.tsx                  # Main layout + PhaseDeck integration
+├── constants/theme.ts       # Colors, typography, spacing, animation
 ├── utils/
 │   ├── yahtzeeScoring.ts    # Hand validation logic
 │   └── gameCore.ts          # Scoring, levels, rewards (pure TS)
@@ -91,17 +91,27 @@ dice-game/
 │   ├── Die.tsx              # 3D die with tap-to-lock
 │   ├── DiceTray.tsx         # 3D scene with physics
 │   ├── ui/
-│   │   ├── GlassHeader.tsx  # Level, score, money
+│   │   ├── GlassHeader.tsx  # Level, score, money (fixed, never slides)
 │   │   ├── ScoreRow.tsx     # Selected hand + reveal animation
 │   │   └── FooterControls.tsx
+│   ├── ui-kit/              # Material layer system
+│   │   ├── Surface.tsx      # Base container (panel, inset, chip, overlay)
+│   │   ├── HUDCard.tsx      # Panel wrapper with optional header
+│   │   ├── InsetSlot.tsx    # Recessed sub-surface
+│   │   ├── Chip.tsx         # Non-interactive status badge
+│   │   ├── SectionHeader.tsx # Section title with icon
+│   │   ├── Divider.tsx      # Visual separator
+│   │   ├── index.ts         # Barrel exports
+│   │   └── flow/
+│   │       └── PhaseDeck.tsx # Sliding transition orchestrator
 │   ├── scoring/
 │   │   ├── UpperSection.tsx # 6 dice slots (1-6)
 │   │   └── LowerSection.tsx # 7 poker hand slots
 │   ├── screens/
-│   │   ├── ResultScreen.tsx # Level complete rewards
-│   │   ├── ShopScreen.tsx   # Shop with upgrades
-│   │   ├── UpgradePickerScreen.tsx
-│   │   └── EndScreen.tsx    # Win/Lose screens
+│   │   ├── ResultScreen.tsx # Level complete rewards (exports ResultPanel)
+│   │   ├── ShopScreen.tsx   # Shop with upgrades (exports ShopPanel)
+│   │   ├── UpgradePickerScreen.tsx # (exports UpgradePickerPanel)
+│   │   └── EndScreen.tsx    # Win/Lose screens (exports EndPanel)
 │   └── modals/
 │       └── OverviewModal.tsx # Hand levels + formulas
 ```
@@ -239,6 +249,113 @@ All 13 hand slots use 3 states defined in `theme.ts`:
 ### Dice Tray Sizing
 
 To change the dice tray size in the UI and keep the 3D scene in sync, adjust the UI height in `App.tsx` via `calculateDiceTrayHeight` (in `constants/theme.ts`) and pass both `containerHeight` and `containerWidth` into `DiceTray`. Inside `components/DiceTray.tsx`, derive the 3D floor dimensions from the canvas aspect ratio (e.g., `floorDepth = floorWidth / aspect`) and compute the camera height from the floor size and FOV so the floor fills the viewport without cropping. This keeps the tray full width across devices, prevents dice from rolling out of view, and makes the 3D bounds track the UI layout.
+
+### UI Kit (`components/ui-kit/`)
+
+The UI kit provides material layers to differentiate containers from interactive elements. Containers should look flat and matte; only buttons should have 3D bevels and glows.
+
+**Material Hierarchy (back to front):**
+1. **Background** (`COLORS.bg`) - Main app background
+2. **Panel** (`Surface variant="panel"`) - Card/section containers
+3. **Inset** (`Surface variant="inset"`) - Recessed data displays inside panels
+4. **Interactive** (`PrimaryButton`, `TileButton`) - Tappable elements with 3D effect
+
+**Components:**
+
+```typescript
+import { Surface, HUDCard, InsetSlot, Chip, SectionHeader, Divider } from "../ui-kit";
+
+// Surface - Base container with variants
+<Surface variant="panel">...</Surface>  // Flat matte panel
+<Surface variant="inset">...</Surface>  // Recessed sub-container
+<Surface variant="chip">...</Surface>   // Minimal badge background
+<Surface variant="overlay">...</Surface> // Semi-transparent modal
+
+// HUDCard - Panel wrapper with optional header
+<HUDCard header="REWARDS">
+  <InsetSlot>Data row here</InsetSlot>
+</HUDCard>
+
+// Chip - Non-interactive status badge (NOT tappable)
+<Chip label="NEW" color="cyan" />
+<Chip label="TIER 2" color="gold" size="sm" />
+
+// SectionHeader - Section title with optional icon/accessory
+<SectionHeader title="UPGRADES" icon={<Icon />} />
+
+// Divider - Visual separator
+<Divider spacing="md" />
+```
+
+**Visual Rules:**
+- Panels: Flat fill (`COLORS.surface`), subtle top border (`overlays.whiteMild`), NO outer glow
+- Insets: Darker fill (`COLORS.bg`), top dark border for recessed effect
+- Chips: Minimal flat badge, NO bevel, color variants (cyan, gold, mint, coral, muted)
+- Only `PrimaryButton` and `TileButton` should have 3D bevels and glows
+
+### PhaseDeck Sliding Transitions (`components/ui-kit/flow/PhaseDeck.tsx`)
+
+PhaseDeck orchestrates Balatro-style sliding panel transitions between game phases. It replaces conditional screen rendering with smooth horizontal animations.
+
+**Architecture:**
+1. **Base Layer** - DiceTray (3D scene) - always visible, never animates
+2. **Fixed Layer** - GlassHeader - always visible, never animates
+3. **HUD Layer** - ScoreRow, ScoringGrid, FooterControls - slides out with parallax
+4. **Overlay Layer** - ResultPanel, ShopPanel, UpgradePickerPanel, EndPanel - slides in on demand
+
+**Deck Position Mapping:**
+
+| Position | Phases | What's Visible |
+|----------|--------|----------------|
+| 0 | LEVEL_PLAY, CASHOUT_CHOICE | HUD (ScoreRow, ScoringGrid, Footer) |
+| 1 | LEVEL_RESULT | ResultPanel |
+| 2 | SHOP_MAIN | ShopPanel |
+| 3 | SHOP_PICK_UPGRADE | UpgradePickerPanel |
+| 4 | WIN_SCREEN, LOSE_SCREEN | EndPanel |
+
+**Parallax Effect (HUD only):**
+
+When transitioning away from gameplay, HUD elements slide left at different speeds to create depth:
+
+```typescript
+// From ANIMATION.phase.parallax in theme.ts
+scoreRow: 0.6,      // Moves 60% of screen width (slowest - appears farthest)
+scoringGrid: 0.75,  // Moves 75% of screen width
+footer: 0.9,        // Moves 90% of screen width (fastest - appears closest)
+```
+
+**Integration in App.tsx:**
+
+```typescript
+import { PhaseDeck } from "./components/ui-kit/flow";
+
+// In render:
+<PhaseDeck
+  diceTray={<DiceTray containerHeight={...} containerWidth={...} />}
+  diceTrayHeight={diceTrayHeight}
+/>
+```
+
+**Screen Components Export Pattern:**
+
+Each screen exports both a full `Screen` wrapper and a `Panel` for PhaseDeck:
+
+```typescript
+// ResultScreen.tsx
+export const ResultPanel = () => { ... };  // Inner content for PhaseDeck
+export const ResultScreen = () => (        // Full screen wrapper (legacy)
+  <View style={styles.container}>
+    <ResultPanel />
+  </View>
+);
+```
+
+**Animation Config:**
+
+```typescript
+// From ANIMATION.phase in theme.ts
+springConfig: { damping: 22, stiffness: 180 },  // Spring for slide animations
+```
 
 ---
 
@@ -421,6 +538,12 @@ ANIMATION.counting.totalScoreDisplay // 1600ms
 // Spring configs (for reanimated)
 ANIMATION.springs.button  // { damping: 20, stiffness: 400 }
 ANIMATION.springs.modal   // { damping: 25, stiffness: 400, mass: 0.8 }
+
+// Phase transitions (PhaseDeck sliding panels)
+ANIMATION.phase.springConfig  // { damping: 22, stiffness: 180 }
+ANIMATION.phase.parallax.scoreRow     // 0.6 (60% of screen width)
+ANIMATION.phase.parallax.scoringGrid  // 0.75
+ANIMATION.phase.parallax.footer       // 0.9
 ```
 
 ### Physics Constants
