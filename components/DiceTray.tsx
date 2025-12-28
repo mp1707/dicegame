@@ -8,7 +8,7 @@ import React, {
 import { View, Text, StyleSheet } from "react-native";
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import { Physics, RigidBody, CuboidCollider } from "@react-three/rapier";
-import { ContactShadows, Environment } from "@react-three/drei";
+import { ContactShadows, Environment, useEnvironment } from "@react-three/drei";
 import * as THREE from "three";
 import { Die } from "./Die";
 import { useGameStore } from "../store/gameStore";
@@ -69,6 +69,43 @@ const RenderWarmup = ({ rollTrigger }: { rollTrigger: number }) => {
   }, [invalidate, rollTrigger]);
 
   return null;
+};
+
+// Force shader compilation on mount to avoid first-roll jank
+const ShaderWarmup = () => {
+  const { gl, scene, camera } = useThree();
+  const warmedUp = useRef(false);
+
+  useEffect(() => {
+    if (warmedUp.current) return;
+    warmedUp.current = true;
+
+    // Create minimal geometry to trigger shader compilation
+    const geo = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+    const standardMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+    const basicMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+
+    const mesh1 = new THREE.Mesh(geo, standardMat);
+    const mesh2 = new THREE.Mesh(geo, basicMat);
+    mesh1.position.y = -100; // Off-screen
+    mesh2.position.y = -100;
+
+    scene.add(mesh1, mesh2);
+    gl.compile(scene, camera); // Force synchronous shader compilation
+    scene.remove(mesh1, mesh2);
+
+    geo.dispose();
+    standardMat.dispose();
+    basicMat.dispose();
+  }, [gl, scene, camera]);
+
+  return null;
+};
+
+// Preload HDRI environment to avoid first-render stutter
+const PreloadedEnvironment = () => {
+  const envMap = useEnvironment({ preset: "night" });
+  return <Environment map={envMap} />;
 };
 
 // Camera controller for zoom animation during reveal
@@ -320,6 +357,7 @@ export const DiceTray = ({
 
         <Suspense fallback={null}>
           <RenderWarmup rollTrigger={rollTrigger} />
+          <ShaderWarmup />
           <CameraController
             defaultHeight={cameraHeight}
             defaultFOV={adjustedFOV}
@@ -382,7 +420,7 @@ export const DiceTray = ({
           </Physics>
 
           <ContactShadows opacity={0.6} blur={2.5} />
-          <Environment preset="night" />
+          <PreloadedEnvironment />
         </Suspense>
       </Canvas>
 

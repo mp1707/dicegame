@@ -21,6 +21,9 @@ const FACE_OFFSET = DIE_HALF + 0.01;
 const PIP_OFFSET = 0.25 * DIE_SIZE;
 const PIP_RADIUS = 0.08 * DIE_SIZE;
 
+// Shared geometry for all pips (avoids creating 150+ instances)
+const SHARED_PIP_GEOMETRY = new THREE.CircleGeometry(PIP_RADIUS, 16);
+
 // Pip positions for each face value
 const PIP_POSITIONS: Record<number, [number, number][]> = {
   1: [[0, 0]],
@@ -73,8 +76,7 @@ const DieFace = ({
   return (
     <group rotation={rotation} position={position}>
       {pips.map((pipPos, i) => (
-        <mesh key={i} position={[pipPos[0], pipPos[1], 0.01]}>
-          <circleGeometry args={[PIP_RADIUS, 16]} />
+        <mesh key={i} position={[pipPos[0], pipPos[1], 0.01]} geometry={SHARED_PIP_GEOMETRY}>
           <meshBasicMaterial color="black" transparent opacity={opacity} />
         </mesh>
       ))}
@@ -505,7 +507,6 @@ export const Die = ({
       const mat = meshRef.current.material as THREE.MeshStandardMaterial;
       mat.color.copy(animatedColorRef.current);
       mat.opacity = animatedOpacityRef.current;
-      mat.needsUpdate = true;
     }
 
     // Keep frame loop running during reveal animation or highlight pulse
