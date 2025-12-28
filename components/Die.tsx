@@ -285,8 +285,9 @@ export const Die = ({
         const upVector = new THREE.Vector3(0, 1, 0);
         let bestDot = -1;
         let bestFaceNormal = new THREE.Vector3(0, 1, 0);
+        let bestFace = 3; // Track which face is on top
 
-        FACE_NORMALS.forEach(({ normal }) => {
+        FACE_NORMALS.forEach(({ face, normal }) => {
           const worldNormal = normal
             .clone()
             .applyQuaternion(capturedPhysicsQuaternionRef.current);
@@ -294,12 +295,26 @@ export const Die = ({
           if (dot > bestDot) {
             bestDot = dot;
             bestFaceNormal = normal.clone();
+            bestFace = face;
           }
         });
 
         // Create quaternion that rotates the best face to point up
         const rotationToUp = new THREE.Quaternion();
         rotationToUp.setFromUnitVectors(bestFaceNormal, upVector);
+
+        // Apply face-specific orientation correction
+        // Face 6 pips are arranged as two vertical columns - rotate around Y to align
+        // Use premultiply so Y rotation happens AFTER the face is pointing up
+        if (bestFace === 6) {
+          const yAxisCorrection = new THREE.Quaternion();
+          yAxisCorrection.setFromAxisAngle(
+            new THREE.Vector3(0, 1, 0),
+            Math.PI / 2
+          );
+          rotationToUp.premultiply(yAxisCorrection);
+        }
+
         targetQuaternionRef.current.copy(rotationToUp);
 
         wasRevealActiveRef.current = true;
