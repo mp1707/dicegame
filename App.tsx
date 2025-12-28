@@ -34,6 +34,10 @@ export default function App() {
     "Inter-Medium": Inter_500Medium,
     "Inter-SemiBold": Inter_600SemiBold,
     "Inter-Bold": Inter_700Bold,
+    "RobotoMono-Regular": require("./assets/fonts/RobotoMono-Regular.ttf"),
+    "RobotoMono-Bold": require("./assets/fonts/RobotoMono-Regular.ttf"),
+    "PressStart2P-Regular": require("./assets/fonts/PressStart2P-Regular.ttf"),
+    "M6x11-Regular": require("./assets/fonts/m6x11.ttf"),
   });
 
   // Game states

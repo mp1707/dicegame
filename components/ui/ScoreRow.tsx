@@ -250,6 +250,7 @@ export const ScoreRow = () => {
   const overshootRibbon = useSharedValue(0); // 0-1 for overshoot ribbon width
   const iconColorProgress = useSharedValue(0); // 0 = cyan, 1 = gold
   const ambientSheen = useSharedValue(0); // For idle state sheen animation
+  const armedState = useSharedValue(0); // 0 = normal, 1 = gold "armed" state
   const overshootPercent = useSharedValue(0); // Animated percentage display
 
   // Display state for animated percentage (updated via useAnimatedReaction)
@@ -326,8 +327,9 @@ export const ScoreRow = () => {
         withTiming(1, { duration: 300, easing: Easing.out(Easing.quad) })
       );
 
-      // 5. Icon turns gold
+      // 5. Icon turns gold + plaque enters "armed" state
       iconColorProgress.value = withTiming(1, { duration: 300 });
+      armedState.value = withTiming(1, { duration: 300 });
     }
 
     previousLevelScore.current = levelScore;
@@ -339,6 +341,7 @@ export const ScoreRow = () => {
       hasTriggeredGoalCelebration.current = false;
       iconColorProgress.value = 0;
       overshootRibbon.value = 0;
+      armedState.value = 0;
     }
   }, [levelWon]);
 
@@ -540,7 +543,7 @@ export const ScoreRow = () => {
               </View>
             </>
           ) : (
-            <Text style={styles.scoreLabel}>SCORE</Text>
+            <Text style={styles.scoreLabel}>Punkte</Text>
           )}
         </View>
 
@@ -617,12 +620,10 @@ export const ScoreRow = () => {
           <Animated.View style={[styles.seamFlash, seamFlashStyle]} />
         </View>
 
-        {/* Goal Endcap Plaque */}
-        <Animated.View
-          style={[styles.goalPlaque, plaqueAnimatedStyle, plaqueGlowStyle]}
-        >
-          {/* Plaque content - shows goal or animated overshoot percentage */}
-          <View style={styles.plaqueContent}>
+        {/* Goal Endcap Plaque - Silver metal plate */}
+        <Animated.View style={[styles.goalPlaque, plaqueGlowStyle]}>
+          {/* Plaque content - animate icon+text only */}
+          <Animated.View style={[styles.plaqueContent, plaqueAnimatedStyle]}>
             {displayPercent > 0 || overshootAmount >= 0.25 ? (
               // Show animated +XX% with scale punch as gold bar fills
               <Animated.Text
@@ -646,7 +647,7 @@ export const ScoreRow = () => {
                 </Text>
               </>
             )}
-          </View>
+          </Animated.View>
 
           {/* Specular highlight */}
           <View style={styles.plaqueHighlight} />
@@ -698,15 +699,15 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   scoreLabel: {
-    color: COLORS.text, // Match handName color
-    fontSize: 14,
-    fontFamily: "Bungee-Regular", // Match handName font
-    letterSpacing: 0.5, // Match handName letterSpacing
+    color: COLORS.text,
+    fontSize: 24,
+    fontFamily: "M6x11-Regular",
+    letterSpacing: 0.5,
   },
   handName: {
     color: COLORS.text,
-    fontSize: 14,
-    fontFamily: "Bungee-Regular",
+    fontSize: 24,
+    fontFamily: "M6x11-Regular",
     letterSpacing: 0.5,
   },
   levelBadge: {
@@ -718,7 +719,7 @@ const styles = StyleSheet.create({
   levelText: {
     color: COLORS.cyan,
     fontSize: 10,
-    fontFamily: "Inter-Bold",
+    fontFamily: "M6x11-Regular",
     letterSpacing: 0.5,
   },
 
@@ -735,17 +736,17 @@ const styles = StyleSheet.create({
   deltaPlus: {
     color: COLORS.cyan,
     fontSize: 14,
-    fontFamily: "Inter-Bold",
+    fontFamily: "M6x11-Regular",
   },
   deltaPoints: {
     color: COLORS.cyan,
-    fontSize: 16,
-    fontFamily: "Bungee-Regular",
+    fontSize: 10,
+    fontFamily: "M6x11-Regular",
   },
   deltaMult: {
     color: COLORS.cyan,
     fontSize: 14,
-    fontFamily: "Inter-Bold",
+    fontFamily: "M6x11-Regular",
     opacity: 0.8,
   },
 
@@ -758,14 +759,14 @@ const styles = StyleSheet.create({
   totalLabel: {
     color: COLORS.textMuted,
     fontSize: 10,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "M6x11-Regular",
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   totalNumber: {
     color: COLORS.text,
     fontSize: 24,
-    fontFamily: "Bungee-Regular",
+    fontFamily: "M6x11-Regular",
     fontVariant: ["tabular-nums"],
   },
 
@@ -773,7 +774,7 @@ const styles = StyleSheet.create({
   scoreNumber: {
     color: COLORS.text,
     fontSize: 24,
-    fontFamily: "Bungee-Regular",
+    fontFamily: "M6x11-Regular",
     fontVariant: ["tabular-nums"],
   },
 
@@ -785,23 +786,23 @@ const styles = StyleSheet.create({
   pointsText: {
     color: COLORS.text,
     fontSize: 24,
-    fontFamily: "Bungee-Regular",
+    fontFamily: "M6x11-Regular",
   },
   multSymbol: {
     color: COLORS.textMuted,
     fontSize: 20,
-    fontFamily: "Bungee-Regular",
+    fontFamily: "M6x11-Regular",
   },
   multText: {
     color: COLORS.cyan,
     fontSize: 24,
-    fontFamily: "Bungee-Regular",
+    fontFamily: "M6x11-Regular",
   },
 
   // Legacy (keep for Animated.Text compatibility)
   totalScore: {
     fontSize: 24,
-    fontFamily: "Bungee-Regular",
+    fontFamily: "M6x11-Regular",
     textShadowColor: "rgba(255, 200, 87, 0.3)",
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 8,
@@ -821,18 +822,19 @@ const styles = StyleSheet.create({
   meterTrack: {
     flex: 1,
     height: 28, // Same height as plaque
-    backgroundColor: COLORS.surface, // Darker than plaque for contrast
+    backgroundColor: COLORS.bg, // Darker for recessed slot look
     borderRadius: 8, // Match plaque rounding for unified look
-    borderTopRightRadius: 0, // No right rounding (flush with plaque)
+    borderTopRightRadius: 0, // No right rounding (flush with seam)
     borderBottomRightRadius: 0,
     overflow: "hidden",
-    // 3D bevel effect - same style as goalPlaque
+    // Recessed slot effect - inner shadow via dark border top/bottom
     borderWidth: 1,
     borderTopWidth: 2,
-    borderColor: "rgba(255, 255, 255, 0.15)", // Top/left highlight
-    borderBottomWidth: 2,
-    borderBottomColor: "rgba(0, 0, 0, 0.4)", // Bottom shadow lip
-    borderRightWidth: 0, // Flush with plaque
+    borderTopColor: "rgba(0, 0, 0, 0.5)", // Dark top for inset look
+    borderColor: "rgba(0, 0, 0, 0.3)",
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255, 255, 255, 0.1)", // Subtle bottom highlight
+    borderRightWidth: 0, // Flush with seam
   },
   meterTrackInner: {
     flex: 1,
@@ -905,34 +907,38 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
 
-  // Seam between bar and plaque
+  // Seam between bar and plaque - welded endcap look
   seamLine: {
-    width: 0, // Removed seam - bar and plaque are now flush
+    width: 2, // Visible seam for "welded" effect
     height: 28,
-    backgroundColor: "transparent",
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
     position: "relative",
-    overflow: "hidden",
+    overflow: "visible",
+    // Subtle highlight on left side (bar edge)
+    borderLeftWidth: 1,
+    borderLeftColor: "rgba(255, 255, 255, 0.08)",
   },
   seamFlash: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: COLORS.gold,
+    shadowColor: COLORS.gold,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 6,
   },
 
-  // Goal Plaque (smaller endcap) - matches bar rounding for unified appearance
+  // Goal Plaque - flat label at end of progress bar
   goalPlaque: {
     width: 70,
     height: 28,
-    backgroundColor: COLORS.surface2, // Match TileButton
-    borderRadius: 8, // Match meterTrack rounding for unified look
-    borderTopLeftRadius: 0, // No left rounding (flush with bar)
+    backgroundColor: COLORS.surface2, // Neutral surface
+    borderRadius: 8,
+    borderTopLeftRadius: 0,
     borderBottomLeftRadius: 0,
+    // Subtle border to define edge without elevation
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
-    borderLeftWidth: 0, // No left border (welded to bar)
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255, 255, 255, 0.15)",
-    borderBottomWidth: 2,
-    borderBottomColor: "rgba(0, 0, 0, 0.4)",
+    borderColor: "rgba(255, 255, 255, 0.15)",
+    borderLeftWidth: 0, // Flush with seam
     position: "relative",
     overflow: "hidden",
   },
@@ -962,24 +968,28 @@ const styles = StyleSheet.create({
   },
   goalLabel: {
     fontSize: 8,
-    fontFamily: "Inter-SemiBold",
+    fontFamily: "M6x11-Regular",
     color: COLORS.textMuted,
     letterSpacing: 0.5,
   },
   // Overshoot percentage text (shown when bar is fully filled)
   overshootPercent: {
     fontSize: 14,
-    fontFamily: "Bungee-Regular",
+    fontFamily: "M6x11-Regular",
     color: COLORS.gold,
-    textShadowColor: "rgba(255, 200, 87, 0.4)",
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 4,
+    textShadowColor: "rgba(255, 200, 87, 0.5)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   goalNumber: {
     fontSize: 14,
-    fontFamily: "Bungee-Regular",
+    fontFamily: "M6x11-Regular",
     color: COLORS.text,
     fontVariant: ["tabular-nums"],
+    // Shadow for scanline contrast
+    textShadowColor: "rgba(0, 0, 0, 0.6)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   plaqueHighlight: {
     position: "absolute",
@@ -987,7 +997,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 1,
-    backgroundColor: "rgba(255, 255, 255, 0.15)",
+    backgroundColor: "rgba(255, 255, 255, 0.12)", // Subtle for theme
     borderTopRightRadius: 6,
   },
 
@@ -1007,21 +1017,21 @@ const styles = StyleSheet.create({
   },
   finalScore: {
     color: COLORS.gold,
-    fontSize: 24,
-    fontFamily: "Bungee-Regular",
+    fontSize: 14,
+    fontFamily: "M6x11-Regular",
     textShadowColor: "rgba(255, 200, 87, 0.4)",
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 10,
   },
   handScore: {
     color: COLORS.text,
-    fontSize: 24,
-    fontFamily: "Bungee-Regular",
+    fontSize: 16,
+    fontFamily: "M6x11-Regular",
   },
   standScore: {
     color: COLORS.text,
-    fontSize: 24,
-    fontFamily: "Bungee-Regular",
+    fontSize: 14,
+    fontFamily: "M6x11-Regular",
   },
   tickContainer: {
     ...StyleSheet.absoluteFillObject,

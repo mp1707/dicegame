@@ -74,6 +74,26 @@ export const TYPOGRAPHY = {
     color: COLORS.text,
   },
 
+  // Scoreboard - VT323 for retro LED scoreboard numbers
+  scoreboardLarge: {
+    fontFamily: "Bungee-Regular",
+    fontSize: 28,
+    color: COLORS.text,
+    fontVariant: ["tabular-nums"] as any,
+  },
+  scoreboardMedium: {
+    fontFamily: "Bungee-Regular",
+    fontSize: 22,
+    color: COLORS.text,
+    fontVariant: ["tabular-nums"] as any,
+  },
+  scoreboardSmall: {
+    fontFamily: "Bungee-Regular",
+    fontSize: 18,
+    color: COLORS.text,
+    fontVariant: ["tabular-nums"] as any,
+  },
+
   // UI - Labels, readable numbers, body
   // Inter supports tabular numbers (tnum) by default features usually, or we ensure mono-look
   scoreValue: {
@@ -92,6 +112,11 @@ export const TYPOGRAPHY = {
   body: {
     fontFamily: "Inter-Medium",
     fontSize: 12,
+    color: COLORS.textMuted,
+  },
+  smallText: {
+    fontFamily: "Inter-Regular",
+    fontSize: 10,
     color: COLORS.textMuted,
   },
   button: {
