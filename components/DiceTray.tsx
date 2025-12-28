@@ -1,5 +1,5 @@
 import React, { Suspense, useRef, useCallback, useEffect, useMemo } from "react";
-import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import { Physics, RigidBody, CuboidCollider } from "@react-three/rapier";
 import { ContactShadows, Environment } from "@react-three/drei";
@@ -10,21 +10,13 @@ import { COLORS } from "../constants/theme";
 import { triggerLightImpact, triggerSelectionHaptic } from "../utils/haptics";
 import { getContributingDiceIndices } from "../utils/gameCore";
 
-// Loading fallback component
-const LoadingFallback = () => (
-  <View style={styles.loadingContainer}>
-    <ActivityIndicator size="large" color={COLORS.gold} />
-    <Text style={styles.loadingText}>Loading Physics...</Text>
-  </View>
-);
-
 // Game end overlay
 const GameEndOverlay = () => {
   const phase = useGameStore((s) => s.phase);
 
-  if (phase !== "won" && phase !== "lost") return null;
+  if (phase !== "WIN_SCREEN" && phase !== "LOSE_SCREEN") return null;
 
-  const isWon = phase === "won";
+  const isWon = phase === "WIN_SCREEN";
 
   return (
     <View style={styles.gameEndOverlay}>
@@ -125,12 +117,10 @@ export const DiceTray = ({
   const selectedDice = useGameStore((state) => state.selectedDice);
   const diceValues = useGameStore((state) => state.diceValues);
   const isRolling = useGameStore((state) => state.isRolling);
-  const hasRolledThisRound = useGameStore((state) => state.hasRolledThisRound);
   const phase = useGameStore((state) => state.phase);
   const diceVisible = useGameStore((state) => state.diceVisible);
   const completeRoll = useGameStore((state) => state.completeRoll);
   const toggleDiceLock = useGameStore((state) => state.toggleDiceLock);
-  const pendingCategoryId = useGameStore((state) => state.pendingCategoryId);
   const selectedHandId = useGameStore((state) => state.selectedHandId);
   const revealState = useGameStore((state) => state.revealState);
 
@@ -257,11 +247,11 @@ export const DiceTray = ({
   // Callback for die tap
   const handleDieTap = useCallback(
     (index: number) => {
-      if (pendingCategoryId) return;
+      if (selectedHandId) return; // Can't lock dice when a hand is selected
       triggerSelectionHaptic();
       toggleDiceLock(index);
     },
-    [pendingCategoryId, toggleDiceLock]
+    [selectedHandId, toggleDiceLock]
   );
 
   return (
@@ -357,13 +347,6 @@ export const DiceTray = ({
         </Suspense>
       </Canvas>
 
-
-      {phase === "rolling" && !hasRolledThisRound && !isRolling && (
-        <View pointerEvents="none" style={styles.readyToRollOverlay}>
-          <Text style={styles.readyToRollText}>START</Text>
-        </View>
-      )}
-
       {/* Goal Display (Bottom Left) */}
       <View style={styles.goalDisplayOverlay} pointerEvents="none">
         <Text style={styles.goalText}>
@@ -389,18 +372,6 @@ const styles = StyleSheet.create({
   canvas: {
     flex: 1,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: COLORS.bg2,
-  },
-  loadingText: {
-    color: COLORS.text,
-    marginTop: 10,
-    fontSize: 14,
-    fontFamily: "RobotoMono-Regular",
-  },
   gameEndOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0, 0, 0, 0.7)",
@@ -415,17 +386,6 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 10,
     textAlign: "center",
-  },
-  readyToRollOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  readyToRollText: {
-    color: "rgba(255, 255, 255, 0.15)", // Very subtle watermark style
-    fontSize: 40,
-    fontFamily: "PressStart2P-Regular",
-    letterSpacing: 4,
   },
   goalDisplayOverlay: {
     position: "absolute",

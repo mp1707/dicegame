@@ -144,6 +144,7 @@ Level goals: 50 → 80 → 120 → 180 → 250 → 350 → 480 → 650
 ### Reward System
 
 On level complete:
+
 - Base win: $10
 - Per unused hand: $2
 - Per unused roll: $1
@@ -154,12 +155,72 @@ Hand upgrade cost: $6 + current hand level
 
 ### Dice Locking Pattern
 
+Locked dice use Rapier's body type switching for truly immovable behavior:
+
 ```typescript
-// Die.tsx - Skip roll for locked dice
-if (rollTrigger > prevRollTrigger.current && !isSelected) {
-  rigidBody.current.applyImpulse(...);
+// Die.tsx - On roll trigger
+if (isLocked) {
+  // Switch to kinematicPosition - immovable but collidable (like walls)
+  rigidBody.current.setBodyType(1, true); // 1 = kinematicPosition
+  reportSettle(); // Immediately report since locked dice don't move
+} else {
+  // Ensure dynamic for rolling
+  rigidBody.current.setBodyType(0, true); // 0 = dynamic
+  // Apply impulse and roll normally...
 }
 ```
+
+This approach makes locked dice truly solid - other dice bounce off naturally without pushing them.
+
+### Counting Animation Flow
+
+When a player accepts a hand, a coordinated reveal animation plays across multiple components:
+
+**1. Trigger: `acceptHand()` in gameStore**
+
+- Sets `revealState.active = true` with scoring breakdown
+- Unlocks all dice (locks no longer needed during scoring)
+
+**2. DiceTray orchestration**
+
+- `CameraController`: Zooms camera to 60% of default height (40% closer)
+- Slot assignment: Sorts dice by X position (left-to-right) and assigns arranged slots
+- Each Die receives: `isRevealActive`, `arrangedPosition`, `isHighlighted`, `isContributing`
+
+**3. Die animation (in useFrame)**
+
+- **First reveal frame**:
+  - Switches die to dynamic type (in case it was kinematic from locking)
+  - Captures physics position/rotation
+  - Computes target quaternion to show top face
+  - Applies captured position immediately (no lerp) and returns early
+  - Calls `invalidate()` to ensure next frame renders
+- **Subsequent frames**:
+  - Caps `delta` to max 33ms to prevent instant jumps after long pauses (`frameloop="demand"`)
+  - Lerps position toward arranged slot
+  - Slerps rotation toward flat orientation
+  - Physics disabled by zeroing velocities while animation runs
+
+**4. ScoreRow counting animation**
+
+- Iterates through `contributingIndices` one by one
+- Updates `currentDieIndex` to highlight each die in turn
+- Accumulates pips and animates score display
+- After all dice counted, shows final score for 2 seconds, then calls `finalizeHand()`
+
+**5. Die visual states during reveal**
+
+- **Highlighted** (current die): Gold color, pulse scale (1.0 → 1.12 → 1.0)
+- **Contributing**: Normal opacity, awaiting highlight
+- **Non-contributing**: Dimmed to 30% opacity
+
+**Key timing constants:**
+
+- Position lerp speed: 8 (exponential decay)
+- Delta cap: 33ms (prevents instant jumps after frame gaps)
+- Highlight pulse: 200ms (35% attack, 65% settle)
+- Per-die counting delay: 700ms
+- Final score display: 2000ms
 
 ### Slot Visual States
 

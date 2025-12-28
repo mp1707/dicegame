@@ -148,19 +148,23 @@ export const Die = ({
       stableTimeRef.current = 0;
 
       if (isLocked) {
-        // LOCKED DICE: Immediate settle, no physics action
+        // LOCKED DICE: Switch to kinematicPosition to be truly immovable
+        // Other dice will bounce off locked dice naturally
+        if (rigidBody.current) {
+          rigidBody.current.setBodyType(1, true); // 1 = kinematicPosition
+        }
+        // Report settle immediately since locked dice don't move
         reportSettle();
       } else {
-        // UNLOCKED DICE: Wake up and roll
-        onWake(index); // Notify parent we are moving
-
+        // UNLOCKED DICE: Ensure dynamic type and roll
         if (rigidBody.current) {
+          // Ensure die is dynamic for rolling
+          rigidBody.current.setBodyType(0, true); // 0 = dynamic
+
           const pos = initialPosition.current;
 
-          // awake() is sometimes needed to ensure impulses work if body was sleeping
+          // Wake and reset position
           rigidBody.current.wakeUp();
-
-          // Reset Position
           rigidBody.current.setTranslation(
             { x: pos[0] * 0.7, y: pos[1], z: pos[2] },
             true
@@ -190,6 +194,8 @@ export const Die = ({
             true
           );
         }
+
+        onWake(index); // Notify parent we are moving
       }
     }
 
@@ -253,21 +259,27 @@ export const Die = ({
     }
   }, [isRevealActive, isLocked, isVisible]);
 
-  // Combined useFrame for settle detection + animation + locked freeze
+  // Combined useFrame for settle detection + animation
   useFrame((state, delta) => {
     // ARRANGED POSITION ANIMATION during reveal
     if (isRevealActive && rigidBody.current) {
       // Capture physics state on FIRST reveal frame (before any animation)
       // This must happen in useFrame, not useEffect, to avoid timing issues
       if (!wasRevealActiveRef.current) {
-        // Capture current physics position
+        // CRITICAL: Ensure die is dynamic for animation (in case it was kinematic from locking)
+        rigidBody.current.setBodyType(0, true); // 0 = dynamic
+
+        // Force capture current physics state immediately
+        // This is the TRUE position after the roll settled
         const pos = rigidBody.current.translation();
         animatedPositionRef.current.set(pos.x, pos.y, pos.z);
 
         // Capture current physics rotation
         const rot = rigidBody.current.rotation();
         capturedPhysicsQuaternionRef.current.set(rot.x, rot.y, rot.z, rot.w);
-        animatedQuaternionRef.current.copy(capturedPhysicsQuaternionRef.current);
+        animatedQuaternionRef.current.copy(
+          capturedPhysicsQuaternionRef.current
+        );
 
         // Calculate target quaternion to show top face upward
         const upVector = new THREE.Vector3(0, 1, 0);
@@ -275,7 +287,9 @@ export const Die = ({
         let bestFaceNormal = new THREE.Vector3(0, 1, 0);
 
         FACE_NORMALS.forEach(({ normal }) => {
-          const worldNormal = normal.clone().applyQuaternion(capturedPhysicsQuaternionRef.current);
+          const worldNormal = normal
+            .clone()
+            .applyQuaternion(capturedPhysicsQuaternionRef.current);
           const dot = worldNormal.dot(upVector);
           if (dot > bestDot) {
             bestDot = dot;
@@ -289,12 +303,46 @@ export const Die = ({
         targetQuaternionRef.current.copy(rotationToUp);
 
         wasRevealActiveRef.current = true;
+
+        // IMPORTANT: Skip lerp on capture frame - just apply captured position
+        // This ensures animation starts from correct position on next frame
+        rigidBody.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
+        rigidBody.current.setAngvel({ x: 0, y: 0, z: 0 }, true);
+        rigidBody.current.setTranslation(
+          {
+            x: animatedPositionRef.current.x,
+            y: animatedPositionRef.current.y,
+            z: animatedPositionRef.current.z,
+          },
+          true
+        );
+        rigidBody.current.setRotation(
+          {
+            x: animatedQuaternionRef.current.x,
+            y: animatedQuaternionRef.current.y,
+            z: animatedQuaternionRef.current.z,
+            w: animatedQuaternionRef.current.w,
+          },
+          true
+        );
+
+        // Force next frame to render immediately
+        state.invalidate();
+        return; // Skip rest of animation logic on capture frame
       }
 
+      // Cap delta to prevent instant jumps after long pauses between frames
+      // With frameloop="demand", delta can be huge after settling
+      const cappedDelta = Math.min(delta, 1 / 30); // Cap at ~33ms
+
       // Smooth lerp position toward arranged position (using cached ref)
-      targetPositionRef.current.set(arrangedPosition[0], arrangedPosition[1], arrangedPosition[2]);
+      targetPositionRef.current.set(
+        arrangedPosition[0],
+        arrangedPosition[1],
+        arrangedPosition[2]
+      );
       const posLerpSpeed = 8; // Balanced speed for smooth but snappy movement
-      const posT = 1 - Math.exp(-posLerpSpeed * delta);
+      const posT = 1 - Math.exp(-posLerpSpeed * cappedDelta);
       animatedPositionRef.current.lerp(targetPositionRef.current, posT);
 
       // Smooth slerp rotation toward target (top face up)
@@ -324,12 +372,6 @@ export const Die = ({
       // Reset tracking when reveal ends
       wasRevealActiveRef.current = false;
     }
-    // LOCKED DICE: Freeze in place by zeroing velocities every frame
-    // This is more stable than changing RigidBody type between fixed/dynamic
-    else if (isLocked && rigidBody.current) {
-      rigidBody.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
-      rigidBody.current.setAngvel({ x: 0, y: 0, z: 0 }, true);
-    }
 
     // Continuously report position for slot sorting (ensures positions are current before reveal)
     if (!isRevealActive && rigidBody.current && isVisible) {
@@ -337,7 +379,12 @@ export const Die = ({
     }
 
     // Settle detection (only for unlocked, unsettled dice, and not during reveal)
-    if (!isLocked && !settleReportedRef.current && rigidBody.current && !isRevealActive) {
+    if (
+      !isLocked &&
+      !settleReportedRef.current &&
+      rigidBody.current &&
+      !isRevealActive
+    ) {
       const linvel = rigidBody.current.linvel();
       const angvel = rigidBody.current.angvel();
       const speed = Math.hypot(linvel.x, linvel.y, linvel.z);
@@ -421,7 +468,9 @@ export const Die = ({
         targetScale,
         lerpFactor * 1.5
       );
-      const colorTarget = useGoldColor ? goldColorRef.current : whiteColorRef.current;
+      const colorTarget = useGoldColor
+        ? goldColorRef.current
+        : whiteColorRef.current;
       animatedColorRef.current.lerp(colorTarget, lerpFactor * 1.2);
       animatedOpacityRef.current = THREE.MathUtils.lerp(
         animatedOpacityRef.current,
@@ -443,8 +492,8 @@ export const Die = ({
       mat.needsUpdate = true;
     }
 
-    // Keep frame loop running during reveal animation or when locked (for freeze logic)
-    if (isRevealActive || isHighlighted || isLocked) {
+    // Keep frame loop running during reveal animation or highlight pulse
+    if (isRevealActive || isHighlighted) {
       state.invalidate();
     }
   });
