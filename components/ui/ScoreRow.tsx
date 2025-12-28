@@ -341,6 +341,7 @@ export const ScoreRow = () => {
       hasTriggeredGoalCelebration.current = false;
       iconColorProgress.value = 0;
       overshootRibbon.value = 0;
+      overshootPercent.value = 0;
       armedState.value = 0;
     }
   }, [levelWon]);

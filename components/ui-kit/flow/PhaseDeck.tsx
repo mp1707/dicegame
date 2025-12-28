@@ -3,9 +3,10 @@ import { View, StyleSheet, useWindowDimensions } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withSpring,
+  withTiming,
   interpolate,
   SharedValue,
+  Easing,
 } from "react-native-reanimated";
 import { useGameStore, GamePhase } from "../../../store/gameStore";
 import { ANIMATION, COLORS } from "../../../constants/theme";
@@ -58,7 +59,11 @@ const getDeckPosition = (phase: GamePhase): number => {
   }
 };
 
-const springConfig = ANIMATION.phase.springConfig;
+// Snappy easing config - fast attack, no wobble
+const timingConfig = {
+  duration: 280,
+  easing: Easing.out(Easing.cubic),
+};
 
 /**
  * Hook to create animated style for sliding layers
@@ -122,7 +127,7 @@ export const PhaseDeck: React.FC<PhaseDeckProps> = ({
   // React to phase changes
   useEffect(() => {
     const targetPosition = getDeckPosition(phase);
-    deckPosition.value = withSpring(targetPosition, springConfig);
+    deckPosition.value = withTiming(targetPosition, timingConfig);
   }, [phase, deckPosition]);
 
   // HUD layer animated styles with parallax
@@ -155,10 +160,12 @@ export const PhaseDeck: React.FC<PhaseDeckProps> = ({
   const endStyle = useSlideStyle(deckPosition, 4, screenWidth);
 
   // Determine which layers should be rendered (for performance)
-  const isGameplayVisible = phase === "LEVEL_PLAY" || phase === "CASHOUT_CHOICE";
+  const isGameplayVisible =
+    phase === "LEVEL_PLAY" || phase === "CASHOUT_CHOICE";
   const isResultVisible = phase === "LEVEL_RESULT" || isGameplayVisible;
   const isShopVisible = phase === "SHOP_MAIN" || phase === "LEVEL_RESULT";
-  const isUpgradeVisible = phase === "SHOP_PICK_UPGRADE" || phase === "SHOP_MAIN";
+  const isUpgradeVisible =
+    phase === "SHOP_PICK_UPGRADE" || phase === "SHOP_MAIN";
   const isEndVisible = phase === "WIN_SCREEN" || phase === "LOSE_SCREEN";
 
   return (
