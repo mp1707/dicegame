@@ -424,16 +424,6 @@ export const DiceTray = ({
         </Suspense>
       </Canvas>
 
-      {/* Goal Display (Bottom Left) */}
-      <View style={styles.goalDisplayOverlay} pointerEvents="none">
-        <Text style={styles.goalText}>
-          ZIEL -{" "}
-          <Text style={styles.goalValue}>
-            {useGameStore((s) => s.levelGoal)}
-          </Text>
-        </Text>
-      </View>
-
       {/* Game End Overlay */}
       <GameEndOverlay />
     </View>
@@ -462,21 +452,5 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 10,
     textAlign: "center",
-  },
-  goalDisplayOverlay: {
-    position: "absolute",
-    bottom: 12,
-    left: 16,
-    zIndex: 30,
-  },
-  goalText: {
-    color: COLORS.text,
-    fontSize: 20,
-    fontFamily: "Bungee-Regular",
-    letterSpacing: 1,
-  },
-  goalValue: {
-    color: COLORS.text,
-    fontSize: 20,
   },
 });

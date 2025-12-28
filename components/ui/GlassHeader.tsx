@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet, Platform } from "react-native";
+import { View, Text, StyleSheet, Platform, Image } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { COLORS, TYPOGRAPHY, SPACING } from "../../constants/theme";
 import { useGameStore } from "../../store/gameStore";
@@ -34,7 +34,11 @@ export const GlassHeader = () => {
         </View>
 
         <View style={styles.moneyContainer}>
-          <Text style={styles.moneyValue}>${formatNumber(money)}</Text>
+          <Image
+            source={require("../../assets/icons/coin.png")}
+            style={styles.coinIcon}
+          />
+          <Text style={styles.moneyValue}>{formatNumber(money)}</Text>
         </View>
       </View>
     </View>
@@ -87,7 +91,13 @@ const styles = StyleSheet.create({
     fontFamily: "Bungee-Regular",
   },
   moneyContainer: {
-    alignItems: "flex-end",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  coinIcon: {
+    width: 24,
+    height: 24,
   },
   moneyValue: {
     color: COLORS.gold,
