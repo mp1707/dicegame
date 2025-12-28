@@ -233,8 +233,15 @@ export const Die = ({
     }
   }, [isRevealActive, isLocked, isVisible]);
 
-  // Combined useFrame for settle detection + animation
+  // Combined useFrame for settle detection + animation + locked freeze
   useFrame((state, delta) => {
+    // LOCKED DICE: Freeze in place by zeroing velocities every frame
+    // This is more stable than changing RigidBody type between fixed/dynamic
+    if (isLocked && rigidBody.current) {
+      rigidBody.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
+      rigidBody.current.setAngvel({ x: 0, y: 0, z: 0 }, true);
+    }
+
     // Settle detection (only for unlocked, unsettled dice)
     if (!isLocked && !settleReportedRef.current && rigidBody.current) {
       const linvel = rigidBody.current.linvel();
@@ -263,13 +270,23 @@ export const Die = ({
     let targetOpacity: number;
 
     if (isHighlighted) {
-      // Pulse animation: grow then shrink
+      // Snappy pulse: quick grow, fast return
       const elapsed = performance.now() - highlightStartTimeRef.current;
-      const pulseDuration = 400;
-      if (elapsed < pulseDuration / 2) {
-        targetScale = THREE.MathUtils.lerp(1.0, 1.15, elapsed / (pulseDuration / 2));
+      const pulseDuration = 200; // Faster pulse
+      const peakScale = 1.08; // Subtler scale for premium feel
+
+      if (elapsed < pulseDuration * 0.35) {
+        // Fast attack (35% of duration)
+        const t = elapsed / (pulseDuration * 0.35);
+        // Ease-out cubic for snappy attack
+        const eased = 1 - Math.pow(1 - t, 3);
+        targetScale = THREE.MathUtils.lerp(1.0, peakScale, eased);
       } else if (elapsed < pulseDuration) {
-        targetScale = THREE.MathUtils.lerp(1.15, 1.0, (elapsed - pulseDuration / 2) / (pulseDuration / 2));
+        // Quick settle (65% of duration)
+        const t = (elapsed - pulseDuration * 0.35) / (pulseDuration * 0.65);
+        // Ease-out quad for smooth settle
+        const eased = 1 - (1 - t) * (1 - t);
+        targetScale = THREE.MathUtils.lerp(peakScale, 1.0, eased);
       } else {
         targetScale = 1.0;
       }
@@ -297,17 +314,20 @@ export const Die = ({
       targetOpacity = isVisible ? 1.0 : 0.0;
     }
 
-    // Lerp toward targets
+    // Lerp toward targets - faster for snappier feel
     animatedScaleRef.current = THREE.MathUtils.lerp(
       animatedScaleRef.current,
       targetScale,
-      lerpFactor * 8
+      lerpFactor * 18 // Faster scale response
     );
-    animatedColorRef.current.lerp(new THREE.Color(targetColor), lerpFactor * 6);
+    animatedColorRef.current.lerp(
+      new THREE.Color(targetColor),
+      lerpFactor * 12
+    );
     animatedOpacityRef.current = THREE.MathUtils.lerp(
       animatedOpacityRef.current,
       targetOpacity,
-      lerpFactor * 6
+      lerpFactor * 14 // Faster opacity transitions
     );
 
     // Apply to refs
@@ -323,8 +343,8 @@ export const Die = ({
       mat.needsUpdate = true;
     }
 
-    // Keep frame loop running during reveal animation
-    if (isRevealActive || isHighlighted) {
+    // Keep frame loop running during reveal animation or when locked (for freeze logic)
+    if (isRevealActive || isHighlighted || isLocked) {
       state.invalidate();
     }
   });
@@ -348,7 +368,8 @@ export const Die = ({
   const roughness = isLocked ? 0.2 : 0.4;
 
   // Base opacity for DieFace pips (matches animation target)
-  const pipOpacity = isRevealActive && !isContributing ? 0.3 : isVisible ? 1 : 0;
+  const pipOpacity =
+    isRevealActive && !isContributing ? 0.3 : isVisible ? 1 : 0;
 
   return (
     <RigidBody
@@ -358,16 +379,12 @@ export const Die = ({
       friction={0.9}
       linearDamping={0.35}
       angularDamping={0.6}
-      // Fixed type for locked dice prevents any movement/drift
-      type={isLocked ? "fixed" : "dynamic"}
+      type="dynamic"
       onSleep={reportSettle}
       onWake={handleWake}
       position={position}
     >
-      <group
-        ref={groupRef}
-        onPointerDown={handlePointerDown}
-      >
+      <group ref={groupRef} onPointerDown={handlePointerDown}>
         {/* Main die body */}
         <mesh ref={meshRef} castShadow receiveShadow>
           <boxGeometry args={[DIE_SIZE, DIE_SIZE, DIE_SIZE]} />

@@ -18,6 +18,7 @@ import {
 import { DiceTray } from "./components/DiceTray";
 import { GlassHeader } from "./components/ui/GlassHeader";
 import { ScoreRow } from "./components/ui/ScoreRow";
+import { WinOverlay } from "./components/ui/WinOverlay";
 import { ScoringGrid } from "./components/scoring/ScoringGrid";
 import { FooterControls } from "./components/ui/FooterControls";
 import { OverviewModal } from "./components/modals/OverviewModal";
@@ -98,6 +99,7 @@ export default function App() {
               containerWidth={screenWidth}
             />
           </View>
+          <WinOverlay />
         </View>
 
         {/* Score Row (selected hand + formula) */}

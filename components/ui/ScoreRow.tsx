@@ -3,8 +3,9 @@ import { View, Text, StyleSheet } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withSpring,
+  withTiming,
   withSequence,
+  Easing,
   SharedValue,
 } from "react-native-reanimated";
 import { COLORS, SPACING } from "../../constants/theme";
@@ -45,8 +46,9 @@ export const ScoreRow = () => {
     : 0;
   const mult = selectedHandId ? HAND_BASE_CONFIG[selectedHandId].mult : 1;
 
-  // Spring config for snappy animation
-  const springConfig = { damping: 15, stiffness: 400 };
+  // Snappy timing config - fast attack, quick settle
+  const snapTiming = { duration: 120, easing: Easing.out(Easing.cubic) };
+  const returnTiming = { duration: 100, easing: Easing.inOut(Easing.quad) };
 
   // Run reveal animation when revealState becomes active
   useEffect(() => {
@@ -67,13 +69,13 @@ export const ScoreRow = () => {
 
     const animateNextDie = () => {
       if (dieIdx >= contributingIndices.length) {
-        // All dice counted - show final score
-        updateRevealAnimation({ animationPhase: "final" });
+        // All dice counted - show final score, clear highlight
+        updateRevealAnimation({ animationPhase: "final", currentDieIndex: -1 });
 
-        // Bounce animation for final score
+        // Snappy pop for final score - quick scale up, fast settle
         finalScoreScale.value = withSequence(
-          withSpring(1.15, { damping: 10, stiffness: 400 }),
-          withSpring(1, { damping: 15, stiffness: 300 })
+          withTiming(1.08, { duration: 100, easing: Easing.out(Easing.back(1.5)) }),
+          withTiming(1, { duration: 80, easing: Easing.out(Easing.quad) })
         );
 
         // Hold for 2 seconds then finalize
@@ -96,10 +98,10 @@ export const ScoreRow = () => {
         accumulatedPips,
       });
 
-      // Animate points scale simultaneously
+      // Snappy pop on points update
       pointsScale.value = withSequence(
-        withSpring(1.1, springConfig),
-        withSpring(1, springConfig)
+        withTiming(1.06, snapTiming),
+        withTiming(1, returnTiming)
       );
 
       // Wait then animate next die
