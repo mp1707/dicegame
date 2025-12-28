@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from "react";
 import { RigidBody, RapierRigidBody } from "@react-three/rapier";
 import * as THREE from "three";
 import { ThreeEvent, useFrame } from "@react-three/fiber";
+import { RoundedBox } from "@react-three/drei";
 import { COLORS } from "../constants/theme";
 
 // Standard D6 Face Normals
@@ -550,14 +551,20 @@ export const Die = ({
     >
       <group ref={groupRef} onPointerDown={handlePointerDown}>
         {/* Main die body */}
-        <mesh ref={meshRef} castShadow receiveShadow>
-          <boxGeometry args={[DIE_SIZE, DIE_SIZE, DIE_SIZE]} />
+        <RoundedBox
+          ref={meshRef}
+          args={[DIE_SIZE, DIE_SIZE, DIE_SIZE]}
+          radius={0.08}
+          smoothness={4}
+          castShadow
+          receiveShadow
+        >
           <meshStandardMaterial
             metalness={metalness}
             roughness={roughness}
             transparent
           />
-        </mesh>
+        </RoundedBox>
 
         {/* Face 1 - Right (+X) */}
         <DieFace
