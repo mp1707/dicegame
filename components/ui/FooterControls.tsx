@@ -1,7 +1,7 @@
 import React from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Image } from "react-native";
 import { PrimaryButton, GameText } from "../shared";
-import { InsetSlot } from "../ui-kit";
+import { InsetSlot, Surface } from "../ui-kit";
 import { COLORS, SPACING, DIMENSIONS } from "../../constants/theme";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useGameStore } from "../../store/gameStore";
@@ -9,6 +9,30 @@ import {
   triggerLightImpact,
   triggerSelectionHaptic,
 } from "../../utils/haptics";
+
+// Import icons
+const DieIcon = require("../../assets/icons/die.png");
+const GloveIcon = require("../../assets/icons/Glove.png");
+
+// Stat Pill Component - Icon + Label + Value as single unified component
+interface StatPillProps {
+  icon: any;
+  label: string;
+  value: number;
+  color: string;
+}
+
+const StatPill: React.FC<StatPillProps> = ({ icon, label, value }) => (
+  <InsetSlot style={styles.statPill}>
+    <Image source={icon} style={styles.statIcon} />
+    <GameText variant="body" color={COLORS.text}>
+      {label}
+    </GameText>
+    <GameText variant="body" color={COLORS.text}>
+      {value}
+    </GameText>
+  </InsetSlot>
+);
 
 export const FooterControls = () => {
   const rollsRemaining = useGameStore((s) => s.rollsRemaining);
@@ -55,10 +79,61 @@ export const FooterControls = () => {
     triggerLightImpact();
   };
 
-  const renderContent = () => {
-    // Cash out choice - Two buttons
-    if (phase === "CASHOUT_CHOICE") {
+  // Render the CTA button based on current state
+  const renderCTA = () => {
+    // Reveal animation in progress
+    if (isRevealing) {
       return (
+        <PrimaryButton
+          onPress={() => {}}
+          label="..."
+          disabled={true}
+          variant="cyan"
+          compact
+          style={styles.ctaButton}
+        />
+      );
+    }
+
+    // Hand selected - Accept button
+    if (isHandSelected) {
+      return (
+        <PrimaryButton
+          onPress={handleAcceptHand}
+          label="ANNEHMEN"
+          variant="cyan"
+          compact
+          icon={
+            <MaterialCommunityIcons
+              name="pencil-outline"
+              size={DIMENSIONS.iconSize.md}
+              color={COLORS.textDark}
+            />
+          }
+          style={styles.ctaButton}
+        />
+      );
+    }
+
+    // Default: Roll button
+    const label = isRolling ? "ROLL..." : "WURF";
+
+    return (
+      <PrimaryButton
+        onPress={onPressRoll}
+        label={label}
+        disabled={!canRoll}
+        variant="cyan"
+        compact
+        style={styles.ctaButton}
+      />
+    );
+  };
+
+  // Cash out choice - Two full-width buttons (special case without stats)
+  if (phase === "CASHOUT_CHOICE") {
+    return (
+      <View style={styles.container}>
         <View style={styles.dualButtonContainer}>
           <PrimaryButton
             onPress={handleCashOut}
@@ -75,126 +150,68 @@ export const FooterControls = () => {
             style={[styles.button, styles.halfButton]}
           />
         </View>
-      );
-    }
-
-    // Reveal animation in progress
-    if (isRevealing) {
-      return (
-        <PrimaryButton
-          onPress={() => {}}
-          label="..."
-          disabled={true}
-          variant="cyan"
-          style={styles.button}
-        />
-      );
-    }
-
-    // Hand selected - Accept button
-    if (isHandSelected) {
-      return (
-        <PrimaryButton
-          onPress={handleAcceptHand}
-          label="ANNEHMEN"
-          variant="cyan"
-          icon={
-            <MaterialCommunityIcons
-              name="pencil-outline"
-              size={DIMENSIONS.iconSize.md}
-              color={COLORS.textDark}
-            />
-          }
-          style={styles.button}
-        />
-      );
-    }
-
-    // Default: Roll button
-    const label = isRolling ? "ROLL..." : "WURF";
-
-    return (
-      <PrimaryButton
-        onPress={onPressRoll}
-        label={label}
-        disabled={!canRoll}
-        variant="cyan"
-        icon={
-          canRoll ? (
-            <MaterialCommunityIcons
-              name="dice-multiple"
-              size={DIMENSIONS.iconSize.md}
-              color={COLORS.textDark}
-            />
-          ) : undefined
-        }
-      />
+      </View>
     );
-  };
+  }
 
   // Show stats only during gameplay
   const showStats = phase === "LEVEL_PLAY" && !isRevealing;
 
   return (
     <View style={styles.container}>
-      {showStats && (
-        <View style={styles.statsRow}>
-          {/* Hands remaining */}
-          <View style={styles.resourceBar}>
-            <GameText variant="labelSmall" color={COLORS.textMuted}>
-              HANDS
-            </GameText>
-            <InsetSlot style={styles.resourceSlot}>
-              <GameText variant="scoreboardMedium" color={COLORS.cyan}>
-                {handsRemaining}
-              </GameText>
-            </InsetSlot>
+      <Surface variant="panel" padding="sm" style={styles.footerStrip}>
+        {showStats && (
+          <View style={styles.statsContainer}>
+            <StatPill
+              icon={GloveIcon}
+              label="Hände:"
+              value={handsRemaining}
+              color={COLORS.cyan}
+            />
+            <StatPill
+              icon={DieIcon}
+              label="Würfe:"
+              value={rollsRemaining}
+              color={COLORS.gold}
+            />
           </View>
-
-          {/* Rolls remaining */}
-          <View style={styles.resourceBar}>
-            <GameText variant="labelSmall" color={COLORS.textMuted}>
-              ROLLS
-            </GameText>
-            <InsetSlot style={styles.resourceSlot}>
-              <GameText variant="scoreboardMedium" color={COLORS.gold}>
-                {rollsRemaining}
-              </GameText>
-            </InsetSlot>
-          </View>
-        </View>
-      )}
-      {renderContent()}
+        )}
+        {renderCTA()}
+      </Surface>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: SPACING.xxl,
+    paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.sectionGap,
-    gap: SPACING.md,
-    alignItems: "center",
   },
-  statsRow: {
-    flexDirection: "row",
-    justifyContent: "flex-start",
-    alignItems: "center",
-    gap: SPACING.lg,
-    alignSelf: "flex-start",
-  },
-  resourceBar: {
+  footerStrip: {
     flexDirection: "row",
     alignItems: "center",
     gap: SPACING.sm,
   },
-  resourceSlot: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs,
-    minWidth: 44,
+  statsContainer: {
+    flexDirection: "column",
+    alignItems: "stretch",
+    gap: SPACING.xs,
+  },
+  statPill: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: COLORS.bg,
+    gap: SPACING.xs,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+  },
+  statIcon: {
+    width: 20,
+    height: 20,
+    resizeMode: "contain",
+  },
+  ctaButton: {
+    flex: 1,
+    shadowOpacity: 0.6,
   },
   button: {
     shadowOpacity: 0.6,

@@ -19,7 +19,7 @@ import { COLORS, calculateDiceTrayHeight } from "./constants/theme";
 export default function App() {
   // Load single font (M6x11)
   const [fontsLoaded] = useFonts({
-    "M6x11-Regular": require("./assets/fonts/m6x11.ttf"),
+    "M6x11-Regular": require("./assets/fonts/m6x11plus.ttf"),
   });
 
   // Game states
