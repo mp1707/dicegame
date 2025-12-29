@@ -17,11 +17,11 @@ import { useGameStore } from "./store/gameStore";
 import { COLORS, SPACING, calculateDiceTrayHeight } from "./constants/theme";
 
 // Layout constants - TrayModule internal dimensions
-const RAIL_WIDTH = 64;
+const RAIL_WIDTH = 56; // Per spec: 52-64px range, 56px primary target
 const DIVIDER_WIDTH = 3;
 const FRAME_BORDER = 3; // Outer frame border
-const INNER_LIP = 1; // Inner container border
-// Note: feltInset and canvasClip no longer have borders/padding - felt fills edge-to-edge
+const INNER_LIP = 2; // Left-side inner border only (right side has no border)
+// Note: feltInset fills to rightedge, only left side has inner lip
 
 export default function App() {
   // Load single font (M6x11)
@@ -39,8 +39,10 @@ export default function App() {
 
   // Calculate tray width: full width minus all TrayModule internal elements
   const trayPadding = SPACING.sm * 2; // paddingHorizontal in trayWrapper
+  // Left: FRAME_BORDER + INNER_LIP + RAIL_WIDTH + DIVIDER
+  // Right: FRAME_BORDER only (no inner lip on right)
   const moduleInternals =
-    RAIL_WIDTH + DIVIDER_WIDTH + FRAME_BORDER * 2 + INNER_LIP * 2;
+    RAIL_WIDTH + DIVIDER_WIDTH + FRAME_BORDER * 2 + INNER_LIP;
   const diceTrayWidth = screenWidth - trayPadding - moduleInternals;
 
   // Scanline overlay style

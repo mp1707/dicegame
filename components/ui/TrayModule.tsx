@@ -4,7 +4,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { COLORS, DIMENSIONS, SPACING } from "../../constants/theme";
 
 // Layout constants
-const RAIL_WIDTH = 64;
+const RAIL_WIDTH = 56; // Per spec: 52-64px range, 56px primary target
 const DIVIDER_WIDTH = 3; // 1px highlight + 2px shadow
 
 interface TrayModuleProps {
@@ -53,32 +53,32 @@ export const TrayModule: React.FC<TrayModuleProps> = ({
           {/* Canvas container with rounded clipping */}
           <View style={styles.canvasClip}>{feltContent}</View>
 
-          {/* Subtle depth overlay - inner shadow effect */}
+          {/* Subtle depth overlay - inner shadow effect (reduced ~50% per spec §4) */}
           <View style={styles.depthOverlay} pointerEvents="none">
-            {/* Edge shadows (top/left/right/bottom) */}
+            {/* Edge shadows (top/left/right/bottom) - softer for felt-like feel */}
             <LinearGradient
-              colors={["rgba(0,0,0,0.18)", "rgba(0,0,0,0.06)", "transparent"]}
+              colors={["rgba(0,0,0,0.09)", "rgba(0,0,0,0.03)", "transparent"]}
               locations={[0, 0.15, 0.4]}
               start={{ x: 0.5, y: 0 }}
               end={{ x: 0.5, y: 1 }}
               style={styles.topShadow}
             />
             <LinearGradient
-              colors={["rgba(0,0,0,0.12)", "rgba(0,0,0,0.04)", "transparent"]}
+              colors={["rgba(0,0,0,0.06)", "rgba(0,0,0,0.02)", "transparent"]}
               locations={[0, 0.15, 0.35]}
               start={{ x: 0.5, y: 1 }}
               end={{ x: 0.5, y: 0 }}
               style={styles.bottomShadow}
             />
             <LinearGradient
-              colors={["rgba(0,0,0,0.12)", "rgba(0,0,0,0.04)", "transparent"]}
+              colors={["rgba(0,0,0,0.06)", "rgba(0,0,0,0.02)", "transparent"]}
               locations={[0, 0.12, 0.3]}
               start={{ x: 0, y: 0.5 }}
               end={{ x: 1, y: 0.5 }}
               style={styles.leftShadow}
             />
             <LinearGradient
-              colors={["rgba(0,0,0,0.12)", "rgba(0,0,0,0.04)", "transparent"]}
+              colors={["rgba(0,0,0,0.06)", "rgba(0,0,0,0.02)", "transparent"]}
               locations={[0, 0.12, 0.3]}
               start={{ x: 1, y: 0.5 }}
               end={{ x: 0, y: 0.5 }}
@@ -86,10 +86,10 @@ export const TrayModule: React.FC<TrayModuleProps> = ({
             />
           </View>
 
-          {/* Gentle center lift (barely brighter center) */}
+          {/* Gentle center lift (very subtle per spec §4.2) */}
           <View style={styles.centerLiftContainer} pointerEvents="none">
             <LinearGradient
-              colors={["transparent", "rgba(255,255,255,0.03)", "transparent"]}
+              colors={["transparent", "rgba(255,255,255,0.015)", "transparent"]}
               locations={[0.2, 0.5, 0.8]}
               start={{ x: 0.5, y: 0 }}
               end={{ x: 0.5, y: 1 }}
@@ -104,16 +104,15 @@ export const TrayModule: React.FC<TrayModuleProps> = ({
 
 const OUTER_RADIUS = DIMENSIONS.borderRadiusLarge;
 const INNER_RADIUS = OUTER_RADIUS - 3;
-const FELT_RADIUS = INNER_RADIUS - 2;
 
 const styles = StyleSheet.create({
   outerFrame: {
     borderRadius: OUTER_RADIUS,
-    // Outer bevel - raised frame effect
+    // Outer bevel - raised frame effect (per spec §3.1)
     borderWidth: 3,
-    borderTopColor: COLORS.overlays.whiteMild,
+    borderTopColor: COLORS.overlays.whiteMild, // Top highlight (thin)
     borderLeftColor: COLORS.overlays.whiteMild,
-    borderRightColor: COLORS.overlays.blackMedium,
+    borderRightColor: COLORS.overlays.blackMedium, // Bottom/right shadow (thicker)
     borderBottomColor: COLORS.overlays.blackMedium,
     // Frame surface color
     backgroundColor: COLORS.surface,
@@ -128,16 +127,22 @@ const styles = StyleSheet.create({
   innerContainer: {
     flex: 1,
     flexDirection: "row",
-    // Inner lip - separates frame from insets
-    borderWidth: 1,
-    borderColor: COLORS.overlays.blackMild,
-    borderRadius: INNER_RADIUS,
+    // Inner lip shadow - only on top/left/bottom, not right (felt fills to edge)
+    borderTopWidth: 2,
+    borderLeftWidth: 2,
+    borderBottomWidth: 2,
+    borderRightWidth: 0,
+    borderTopColor: COLORS.overlays.blackMild,
+    borderLeftColor: COLORS.overlays.blackMild,
+    borderBottomColor: COLORS.overlays.whiteSubtle,
+    borderTopLeftRadius: INNER_RADIUS,
+    borderBottomLeftRadius: INNER_RADIUS,
+    borderTopRightRadius: INNER_RADIUS,
+    borderBottomRightRadius: INNER_RADIUS,
     overflow: "hidden",
   },
   railInset: {
     backgroundColor: COLORS.bg,
-    // Subtle inner shadow for recessed feel
-    borderRightWidth: 0,
   },
   dividerSeam: {
     width: DIVIDER_WIDTH,
@@ -154,19 +159,22 @@ const styles = StyleSheet.create({
   feltInset: {
     flex: 1,
     position: "relative",
-    // No background - the canvas/felt fills entirely
-    borderRadius: FELT_RADIUS,
+    // Rounded on right side to match outerFrame
+    borderTopRightRadius: OUTER_RADIUS - 3,
+    borderBottomRightRadius: OUTER_RADIUS - 3,
     overflow: "hidden",
   },
   canvasClip: {
     flex: 1,
-    borderRadius: FELT_RADIUS,
+    borderTopRightRadius: OUTER_RADIUS - 3,
+    borderBottomRightRadius: OUTER_RADIUS - 3,
     overflow: "hidden",
-    // No padding - felt fills edge to edge, depth overlay handles visual separation
   },
   depthOverlay: {
     ...StyleSheet.absoluteFillObject,
-    borderRadius: FELT_RADIUS,
+    // Match feltInset rounding
+    borderTopRightRadius: OUTER_RADIUS - 3,
+    borderBottomRightRadius: OUTER_RADIUS - 3,
     overflow: "hidden",
   },
   topShadow: {
@@ -199,7 +207,9 @@ const styles = StyleSheet.create({
   },
   centerLiftContainer: {
     ...StyleSheet.absoluteFillObject,
-    borderRadius: FELT_RADIUS,
+    // Match feltInset rounding
+    borderTopRightRadius: OUTER_RADIUS - 3,
+    borderBottomRightRadius: OUTER_RADIUS - 3,
     overflow: "hidden",
   },
 });

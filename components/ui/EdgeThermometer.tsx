@@ -1,17 +1,16 @@
 import React, { useEffect, useRef } from "react";
-import { View, StyleSheet, Image } from "react-native";
+import { View, StyleSheet } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
   withSequence,
-  withRepeat,
+  withSpring,
   Easing,
   interpolateColor,
   cancelAnimation,
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
-import { Surface, InsetSlot } from "../ui-kit";
 import { GameText } from "../shared";
 import { COLORS, SPACING, DIMENSIONS } from "../../constants/theme";
 import { useGameStore } from "../../store/gameStore";
@@ -22,7 +21,7 @@ interface EdgeThermometerProps {
   /** Height is now controlled by parent TrayModule */
   height?: number;
 }
-const MIN_FILL_HEIGHT = 4; // Always show a tiny nub
+const MIN_FILL_HEIGHT = 6; // Minimum visible nub (per spec §5.5: 6-10px)
 
 export const EdgeThermometer: React.FC<EdgeThermometerProps> = ({ height }) => {
   // Store subscriptions
@@ -52,40 +51,37 @@ export const EdgeThermometer: React.FC<EdgeThermometerProps> = ({ height }) => {
   const celebrationScale = useSharedValue(1);
   const fillColorProgress = useSharedValue(0);
 
-  // Fill animation - synced with score changes (faster: 150ms)
+  // Stiff spring config for snappy animations
+  const stiffSpring = { damping: 20, stiffness: 300 };
+
+  // Fill animation - synced with score changes
   useEffect(() => {
     // Check if level changed (drain animation)
     if (currentLevelIndex !== prevLevelIndex.current) {
       prevLevelIndex.current = currentLevelIndex;
       wasGoalMet.current = false;
 
-      // Drain down animation
+      // Drain down with smooth easing (no spring bounce)
       fillProgress.value = withTiming(0, {
-        duration: 200,
-        easing: Easing.in(Easing.cubic),
+        duration: 400,
+        easing: Easing.out(Easing.quad),
       });
       fillColorProgress.value = 0;
       glowOpacity.value = 0;
       return;
     }
 
-    // Normal progress animation (faster: 150ms per feedback #8)
-    fillProgress.value = withTiming(targetProgress, {
-      duration: 150,
-      easing: Easing.out(Easing.cubic),
-    });
+    // Normal progress animation with stiff spring
+    fillProgress.value = withSpring(targetProgress, stiffSpring);
   }, [targetProgress, currentLevelIndex]);
 
-  // Near-goal glow effect
+  // Near-goal glow effect - single pulse at >=80% (per spec §6.2)
   useEffect(() => {
     if (isNearGoal) {
-      glowOpacity.value = withRepeat(
-        withSequence(
-          withTiming(0.8, { duration: 600 }),
-          withTiming(0.3, { duration: 600 })
-        ),
-        -1,
-        true
+      // Single soft pulse at 80%, not looping
+      glowOpacity.value = withSequence(
+        withTiming(0.6, { duration: 200 }),
+        withTiming(0.3, { duration: 200 })
       );
     } else if (isGoalMet) {
       cancelAnimation(glowOpacity);
@@ -134,31 +130,25 @@ export const EdgeThermometer: React.FC<EdgeThermometerProps> = ({ height }) => {
     borderColor: interpolateColor(
       fillColorProgress.value,
       [0, 1],
-      [isGoalMet ? COLORS.gold : COLORS.cyan, COLORS.mint]
+      [COLORS.cyan, COLORS.gold] // Cyan default, gold on success
     ),
   }));
 
   // No fixed height calculation - track uses flex to fill available space
 
-  // Determine fill colors based on state
+  // Determine fill colors based on state (cyan default, gold at 100%+)
   const fillColors: [string, string] = isGoalMet
-    ? [COLORS.gold, COLORS.gold + "CC"]
-    : [COLORS.cyan, COLORS.cyan + "CC"];
+    ? [COLORS.gold, COLORS.gold + "CC"] // Success: gold
+    : [COLORS.cyan, COLORS.cyan + "CC"]; // Default: cyan
 
   return (
     <View style={styles.container}>
-      {/* Goal Label + Value */}
-      <View style={styles.goalLabelRow}>
-        <Image
-          source={require("../../assets/icons/bullseye.png")}
-          style={styles.goalIcon}
-        />
-        <GameText variant="bodyMedium" color={COLORS.text}>
+      {/* Goal Header Block (per spec §5.1, §5.2 - merged cohesive unit, no bullseye) */}
+      <View style={styles.goalHeader}>
+        <GameText variant="labelSmall" color={COLORS.textMuted}>
           ZIEL
         </GameText>
-      </View>
-      <View style={styles.goalValueSlot}>
-        <GameText variant="scoreboardSmall" color={COLORS.gold}>
+        <GameText variant="displaySmall" color={COLORS.gold}>
           {formatCompactNumber(levelGoal)}
         </GameText>
       </View>
@@ -166,45 +156,33 @@ export const EdgeThermometer: React.FC<EdgeThermometerProps> = ({ height }) => {
       {/* Vertical Progress Track */}
       <View style={styles.trackContainer}>
         <View style={styles.track}>
-          {/* Track inset background - darker for visibility at 0% */}
-          <View style={styles.trackInset}>
-            {/* Top recess border for inset look */}
-            <View style={styles.trackRecess} />
-
-            {/* Subtle inner highlight for separation */}
-            <View style={styles.trackHighlight} />
-          </View>
-
-          {/* Threshold tick at 100% - neutral, subtle (replaces gold strip) */}
-          <View style={styles.thresholdTick} />
-
           {/* Glow border when near/at goal */}
           <Animated.View style={[styles.glowBorder, glowStyle]} />
 
-          {/* Fill with minimum nub for visibility */}
-          <Animated.View style={[styles.fill, fillStyle]}>
-            <LinearGradient
-              colors={fillColors}
-              start={{ x: 0.5, y: 1 }}
-              end={{ x: 0.5, y: 0 }}
-              style={StyleSheet.absoluteFill}
-            />
-            {/* Subtle shine on fill only */}
-            <LinearGradient
-              colors={[
-                "rgba(255,255,255,0.15)",
-                "rgba(255,255,255,0.05)",
-                "transparent",
-              ]}
-              locations={[0, 0.3, 1]}
-              start={{ x: 0, y: 0.5 }}
-              end={{ x: 1, y: 0.5 }}
-              style={styles.fillShine}
-            />
-          </Animated.View>
-
-          {/* Minimum visible nub at bottom */}
-          <View style={styles.minNub} />
+          {/* Fill wrapper - defines the padded area for the fill */}
+          <View style={styles.fillWrapper}>
+            {/* Fill bar */}
+            <Animated.View style={[styles.fill, fillStyle]}>
+              <LinearGradient
+                colors={fillColors}
+                start={{ x: 0.5, y: 1 }}
+                end={{ x: 0.5, y: 0 }}
+                style={StyleSheet.absoluteFill}
+              />
+              {/* Subtle shine on fill only */}
+              <LinearGradient
+                colors={[
+                  "rgba(255,255,255,0.15)",
+                  "rgba(255,255,255,0.05)",
+                  "transparent",
+                ]}
+                locations={[0, 0.3, 1]}
+                start={{ x: 0, y: 0.5 }}
+                end={{ x: 1, y: 0.5 }}
+                style={styles.fillShine}
+              />
+            </Animated.View>
+          </View>
         </View>
       </View>
     </View>
@@ -219,26 +197,21 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
     // No background - inherits from TrayModule rail inset
   },
-  goalLabelRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.xs,
-  },
-  goalIcon: {
-    width: 20,
-    height: 20,
-    resizeMode: "contain",
-  },
-  goalValueSlot: {
+  goalHeader: {
+    // Merged cohesive header block (per spec §5.2)
     width: "100%",
-    alignItems: "center",
+    alignItems: "flex-start", // Left-aligned per spec
+    gap: SPACING.xxs,
+    // InsetSlot-style background for visual definition
     backgroundColor: COLORS.overlays.blackMedium,
     borderRadius: DIMENSIONS.borderRadiusSmall,
-    paddingHorizontal: SPACING.xs,
-    paddingVertical: SPACING.xs,
+    padding: SPACING.sm,
+    // Recess cues
     borderWidth: 1,
-    borderColor: COLORS.overlays.blackMild,
     borderTopColor: COLORS.overlays.blackStrong,
+    borderLeftColor: COLORS.overlays.blackMild,
+    borderRightColor: COLORS.overlays.whiteSubtle,
+    borderBottomColor: COLORS.overlays.whiteSubtle,
   },
   trackContainer: {
     flex: 1,
@@ -251,56 +224,38 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     position: "relative",
     borderRadius: DIMENSIONS.borderRadiusSmall,
+    // Visible track border (per spec §5.3)
+    backgroundColor: COLORS.overlays.blackMedium,
+    borderWidth: 2,
+    borderTopColor: COLORS.overlays.blackStrong,
+    borderLeftColor: COLORS.overlays.blackMild,
+    borderRightColor: COLORS.overlays.whiteSubtle,
+    borderBottomColor: COLORS.overlays.whiteSubtle,
   },
-  trackInset: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: COLORS.overlays.blackMedium, // Darker than rail for contrast
-    borderRadius: DIMENSIONS.borderRadiusSmall,
-    overflow: "hidden",
-  },
-  trackRecess: {
+  fillWrapper: {
     position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 2,
-    backgroundColor: COLORS.overlays.blackStrong,
-  },
-  trackHighlight: {
-    position: "absolute",
-    top: 2,
-    left: 1,
-    right: 1,
-    height: 1,
-    backgroundColor: COLORS.overlays.whiteSubtle,
-    opacity: 0.5,
-  },
-  thresholdTick: {
-    position: "absolute",
-    top: 0,
+    top: 4,
+    bottom: 4,
     left: 4,
     right: 4,
-    height: 2,
-    backgroundColor: COLORS.overlays.whiteSubtle, // Neutral, not gold
-    zIndex: 2,
-    borderRadius: 1,
+    overflow: "hidden",
+    borderRadius: DIMENSIONS.borderRadiusSmall - 6,
   },
   glowBorder: {
     ...StyleSheet.absoluteFillObject,
     borderWidth: 2,
-    borderColor: COLORS.cyan,
+    borderColor: COLORS.cyan, // Cyan default (animated to gold on success)
     borderRadius: DIMENSIONS.borderRadiusSmall - 2,
     zIndex: 1,
   },
   fill: {
     position: "absolute",
     bottom: 0,
-    left: 2,
-    right: 2,
-    borderRadius: DIMENSIONS.borderRadiusSmall - 4,
+    left: 0,
+    right: 0,
+    // Height is controlled by animated style (percentage of fillWrapper)
+    borderRadius: DIMENSIONS.borderRadiusSmall - 6,
     overflow: "hidden",
-    minHeight: MIN_FILL_HEIGHT, // Always show a tiny nub
-    zIndex: 3,
   },
   fillShine: {
     position: "absolute",
@@ -308,16 +263,5 @@ const styles = StyleSheet.create({
     left: 0,
     bottom: 0,
     width: "40%",
-  },
-  minNub: {
-    position: "absolute",
-    bottom: 2,
-    left: 2,
-    right: 2,
-    height: MIN_FILL_HEIGHT,
-    backgroundColor: COLORS.overlays.whiteSubtle,
-    borderRadius: 2,
-    opacity: 0.3,
-    zIndex: 0,
   },
 });

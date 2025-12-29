@@ -229,8 +229,8 @@ export const DiceTray = ({
   const halfFovTan = Math.tan((adjustedFOV * Math.PI) / 360);
   const fitHeight = floorDepth / 2 / halfFovTan;
   const fitWidth = floorWidth / 2 / (halfFovTan * aspect);
-  // Reduced margin (was +0.4) so floor fills frame better
-  const cameraHeight = Math.max(fitHeight, fitWidth) - 0.1;
+  // Negative margin = camera closer = floor fills/overflows edges
+  const cameraHeight = Math.max(fitHeight, fitWidth) - 0.3;
 
   // Calculate arranged positions for reveal animation
   // Dice line up in center with consistent spacing
