@@ -16,9 +16,12 @@ import { PhaseDeck } from "./components/ui-kit/flow";
 import { useGameStore } from "./store/gameStore";
 import { COLORS, SPACING, calculateDiceTrayHeight } from "./constants/theme";
 
-// Layout constants (must match PhaseDeck)
-const THERMOMETER_WIDTH = 64;
-const TRAY_GAP = 8;
+// Layout constants - TrayModule internal dimensions
+const RAIL_WIDTH = 64;
+const DIVIDER_WIDTH = 3;
+const FRAME_BORDER = 3; // Outer frame border
+const INNER_LIP = 1; // Inner container border
+// Note: feltInset and canvasClip no longer have borders/padding - felt fills edge-to-edge
 
 export default function App() {
   // Load single font (M6x11)
@@ -34,9 +37,11 @@ export default function App() {
   const diceTrayHeight = calculateDiceTrayHeight(screenHeight);
   const hideStatusBar = Platform.OS === "ios";
 
-  // Calculate tray width: full width minus thermometer, gap, and padding
-  const trayPadding = SPACING.sm * 2; // paddingHorizontal in diceContainer
-  const diceTrayWidth = screenWidth - THERMOMETER_WIDTH - TRAY_GAP - trayPadding;
+  // Calculate tray width: full width minus all TrayModule internal elements
+  const trayPadding = SPACING.sm * 2; // paddingHorizontal in trayWrapper
+  const moduleInternals =
+    RAIL_WIDTH + DIVIDER_WIDTH + FRAME_BORDER * 2 + INNER_LIP * 2;
+  const diceTrayWidth = screenWidth - trayPadding - moduleInternals;
 
   // Scanline overlay style
   const scanlineOverlayStyle = {

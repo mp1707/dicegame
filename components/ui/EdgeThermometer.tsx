@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Image } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -19,12 +19,10 @@ import { formatCompactNumber } from "../../utils/formatting";
 import { triggerNotificationSuccess } from "../../utils/haptics";
 
 interface EdgeThermometerProps {
-  height: number;
+  /** Height is now controlled by parent TrayModule */
+  height?: number;
 }
-
-const THERMOMETER_WIDTH = 64;
-const TRACK_WIDTH = 36;
-const BADGE_HEIGHT = 52;
+const MIN_FILL_HEIGHT = 4; // Always show a tiny nub
 
 export const EdgeThermometer: React.FC<EdgeThermometerProps> = ({ height }) => {
   // Store subscriptions
@@ -54,7 +52,7 @@ export const EdgeThermometer: React.FC<EdgeThermometerProps> = ({ height }) => {
   const celebrationScale = useSharedValue(1);
   const fillColorProgress = useSharedValue(0);
 
-  // Fill animation - synced with score changes
+  // Fill animation - synced with score changes (faster: 150ms)
   useEffect(() => {
     // Check if level changed (drain animation)
     if (currentLevelIndex !== prevLevelIndex.current) {
@@ -71,9 +69,9 @@ export const EdgeThermometer: React.FC<EdgeThermometerProps> = ({ height }) => {
       return;
     }
 
-    // Normal progress animation
+    // Normal progress animation (faster: 150ms per feedback #8)
     fillProgress.value = withTiming(targetProgress, {
-      duration: 300,
+      duration: 150,
       easing: Easing.out(Easing.cubic),
     });
   }, [targetProgress, currentLevelIndex]);
@@ -98,14 +96,14 @@ export const EdgeThermometer: React.FC<EdgeThermometerProps> = ({ height }) => {
     }
   }, [isNearGoal, isGoalMet]);
 
-  // Goal reached celebration
+  // Goal reached celebration (one-shot, no looping - feedback #8)
   useEffect(() => {
     if (isGoalMet && !wasGoalMet.current) {
       wasGoalMet.current = true;
 
-      // Bounce animation
+      // Single bounce animation
       celebrationScale.value = withSequence(
-        withTiming(1.15, {
+        withTiming(1.1, {
           duration: 150,
           easing: Easing.out(Easing.back(1.5)),
         }),
@@ -124,7 +122,7 @@ export const EdgeThermometer: React.FC<EdgeThermometerProps> = ({ height }) => {
 
   // Animated styles
   const fillStyle = useAnimatedStyle(() => ({
-    height: `${fillProgress.value * 100}%`,
+    height: `${Math.max(fillProgress.value * 100, 2)}%`, // Minimum 2% for visibility
   }));
 
   const badgeStyle = useAnimatedStyle(() => ({
@@ -140,8 +138,7 @@ export const EdgeThermometer: React.FC<EdgeThermometerProps> = ({ height }) => {
     ),
   }));
 
-  // Calculate track height
-  const trackHeight = height - BADGE_HEIGHT - SPACING.md * 2;
+  // No fixed height calculation - track uses flex to fill available space
 
   // Determine fill colors based on state
   const fillColors: [string, string] = isGoalMet
@@ -149,29 +146,42 @@ export const EdgeThermometer: React.FC<EdgeThermometerProps> = ({ height }) => {
     : [COLORS.cyan, COLORS.cyan + "CC"];
 
   return (
-    <View style={[styles.container, { height }]}>
-      {/* Goal Badge */}
-      <Animated.View style={badgeStyle}>
-        <Surface variant="chip" padding="sm" style={styles.goalBadge}>
-          <GameText variant="labelSmall" color={COLORS.textMuted}>
-            GOAL
-          </GameText>
-          <GameText variant="scoreboardSmall" color={COLORS.gold}>
-            {formatCompactNumber(levelGoal)}
-          </GameText>
-        </Surface>
-      </Animated.View>
+    <View style={styles.container}>
+      {/* Goal Label + Value */}
+      <View style={styles.goalLabelRow}>
+        <Image
+          source={require("../../assets/icons/bullseye.png")}
+          style={styles.goalIcon}
+        />
+        <GameText variant="bodyMedium" color={COLORS.text}>
+          ZIEL
+        </GameText>
+      </View>
+      <View style={styles.goalValueSlot}>
+        <GameText variant="scoreboardSmall" color={COLORS.gold}>
+          {formatCompactNumber(levelGoal)}
+        </GameText>
+      </View>
 
       {/* Vertical Progress Track */}
       <View style={styles.trackContainer}>
-        <InsetSlot padding="none" style={[styles.track, { height: trackHeight }]}>
-          {/* Threshold tick at 100% */}
+        <View style={styles.track}>
+          {/* Track inset background - darker for visibility at 0% */}
+          <View style={styles.trackInset}>
+            {/* Top recess border for inset look */}
+            <View style={styles.trackRecess} />
+
+            {/* Subtle inner highlight for separation */}
+            <View style={styles.trackHighlight} />
+          </View>
+
+          {/* Threshold tick at 100% - neutral, subtle (replaces gold strip) */}
           <View style={styles.thresholdTick} />
 
           {/* Glow border when near/at goal */}
           <Animated.View style={[styles.glowBorder, glowStyle]} />
 
-          {/* Fill */}
+          {/* Fill with minimum nub for visibility */}
           <Animated.View style={[styles.fill, fillStyle]}>
             <LinearGradient
               colors={fillColors}
@@ -179,8 +189,23 @@ export const EdgeThermometer: React.FC<EdgeThermometerProps> = ({ height }) => {
               end={{ x: 0.5, y: 0 }}
               style={StyleSheet.absoluteFill}
             />
+            {/* Subtle shine on fill only */}
+            <LinearGradient
+              colors={[
+                "rgba(255,255,255,0.15)",
+                "rgba(255,255,255,0.05)",
+                "transparent",
+              ]}
+              locations={[0, 0.3, 1]}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={styles.fillShine}
+            />
           </Animated.View>
-        </InsetSlot>
+
+          {/* Minimum visible nub at bottom */}
+          <View style={styles.minNub} />
+        </View>
       </View>
     </View>
   );
@@ -188,34 +213,75 @@ export const EdgeThermometer: React.FC<EdgeThermometerProps> = ({ height }) => {
 
 const styles = StyleSheet.create({
   container: {
-    width: THERMOMETER_WIDTH,
+    flex: 1,
     alignItems: "center",
-    paddingTop: SPACING.sm,
+    padding: SPACING.sm,
+    gap: SPACING.sm,
+    // No background - inherits from TrayModule rail inset
   },
-  goalBadge: {
+  goalLabelRow: {
+    flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: SPACING.sm,
+    gap: SPACING.xs,
+  },
+  goalIcon: {
+    width: 20,
+    height: 20,
+    resizeMode: "contain",
+  },
+  goalValueSlot: {
+    width: "100%",
+    alignItems: "center",
+    backgroundColor: COLORS.overlays.blackMedium,
+    borderRadius: DIMENSIONS.borderRadiusSmall,
+    paddingHorizontal: SPACING.xs,
     paddingVertical: SPACING.xs,
-    minWidth: 56,
+    borderWidth: 1,
+    borderColor: COLORS.overlays.blackMild,
+    borderTopColor: COLORS.overlays.blackStrong,
   },
   trackContainer: {
     flex: 1,
+    width: "100%",
     alignItems: "center",
-    paddingTop: SPACING.sm,
-    paddingBottom: SPACING.md,
   },
   track: {
-    width: TRACK_WIDTH,
+    flex: 1, // Fill all available vertical space
+    width: "100%",
     overflow: "hidden",
     position: "relative",
+    borderRadius: DIMENSIONS.borderRadiusSmall,
+  },
+  trackInset: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: COLORS.overlays.blackMedium, // Darker than rail for contrast
+    borderRadius: DIMENSIONS.borderRadiusSmall,
+    overflow: "hidden",
+  },
+  trackRecess: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 2,
+    backgroundColor: COLORS.overlays.blackStrong,
+  },
+  trackHighlight: {
+    position: "absolute",
+    top: 2,
+    left: 1,
+    right: 1,
+    height: 1,
+    backgroundColor: COLORS.overlays.whiteSubtle,
+    opacity: 0.5,
   },
   thresholdTick: {
     position: "absolute",
     top: 0,
-    left: -4,
-    right: -4,
+    left: 4,
+    right: 4,
     height: 2,
-    backgroundColor: COLORS.gold,
+    backgroundColor: COLORS.overlays.whiteSubtle, // Neutral, not gold
     zIndex: 2,
     borderRadius: 1,
   },
@@ -229,10 +295,29 @@ const styles = StyleSheet.create({
   fill: {
     position: "absolute",
     bottom: 0,
-    left: 0,
-    right: 0,
+    left: 2,
+    right: 2,
     borderRadius: DIMENSIONS.borderRadiusSmall - 4,
     overflow: "hidden",
-    minHeight: 4, // Always show a tiny nub
+    minHeight: MIN_FILL_HEIGHT, // Always show a tiny nub
+    zIndex: 3,
+  },
+  fillShine: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    bottom: 0,
+    width: "40%",
+  },
+  minNub: {
+    position: "absolute",
+    bottom: 2,
+    left: 2,
+    right: 2,
+    height: MIN_FILL_HEIGHT,
+    backgroundColor: COLORS.overlays.whiteSubtle,
+    borderRadius: 2,
+    opacity: 0.3,
+    zIndex: 0,
   },
 });

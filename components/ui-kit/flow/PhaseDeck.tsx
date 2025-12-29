@@ -23,11 +23,7 @@ import { ScoringGrid } from "../../scoring/ScoringGrid";
 import { FooterControls } from "../../ui/FooterControls";
 import { WinOverlay } from "../../ui/WinOverlay";
 import { EdgeThermometer } from "../../ui/EdgeThermometer";
-import { FramedTray } from "../../ui/FramedTray";
-
-// Layout constants
-const THERMOMETER_WIDTH = 64;
-const TRAY_GAP = 8;
+import { TrayModule } from "../../ui/TrayModule";
 
 interface PhaseDeckProps {
   /** The DiceTray component (3D scene) - rendered as base layer */
@@ -176,18 +172,18 @@ export const PhaseDeck: React.FC<PhaseDeckProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* Base Layer: DiceTray with Edge Thermometer - always visible */}
-      <View style={[styles.diceContainer, { height: diceTrayHeight }]}>
-        {/* Left column: Thermometer rail */}
-        <EdgeThermometer height={diceTrayHeight} />
-
-        {/* Right column: Framed tray */}
-        <View style={styles.trayColumn}>
-          <FramedTray>
-            {diceTray}
-          </FramedTray>
-          <WinOverlay />
-        </View>
+      {/* Base Layer: Unified TrayModule (Rail + Felt) - always visible */}
+      <View style={styles.trayWrapper}>
+        <TrayModule
+          height={diceTrayHeight}
+          railContent={<EdgeThermometer />}
+          feltContent={
+            <View style={styles.feltContentWrapper}>
+              {diceTray}
+              <WinOverlay />
+            </View>
+          }
+        />
       </View>
 
       {/* HUD Layer: ScoreRow, ScoringGrid, Footer - slides with parallax */}
@@ -245,14 +241,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  diceContainer: {
-    flexDirection: "row",
-    width: "100%",
-    gap: TRAY_GAP,
+  trayWrapper: {
     paddingHorizontal: SPACING.sm,
     zIndex: 10,
   },
-  trayColumn: {
+  feltContentWrapper: {
     flex: 1,
     position: "relative",
   },

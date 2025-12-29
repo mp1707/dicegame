@@ -25,10 +25,10 @@ interface StatPillProps {
 const StatPill: React.FC<StatPillProps> = ({ icon, label, value }) => (
   <InsetSlot style={styles.statPill}>
     <Image source={icon} style={styles.statIcon} />
-    <GameText variant="body" color={COLORS.text}>
+    <GameText variant="body" color={COLORS.textMuted}>
       {label}
     </GameText>
-    <GameText variant="body" color={COLORS.text}>
+    <GameText variant="body" color={COLORS.textMuted}>
       {value}
     </GameText>
   </InsetSlot>

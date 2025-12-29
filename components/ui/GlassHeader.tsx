@@ -26,7 +26,11 @@ export const GlassHeader = () => {
     >
       {/* Left Pod: Level */}
       <Surface variant="panel" padding="none" style={styles.pod}>
-        <GameText variant="body" color={COLORS.text} style={styles.podLabel}>
+        <GameText
+          variant="body"
+          color={COLORS.textMuted}
+          style={styles.podLabel}
+        >
           LV
         </GameText>
         <InsetSlot padding="none" style={styles.valueInset}>
