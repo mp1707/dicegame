@@ -1,13 +1,9 @@
 import React from "react";
 import { View, StyleSheet, Platform, Image } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import {
-  COLORS,
-  SPACING,
-  DIMENSIONS,
-  FONT_FAMILY,
-} from "../../constants/theme";
+import { COLORS, SPACING, DIMENSIONS } from "../../constants/theme";
 import { GameText } from "../shared";
+import { Surface, InsetSlot } from "../ui-kit";
 import { useGameStore } from "../../store/gameStore";
 import { formatNumber } from "../../utils/yahtzeeScoring";
 
@@ -19,36 +15,39 @@ export const GlassHeader = () => {
   const levelNumber = currentLevelIndex + 1;
 
   return (
-    <View style={styles.container}>
-      <View
-        style={[
-          styles.topRow,
-          {
-            paddingTop:
-              Platform.OS === "ios" ? SPACING.sm : insets.top + SPACING.xs,
-            paddingHorizontal: SPACING.containerPaddingHorizontal,
-          },
-        ]}
-      >
-        <View style={styles.levelContainer}>
-          <GameText variant="bodySmall" style={styles.levelLabel}>
-            LEVEL
-          </GameText>
+    <View
+      style={[
+        styles.container,
+        {
+          paddingTop:
+            Platform.OS === "ios" ? SPACING.xxl : insets.top + SPACING.sm,
+        },
+      ]}
+    >
+      {/* Left Pod: Level */}
+      <Surface variant="panel" padding="none" style={styles.pod}>
+        <GameText variant="body" color={COLORS.text} style={styles.podLabel}>
+          LV
+        </GameText>
+        <InsetSlot padding="none" style={styles.valueInset}>
           <GameText variant="displaySmall" color={COLORS.cyan}>
             {levelNumber}
           </GameText>
-        </View>
+        </InsetSlot>
+      </Surface>
 
-        <View style={styles.moneyContainer}>
-          <Image
-            source={require("../../assets/icons/coin.png")}
-            style={styles.coinIcon}
-          />
-          <GameText variant="displaySmall" style={styles.moneyValue}>
+      {/* Right Pod: Currency */}
+      <Surface variant="panel" padding="none" style={styles.pod}>
+        <Image
+          source={require("../../assets/icons/coin.png")}
+          style={styles.coinIcon}
+        />
+        <InsetSlot padding="none" style={styles.valueInset}>
+          <GameText variant="displaySmall" color={COLORS.gold}>
             {formatNumber(money)}
           </GameText>
-        </View>
-      </View>
+        </InsetSlot>
+      </Surface>
     </View>
   );
 };
@@ -56,38 +55,29 @@ export const GlassHeader = () => {
 const styles = StyleSheet.create({
   container: {
     width: "100%",
-    paddingTop: SPACING.xxl,
-    paddingBottom: SPACING.md,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: SPACING.containerPaddingHorizontal,
+    paddingBottom: SPACING.md,
   },
-  topRow: {
+  pod: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingBottom: SPACING.sm,
+    gap: SPACING.xs,
+    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.sm,
   },
-  levelContainer: {
-    flexDirection: "row",
-    alignItems: "baseline",
-    gap: SPACING.iconGapMedium,
-  },
-  levelLabel: {
+  podLabel: {
     textTransform: "uppercase",
     letterSpacing: 1,
   },
-  moneyContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.iconGapMedium,
+  valueInset: {
+    paddingVertical: SPACING.xxs,
+    paddingHorizontal: SPACING.sm,
   },
   coinIcon: {
-    width: DIMENSIONS.iconSize.md,
-    height: DIMENSIONS.iconSize.md,
-  },
-  moneyValue: {
-    color: COLORS.gold,
-    textShadowColor: COLORS.shadows.gold,
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
+    width: DIMENSIONS.iconSize.sm,
+    height: DIMENSIONS.iconSize.sm,
   },
 });

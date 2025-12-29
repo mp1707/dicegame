@@ -14,7 +14,11 @@ import { GlassHeader } from "./components/ui/GlassHeader";
 import { OverviewModal } from "./components/modals/OverviewModal";
 import { PhaseDeck } from "./components/ui-kit/flow";
 import { useGameStore } from "./store/gameStore";
-import { COLORS, calculateDiceTrayHeight } from "./constants/theme";
+import { COLORS, SPACING, calculateDiceTrayHeight } from "./constants/theme";
+
+// Layout constants (must match PhaseDeck)
+const THERMOMETER_WIDTH = 64;
+const TRAY_GAP = 8;
 
 export default function App() {
   // Load single font (M6x11)
@@ -29,6 +33,10 @@ export default function App() {
   const { height: screenHeight, width: screenWidth } = useWindowDimensions();
   const diceTrayHeight = calculateDiceTrayHeight(screenHeight);
   const hideStatusBar = Platform.OS === "ios";
+
+  // Calculate tray width: full width minus thermometer, gap, and padding
+  const trayPadding = SPACING.sm * 2; // paddingHorizontal in diceContainer
+  const diceTrayWidth = screenWidth - THERMOMETER_WIDTH - TRAY_GAP - trayPadding;
 
   // Scanline overlay style
   const scanlineOverlayStyle = {
@@ -77,7 +85,7 @@ export default function App() {
                 <View style={styles.crtScreenInner}>
                   <DiceTray
                     containerHeight={diceTrayHeight}
-                    containerWidth={screenWidth}
+                    containerWidth={diceTrayWidth}
                   />
                 </View>
               }

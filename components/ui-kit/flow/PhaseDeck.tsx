@@ -9,7 +9,7 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 import { useGameStore, GamePhase } from "../../../store/gameStore";
-import { ANIMATION, COLORS } from "../../../constants/theme";
+import { ANIMATION, COLORS, SPACING } from "../../../constants/theme";
 
 // Import panels
 import { ResultPanel } from "../../screens/ResultScreen";
@@ -22,7 +22,12 @@ import { ScoreRow } from "../../ui/ScoreRow";
 import { ScoringGrid } from "../../scoring/ScoringGrid";
 import { FooterControls } from "../../ui/FooterControls";
 import { WinOverlay } from "../../ui/WinOverlay";
-import { GoalBadge } from "../../ui/GoalBadge";
+import { EdgeThermometer } from "../../ui/EdgeThermometer";
+import { FramedTray } from "../../ui/FramedTray";
+
+// Layout constants
+const THERMOMETER_WIDTH = 64;
+const TRAY_GAP = 8;
 
 interface PhaseDeckProps {
   /** The DiceTray component (3D scene) - rendered as base layer */
@@ -171,11 +176,18 @@ export const PhaseDeck: React.FC<PhaseDeckProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* Base Layer: DiceTray - always visible */}
+      {/* Base Layer: DiceTray with Edge Thermometer - always visible */}
       <View style={[styles.diceContainer, { height: diceTrayHeight }]}>
-        {diceTray}
-        <GoalBadge />
-        <WinOverlay />
+        {/* Left column: Thermometer rail */}
+        <EdgeThermometer height={diceTrayHeight} />
+
+        {/* Right column: Framed tray */}
+        <View style={styles.trayColumn}>
+          <FramedTray>
+            {diceTray}
+          </FramedTray>
+          <WinOverlay />
+        </View>
       </View>
 
       {/* HUD Layer: ScoreRow, ScoringGrid, Footer - slides with parallax */}
@@ -234,15 +246,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   diceContainer: {
+    flexDirection: "row",
     width: "100%",
-    justifyContent: "center",
-    alignItems: "center",
+    gap: TRAY_GAP,
+    paddingHorizontal: SPACING.sm,
     zIndex: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 5,
+  },
+  trayColumn: {
+    flex: 1,
+    position: "relative",
   },
   hudLayer: {
     // ScoreRow position

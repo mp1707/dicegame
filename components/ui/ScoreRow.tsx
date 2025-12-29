@@ -9,8 +9,7 @@ import Animated, {
   Easing,
   interpolateColor,
 } from "react-native-reanimated";
-import { LinearGradient } from "expo-linear-gradient";
-import { COLORS, SPACING, DIMENSIONS } from "../../constants/theme";
+import { COLORS, SPACING } from "../../constants/theme";
 import { Surface, Chip, InsetSlot } from "../ui-kit";
 import { GameText } from "../shared";
 import { useGameStore } from "../../store/gameStore";
@@ -170,7 +169,6 @@ export const ScoreRow = () => {
 
   // Get level score for display
   const levelScore = useGameStore((s) => s.levelScore);
-  const levelGoal = useGameStore((s) => s.levelGoal);
 
   // Calculate delta formula for display during scoring
   const currentPoints =
@@ -183,34 +181,6 @@ export const ScoreRow = () => {
     revealState?.active && revealState.animationPhase === "total"
       ? revealState.displayTotal
       : levelScore;
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // Goal Meter - State & Animations
-  // ─────────────────────────────────────────────────────────────────────────────
-  const meterProgress = useSharedValue(0);
-
-  // Check if goal is met for color switching
-  const currentScore =
-    revealState?.active && revealState.animationPhase === "total"
-      ? revealState.displayTotal || levelScore
-      : levelScore;
-  const isGoalMet = currentScore >= levelGoal && levelGoal > 0;
-
-  // Calculate actual progress based on current score
-  const targetProgress =
-    levelGoal > 0 ? Math.min(currentScore / levelGoal, 1) : 0;
-
-  useEffect(() => {
-    // Simple direct animation to target progress
-    meterProgress.value = withTiming(targetProgress, {
-      duration: 300,
-      easing: Easing.out(Easing.cubic),
-    });
-  }, [targetProgress]);
-
-  const meterFillStyle = useAnimatedStyle(() => ({
-    width: `${meterProgress.value * 100}%`,
-  }));
 
   return (
     <Surface variant="panel" padding="none" style={styles.outerContainer}>
@@ -265,27 +235,6 @@ export const ScoreRow = () => {
           )}
         </InsetSlot>
       </View>
-
-      {/* Row 2: Goal Label + Progress Bar */}
-      <View style={styles.goalRow}>
-        <GameText variant="displaySmall" color={COLORS.text}>
-          Ziel
-        </GameText>
-        <InsetSlot padding="none" style={styles.progressBarSlot}>
-          <Animated.View style={[styles.progressBarFill, meterFillStyle]}>
-            <LinearGradient
-              colors={
-                isGoalMet
-                  ? [COLORS.gold + "CC", COLORS.gold]
-                  : [COLORS.cyan + "CC", COLORS.cyan]
-              }
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={StyleSheet.absoluteFill}
-            />
-          </Animated.View>
-        </InsetSlot>
-      </View>
     </Surface>
   );
 };
@@ -319,29 +268,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingVertical: SPACING.xs,
     paddingHorizontal: SPACING.md,
-  },
-
-  // Row 2: Goal + Progress Bar
-  goalRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: SPACING.containerPaddingHorizontal,
-    paddingBottom: SPACING.md,
-    gap: SPACING.lg,
-  },
-  progressBarSlot: {
-    width: "50%",
-    height: 28,
-    overflow: "hidden",
-  },
-  progressBarFill: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    bottom: 0,
-    borderRadius: DIMENSIONS.borderRadiusSmall - 2,
-    overflow: "hidden",
   },
 
   // Score display styles
