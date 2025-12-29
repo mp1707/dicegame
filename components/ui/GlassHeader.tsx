@@ -24,7 +24,8 @@ export const GlassHeader = () => {
         style={[
           styles.topRow,
           {
-            paddingTop: Platform.OS === "ios" ? SPACING.sm : insets.top + SPACING.xs,
+            paddingTop:
+              Platform.OS === "ios" ? SPACING.sm : insets.top + SPACING.xs,
             paddingHorizontal: SPACING.containerPaddingHorizontal,
           },
         ]}
@@ -55,6 +56,9 @@ export const GlassHeader = () => {
 const styles = StyleSheet.create({
   container: {
     width: "100%",
+    paddingTop: SPACING.xxl,
+    paddingBottom: SPACING.md,
+    paddingHorizontal: SPACING.containerPaddingHorizontal,
   },
   topRow: {
     flexDirection: "row",

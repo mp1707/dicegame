@@ -63,7 +63,10 @@ export default function App() {
         {/* Vignette effect */}
         <View style={styles.vignette} pointerEvents="none" />
 
-        <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
+        <SafeAreaView
+          style={styles.safeArea}
+          edges={["bottom", "left", "right"]}
+        >
           {/* Top HUD - always visible, does NOT animate */}
           <GlassHeader />
 

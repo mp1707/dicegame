@@ -22,6 +22,7 @@ import { ScoreRow } from "../../ui/ScoreRow";
 import { ScoringGrid } from "../../scoring/ScoringGrid";
 import { FooterControls } from "../../ui/FooterControls";
 import { WinOverlay } from "../../ui/WinOverlay";
+import { GoalBadge } from "../../ui/GoalBadge";
 
 interface PhaseDeckProps {
   /** The DiceTray component (3D scene) - rendered as base layer */
@@ -173,6 +174,7 @@ export const PhaseDeck: React.FC<PhaseDeckProps> = ({
       {/* Base Layer: DiceTray - always visible */}
       <View style={[styles.diceContainer, { height: diceTrayHeight }]}>
         {diceTray}
+        <GoalBadge />
         <WinOverlay />
       </View>
 

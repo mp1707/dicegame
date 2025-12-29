@@ -23,25 +23,56 @@ export type CategoryId =
 export interface CategoryInfo {
   id: CategoryId;
   labelDe: string;
+  labelShort: string; // Short form for compact displays
   section: "upper" | "lower";
 }
 
 export const CATEGORIES: CategoryInfo[] = [
   // Upper section
-  { id: "ones", labelDe: "Einser", section: "upper" },
-  { id: "twos", labelDe: "Zweier", section: "upper" },
-  { id: "threes", labelDe: "Dreier", section: "upper" },
-  { id: "fours", labelDe: "Vierer", section: "upper" },
-  { id: "fives", labelDe: "Fünfer", section: "upper" },
-  { id: "sixes", labelDe: "Sechser", section: "upper" },
+  { id: "ones", labelDe: "Einser", labelShort: "1er", section: "upper" },
+  { id: "twos", labelDe: "Zweier", labelShort: "2er", section: "upper" },
+  { id: "threes", labelDe: "Dreier", labelShort: "3er", section: "upper" },
+  { id: "fours", labelDe: "Vierer", labelShort: "4er", section: "upper" },
+  { id: "fives", labelDe: "Fünfer", labelShort: "5er", section: "upper" },
+  { id: "sixes", labelDe: "Sechser", labelShort: "6er", section: "upper" },
   // Lower section
-  { id: "threeOfKind", labelDe: "Dreier Pasch", section: "lower" },
-  { id: "fourOfKind", labelDe: "Vierer Pasch", section: "lower" },
-  { id: "fullHouse", labelDe: "Full House", section: "lower" },
-  { id: "smallStraight", labelDe: "Kleine Straße", section: "lower" },
-  { id: "largeStraight", labelDe: "Große Straße", section: "lower" },
-  { id: "yahtzee", labelDe: "Yahtzee", section: "lower" },
-  { id: "chance", labelDe: "Chance", section: "lower" },
+  {
+    id: "threeOfKind",
+    labelDe: "Dreier Pasch",
+    labelShort: "3er P.",
+    section: "lower",
+  },
+  {
+    id: "fourOfKind",
+    labelDe: "Vierer Pasch",
+    labelShort: "4er P.",
+    section: "lower",
+  },
+  {
+    id: "fullHouse",
+    labelDe: "Full House",
+    labelShort: "F. House",
+    section: "lower",
+  },
+  {
+    id: "smallStraight",
+    labelDe: "Kleine Straße",
+    labelShort: "Kl. Str.",
+    section: "lower",
+  },
+  {
+    id: "largeStraight",
+    labelDe: "Große Straße",
+    labelShort: "Gr. Str.",
+    section: "lower",
+  },
+  {
+    id: "yahtzee",
+    labelDe: "Yahtzee",
+    labelShort: "Yahtzee",
+    section: "lower",
+  },
+  { id: "chance", labelDe: "Chance", labelShort: "Chance", section: "lower" },
 ];
 
 // Get counts of each die value

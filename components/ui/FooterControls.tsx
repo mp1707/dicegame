@@ -1,6 +1,7 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
 import { PrimaryButton, GameText } from "../shared";
+import { InsetSlot } from "../ui-kit";
 import { COLORS, SPACING, DIMENSIONS } from "../../constants/theme";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useGameStore } from "../../store/gameStore";
@@ -55,9 +56,6 @@ export const FooterControls = () => {
   };
 
   const renderContent = () => {
-    // Note: WIN_SCREEN and LOSE_SCREEN are handled by EndPanel
-    // PhaseDeck slides footer away for those phases
-
     // Cash out choice - Two buttons
     if (phase === "CASHOUT_CHOICE") {
       return (
@@ -80,7 +78,7 @@ export const FooterControls = () => {
       );
     }
 
-    // Reveal animation in progress - show "..." indicator
+    // Reveal animation in progress
     if (isRevealing) {
       return (
         <PrimaryButton
@@ -116,74 +114,87 @@ export const FooterControls = () => {
     const label = isRolling ? "ROLL..." : "WURF";
 
     return (
-      <View style={styles.mainControlWrapper}>
-        <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <GameText variant="bodyMedium" color={COLORS.textMuted}>
-              Hands:
-            </GameText>
-            <GameText variant="displaySmall" color={COLORS.cyan}>
-              {handsRemaining}
-            </GameText>
-          </View>
-          <View style={styles.statItem}>
-            <GameText variant="bodyMedium" color={COLORS.textMuted}>
-              Rolls:
-            </GameText>
-            <GameText variant="displaySmall" color={COLORS.gold}>
-              {rollsRemaining}
-            </GameText>
-          </View>
-        </View>
-        <PrimaryButton
-          onPress={onPressRoll}
-          label={label}
-          disabled={!canRoll}
-          variant="cyan"
-          icon={
-            canRoll ? (
-              <MaterialCommunityIcons
-                name="dice-multiple"
-                size={DIMENSIONS.iconSize.md}
-                color={COLORS.textDark}
-              />
-            ) : undefined
-          }
-        />
-      </View>
+      <PrimaryButton
+        onPress={onPressRoll}
+        label={label}
+        disabled={!canRoll}
+        variant="cyan"
+        icon={
+          canRoll ? (
+            <MaterialCommunityIcons
+              name="dice-multiple"
+              size={DIMENSIONS.iconSize.md}
+              color={COLORS.textDark}
+            />
+          ) : undefined
+        }
+      />
     );
   };
 
-  // Note: PhaseDeck handles sliding the footer away for overlay phases
-  // (LEVEL_RESULT, SHOP_MAIN, SHOP_PICK_UPGRADE, WIN_SCREEN, LOSE_SCREEN)
-  // So we always render the footer content here
+  // Show stats only during gameplay
+  const showStats = phase === "LEVEL_PLAY" && !isRevealing;
 
-  return <View style={styles.container}>{renderContent()}</View>;
+  return (
+    <View style={styles.container}>
+      {showStats && (
+        <View style={styles.statsRow}>
+          {/* Hands remaining */}
+          <View style={styles.resourceBar}>
+            <GameText variant="labelSmall" color={COLORS.textMuted}>
+              HANDS
+            </GameText>
+            <InsetSlot style={styles.resourceSlot}>
+              <GameText variant="scoreboardMedium" color={COLORS.cyan}>
+                {handsRemaining}
+              </GameText>
+            </InsetSlot>
+          </View>
+
+          {/* Rolls remaining */}
+          <View style={styles.resourceBar}>
+            <GameText variant="labelSmall" color={COLORS.textMuted}>
+              ROLLS
+            </GameText>
+            <InsetSlot style={styles.resourceSlot}>
+              <GameText variant="scoreboardMedium" color={COLORS.gold}>
+                {rollsRemaining}
+              </GameText>
+            </InsetSlot>
+          </View>
+        </View>
+      )}
+      {renderContent()}
+    </View>
+  );
 };
 
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: SPACING.xxl,
     paddingVertical: SPACING.sectionGap,
-    gap: SPACING.sm,
+    gap: SPACING.md,
     alignItems: "center",
-  },
-  mainControlWrapper: {
-    width: "100%",
-    alignItems: "center",
-    gap: SPACING.sm,
   },
   statsRow: {
-    width: "100%",
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
     alignItems: "center",
-    paddingHorizontal: SPACING.lg,
+    gap: SPACING.lg,
+    alignSelf: "flex-start",
   },
-  statItem: {
+  resourceBar: {
     flexDirection: "row",
     alignItems: "center",
-    gap: SPACING.iconGapMedium,
+    gap: SPACING.sm,
+  },
+  resourceSlot: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
+    minWidth: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: COLORS.bg,
   },
   button: {
     shadowOpacity: 0.6,
