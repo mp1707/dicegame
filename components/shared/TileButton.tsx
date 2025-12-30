@@ -162,29 +162,30 @@ export const TileButton = ({
   const contentOpacity = getContentOpacity(state);
   const showShine = state === "selected";
 
-  // Shadow for selected state
-  const shadowStyle =
+  // Shadow/glow for selected state
+  const glowStyle =
     state === "selected"
       ? {
           shadowColor: COLORS.cyan,
-          shadowOpacity: 0.5,
-          shadowRadius: 8,
+          shadowOpacity: 0.6,
+          shadowRadius: 10,
           shadowOffset: { width: 0, height: 0 },
-          elevation: 4,
+          elevation: 8,
         }
       : {};
 
   return (
-    <Pressable3DBase
-      onPress={onPress}
-      disabled={!pressable}
-      depth={DEPTH}
-      borderRadius={DIMENSIONS.borderRadiusSmall}
-      hapticOnPressIn={state === "selected" ? "none" : "selection"}
-      hapticOnPress="none"
-      showLighting={false}
-      style={[styles.wrapper, shadowStyle, style]}
-      base={<View style={styles.base} />}
+    <View style={[styles.wrapper, glowStyle, style]}>
+      <Pressable3DBase
+        onPress={onPress}
+        disabled={!pressable}
+        depth={DEPTH}
+        borderRadius={DIMENSIONS.borderRadiusSmall}
+        hapticOnPressIn={state === "selected" ? "none" : "selection"}
+        hapticOnPress="none"
+        showLighting={false}
+        style={styles.pressable}
+        base={<View style={styles.base} />}
       face={
         <View style={[styles.face, faceStyles]}>
           {/* Shine sweep overlay for selected state */}
@@ -217,11 +218,17 @@ export const TileButton = ({
         </GameText>
       </View>
     </Pressable3DBase>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   wrapper: {
+    borderRadius: DIMENSIONS.borderRadiusSmall,
+  },
+  pressable: {
+    width: "100%",
+    height: "100%",
     borderRadius: DIMENSIONS.borderRadiusSmall,
   },
   base: {
