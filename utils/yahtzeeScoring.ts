@@ -68,8 +68,8 @@ export const CATEGORIES: CategoryInfo[] = [
   },
   {
     id: "yahtzee",
-    labelDe: "Yahtzee",
-    labelShort: "Yahtzee",
+    labelDe: "Fünfer Pasch",
+    labelShort: "5er P.",
     section: "lower",
   },
   { id: "chance", labelDe: "Chance", labelShort: "Chance", section: "lower" },

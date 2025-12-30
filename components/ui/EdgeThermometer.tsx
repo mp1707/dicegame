@@ -5,7 +5,6 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   withSequence,
-  withSpring,
   Easing,
   interpolateColor,
   cancelAnimation,
@@ -51,9 +50,6 @@ export const EdgeThermometer: React.FC<EdgeThermometerProps> = ({ height }) => {
   const celebrationScale = useSharedValue(1);
   const fillColorProgress = useSharedValue(0);
 
-  // Stiff spring config for snappy animations
-  const stiffSpring = { damping: 20, stiffness: 300 };
-
   // Fill animation - synced with score changes
   useEffect(() => {
     // Check if level changed (drain animation)
@@ -61,7 +57,7 @@ export const EdgeThermometer: React.FC<EdgeThermometerProps> = ({ height }) => {
       prevLevelIndex.current = currentLevelIndex;
       wasGoalMet.current = false;
 
-      // Drain down with smooth easing (no spring bounce)
+      // Drain down with smooth easing
       fillProgress.value = withTiming(0, {
         duration: 400,
         easing: Easing.out(Easing.quad),
@@ -71,8 +67,11 @@ export const EdgeThermometer: React.FC<EdgeThermometerProps> = ({ height }) => {
       return;
     }
 
-    // Normal progress animation with stiff spring
-    fillProgress.value = withSpring(targetProgress, stiffSpring);
+    // Normal progress animation with easing
+    fillProgress.value = withTiming(targetProgress, {
+      duration: 400,
+      easing: Easing.out(Easing.quad),
+    });
   }, [targetProgress, currentLevelIndex]);
 
   // Near-goal glow effect - single pulse at >=80% (per spec §6.2)

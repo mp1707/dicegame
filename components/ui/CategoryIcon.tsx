@@ -1,6 +1,5 @@
 import React from "react";
 import {
-  Crown,
   Dice1,
   Dice2,
   Dice3,
@@ -13,6 +12,7 @@ import {
   House,
   Tally3,
   Tally4,
+  Tally5,
 } from "lucide-react-native";
 import { CategoryId } from "../../utils/yahtzeeScoring";
 
@@ -35,7 +35,7 @@ const CATEGORY_ICONS: Record<CategoryId, React.ComponentType<IconProps>> = {
   smallStraight: Flower,
   largeStraight: Flower2,
   chance: Gift,
-  yahtzee: Crown,
+  yahtzee: Tally5,
 };
 
 export const CategoryIcon = ({

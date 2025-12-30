@@ -212,8 +212,13 @@ export const TileButton = ({
           )}
         </View>
 
-        {/* Bottom: Label */}
-        <GameText variant="body" color={textColor} numberOfLines={1}>
+        {/* Bottom: Label (supports two lines for lower section hands) */}
+        <GameText
+          variant="body"
+          color={textColor}
+          numberOfLines={2}
+          style={styles.labelText}
+        >
           {label}
         </GameText>
       </View>
@@ -272,6 +277,10 @@ const styles = StyleSheet.create({
   iconContainer: {
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: SPACING.xs,
+    marginBottom: SPACING.xxs,
+  },
+  labelText: {
+    textAlign: "center",
+    lineHeight: 12,
   },
 });

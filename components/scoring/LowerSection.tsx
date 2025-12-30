@@ -31,13 +31,7 @@ const LowerSlot = ({ handId }: LowerSlotProps) => {
   const validHands = useValidHands();
 
   const categoryDef = CATEGORIES.find((c) => c.id === handId);
-  let label = categoryDef?.labelDe || handId;
-  // Shorten long labels
-  if (label === "Dreier Pasch") label = "3er P.";
-  if (label === "Vierer Pasch") label = "4er P.";
-  if (label === "Kleine Straße") label = "Kl.Str";
-  if (label === "Große Straße") label = "Gr.Str";
-  if (label === "Full House") label = "Full H.";
+  const label = categoryDef?.labelDe || handId;
 
   const handLevel = handLevels[handId];
 
