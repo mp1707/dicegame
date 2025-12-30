@@ -88,7 +88,7 @@ export const COLORS = {
 
   // Lock outline (screen-space stroke on locked dice)
   lockOutline: {
-    outer: "#7B5CFF", // Bright UI-purple
+    outer: "#5a5a5a", // Bright UI-purple
     inner: "#5D4D8F", // Darker purple for separation
     outerAlpha: 0.85,
     innerAlpha: 0.65,
@@ -98,7 +98,7 @@ export const COLORS = {
 // Font family constant
 export const FONT_FAMILY = "M6x11-Regular";
 
-// Typography - All M6x11 pixel font
+// Typography - All M6x1 1 pixel font
 export const TYPOGRAPHY = {
   // Display - Big numbers, Headers, "WURF"
   displayHuge: {

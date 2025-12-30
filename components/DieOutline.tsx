@@ -46,6 +46,38 @@ const LockIcon = ({
   );
 };
 
+// Connection line component
+const LockLine = ({
+  color,
+  opacityRef,
+}: {
+  color: THREE.Color;
+  opacityRef: React.RefObject<number>;
+}) => {
+  const matRef = useRef<THREE.MeshBasicMaterial>(null);
+
+  useFrame(() => {
+    if (matRef.current) {
+      matRef.current.opacity = opacityRef.current;
+      matRef.current.visible = opacityRef.current > 0.01;
+    }
+  });
+
+  return (
+    <mesh position={[0, -0.25, 0]}>
+      <planeGeometry args={[0.06, 0.3]} />
+      <meshBasicMaterial
+        ref={matRef}
+        color={color}
+        transparent
+        opacity={0}
+        depthWrite={false}
+        toneMapped={false}
+      />
+    </mesh>
+  );
+};
+
 interface DieOutlineProps {
   isLocked: boolean;
   lockedDiceCount: number;
@@ -68,11 +100,12 @@ export const DieOutline = ({ isLocked, lockedDiceCount }: DieOutlineProps) => {
 
   // Parse colors once
   const outerColor = useMemo(
+    // User requested darker tone, "maybe our purple background color"
     () => new THREE.Color(COLORS.lockOutline.outer),
     []
   );
   const innerColor = useMemo(
-    () => new THREE.Color(COLORS.lockOutline.inner),
+    () => new THREE.Color(COLORS.lockOutline.outer),
     []
   );
 
@@ -241,7 +274,10 @@ export const DieOutline = ({ isLocked, lockedDiceCount }: DieOutlineProps) => {
 
       {/* Lock icon floating above die - billboard centered on die, icon offset directly in screen Y */}
       <Billboard position={[0, 0, 0]} follow={true}>
-        <group position={[0, DIE_SIZE * 0.5 + 0.45, 0]}>
+        {/* Adjusted position: slightly further away (0.35 offset) */}
+        <group position={[0, DIE_SIZE * 0.5 + 0.35, 0]}>
+          {/* Connection line rendered FIRST (behind lock) */}
+          <LockLine color={outerColor} opacityRef={lockProgressRef} />
           <LockIcon opacityRef={lockProgressRef} />
         </group>
       </Billboard>
