@@ -105,11 +105,8 @@ export const EdgeThermometer: React.FC<EdgeThermometerProps> = ({ height }) => {
         withTiming(1, { duration: 200, easing: Easing.out(Easing.quad) })
       );
 
-      // Flash mint color
-      fillColorProgress.value = withSequence(
-        withTiming(1, { duration: 150 }),
-        withTiming(0, { duration: 300 })
-      );
+      // Change to gold and stay gold
+      fillColorProgress.value = withTiming(1, { duration: 150 });
 
       triggerNotificationSuccess();
     }
