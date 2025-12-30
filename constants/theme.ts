@@ -85,6 +85,14 @@ export const COLORS = {
     cyan: "rgba(77, 238, 234, 0.4)",
     black: "rgba(0, 0, 0, 0.6)",
   },
+
+  // Lock outline (screen-space stroke on locked dice)
+  lockOutline: {
+    outer: "#7B5CFF", // Bright UI-purple
+    inner: "#5D4D8F", // Darker purple for separation
+    outerAlpha: 0.85,
+    innerAlpha: 0.65,
+  },
 } as const;
 
 // Font family constant
@@ -477,6 +485,26 @@ export const ANIMATION = {
       scoringGrid: 0.75, // Moves 75% of screen width
       footer: 0.9, // Moves 90% of screen width (closest to viewer)
     },
+  },
+
+  // Lock outline (die lock visual feedback)
+  lockOutline: {
+    // Lock ON animation
+    drawIn: 120, // ms - outline draw-in/fade-in
+    popUp: { scale: 1.06, duration: 70 },
+    popDown: { duration: 110 },
+    // Lock OFF animation
+    fadeOut: 90, // ms - outline fade out
+    popDownOff: { scale: 0.97, duration: 60 },
+    popUpOff: { duration: 90 },
+    // Idle pulse (step-like, not breathing)
+    pulseInterval: 1400, // ms between pulses
+    pulseAlphaDown: 0.7,
+    pulseAlphaUp: 0.85,
+    pulseDuration: 120, // ms for each alpha step
+    // Multi-dice dampening
+    maxAlpha: 0.9,
+    multiDiceAmplitudeReduction: 0.3, // 30% reduction for 3+ dice
   },
 } as const;
 

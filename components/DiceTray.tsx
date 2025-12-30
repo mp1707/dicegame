@@ -204,6 +204,9 @@ export const DiceTray = ({
       : []);
   const contributingSet = new Set(contributingIndices);
 
+  // Calculate locked dice count for outline dampening
+  const lockedDiceCount = selectedDice.filter(Boolean).length;
+
   // Reveal state tracking
   const isRevealing = !!revealState?.active;
 
@@ -416,6 +419,7 @@ export const DiceTray = ({
                 }
                 isContributing={contributingSet.has(i)}
                 isRevealActive={!!revealState?.active}
+                lockedDiceCount={lockedDiceCount}
               />
             ))}
           </Physics>

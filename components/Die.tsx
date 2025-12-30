@@ -3,7 +3,8 @@ import { RigidBody, RapierRigidBody } from "@react-three/rapier";
 import * as THREE from "three";
 import { ThreeEvent, useFrame } from "@react-three/fiber";
 import { RoundedBox } from "@react-three/drei";
-import { COLORS } from "../constants/theme";
+import { COLORS, ANIMATION } from "../constants/theme";
+import { DieOutline } from "./DieOutline";
 
 // Standard D6 Face Normals
 const FACE_NORMALS = [
@@ -76,7 +77,11 @@ const DieFace = ({
   return (
     <group rotation={rotation} position={position}>
       {pips.map((pipPos, i) => (
-        <mesh key={i} position={[pipPos[0], pipPos[1], 0.01]} geometry={SHARED_PIP_GEOMETRY}>
+        <mesh
+          key={i}
+          position={[pipPos[0], pipPos[1], 0.01]}
+          geometry={SHARED_PIP_GEOMETRY}
+        >
           <meshBasicMaterial color="black" transparent opacity={opacity} />
         </mesh>
       ))}
@@ -98,6 +103,7 @@ interface DieProps {
   isHighlighted: boolean;
   isContributing: boolean;
   isRevealActive: boolean;
+  lockedDiceCount: number;
 }
 
 export const Die = ({
@@ -114,6 +120,7 @@ export const Die = ({
   isHighlighted,
   isContributing,
   isRevealActive,
+  lockedDiceCount,
 }: DieProps & { onWake: (index: number) => void }) => {
   const rigidBody = useRef<RapierRigidBody>(null);
   const prevRollTrigger = useRef(rollTrigger);
@@ -136,13 +143,17 @@ export const Die = ({
   const wasRevealActiveRef = useRef(false);
   const capturedPhysicsQuaternionRef = useRef(new THREE.Quaternion());
 
-  // Cached color refs to avoid per-frame allocations
-  const goldColorRef = useRef(new THREE.Color(COLORS.gold));
+  // Cached color ref (white only - no gold tint)
   const whiteColorRef = useRef(new THREE.Color("#f5f5f5"));
 
   // Highlight pulse tracking
   const wasHighlightedRef = useRef(false);
   const highlightStartTimeRef = useRef(0);
+
+  // Lock micro-pop animation tracking
+  const wasLockedRef = useRef(isLocked);
+  const lockPopStartRef = useRef(0);
+  const lockPopPhaseRef = useRef<"none" | "up" | "down">("none");
 
   // Trigger Roll Logic - only when rollTrigger changes
   useEffect(() => {
@@ -256,11 +267,11 @@ export const Die = ({
   // Reset animation state when reveal ends
   useEffect(() => {
     if (!isRevealActive) {
-      animatedScaleRef.current = isLocked ? 1.1 : 1.0;
-      animatedColorRef.current.set(isLocked ? COLORS.gold : "#f5f5f5");
+      animatedScaleRef.current = 1.0; // No locked scale boost anymore
+      animatedColorRef.current.set("#f5f5f5"); // Always white
       animatedOpacityRef.current = isVisible ? 1.0 : 0.0;
     }
-  }, [isRevealActive, isLocked, isVisible]);
+  }, [isRevealActive, isVisible]);
 
   // Combined useFrame for settle detection + animation
   useFrame((state, delta) => {
@@ -420,16 +431,23 @@ export const Die = ({
 
     // Animation logic - using proper exponential decay for smooth transitions
     const lerpFactor = 1 - Math.exp(-12 * delta);
+    const now = performance.now();
+
+    // Detect lock state transitions for micro-pop
+    if (isLocked !== wasLockedRef.current) {
+      wasLockedRef.current = isLocked;
+      lockPopStartRef.current = now;
+      lockPopPhaseRef.current = isLocked ? "up" : "down";
+    }
 
     // Calculate target values based on state
     let targetScale: number;
     let targetOpacity: number;
-    let useGoldColor: boolean;
     let applyDirectly = false; // For highlight pulse - apply directly without lerp
 
     if (isHighlighted) {
       // Snappy pulse: quick grow, fast return
-      const elapsed = performance.now() - highlightStartTimeRef.current;
+      const elapsed = now - highlightStartTimeRef.current;
       const pulseDuration = 200; // Faster pulse
       const peakScale = 1.12; // Slightly more pronounced for visibility
 
@@ -448,36 +466,84 @@ export const Die = ({
       } else {
         targetScale = 1.0;
       }
-      useGoldColor = true;
       targetOpacity = 1.0;
       applyDirectly = true; // Pulse already has easing, don't re-lerp
+    } else if (lockPopPhaseRef.current !== "none") {
+      // Lock micro-pop animation
+      const popElapsed = now - lockPopStartRef.current;
+      const config = ANIMATION.lockOutline;
+
+      if (lockPopPhaseRef.current === "up") {
+        // Lock ON: 1.0 -> 1.06 (70ms) -> 1.0 (110ms)
+        if (popElapsed < config.popUp.duration) {
+          const t = popElapsed / config.popUp.duration;
+          // Overshoot easing (back ease out)
+          const c1 = 1.70158;
+          const c3 = c1 + 1;
+          const eased = 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+          targetScale = THREE.MathUtils.lerp(1.0, config.popUp.scale, eased);
+        } else if (
+          popElapsed <
+          config.popUp.duration + config.popDown.duration
+        ) {
+          const t =
+            (popElapsed - config.popUp.duration) / config.popDown.duration;
+          // Ease out quad for settle
+          const eased = 1 - (1 - t) * (1 - t);
+          targetScale = THREE.MathUtils.lerp(config.popUp.scale, 1.0, eased);
+        } else {
+          targetScale = 1.0;
+          lockPopPhaseRef.current = "none";
+        }
+      } else {
+        // Lock OFF: 1.0 -> 0.97 (60ms) -> 1.0 (90ms)
+        if (popElapsed < config.popDownOff.duration) {
+          const t = popElapsed / config.popDownOff.duration;
+          const eased = 1 - Math.pow(1 - t, 3);
+          targetScale = THREE.MathUtils.lerp(
+            1.0,
+            config.popDownOff.scale,
+            eased
+          );
+        } else if (
+          popElapsed <
+          config.popDownOff.duration + config.popUpOff.duration
+        ) {
+          const t =
+            (popElapsed - config.popDownOff.duration) /
+            config.popUpOff.duration;
+          const eased = 1 - (1 - t) * (1 - t);
+          targetScale = THREE.MathUtils.lerp(
+            config.popDownOff.scale,
+            1.0,
+            eased
+          );
+        } else {
+          targetScale = 1.0;
+          lockPopPhaseRef.current = "none";
+        }
+      }
+      targetOpacity = 1.0;
+      applyDirectly = true;
     } else if (isRevealActive && !isContributing) {
       // Non-contributing during reveal: dimmed
       targetScale = 1.0;
-      useGoldColor = false;
       targetOpacity = 0.3;
     } else if (isRevealActive && isContributing) {
       // Contributing but not currently highlighted
       targetScale = 1.0;
-      useGoldColor = false;
-      targetOpacity = 1.0;
-    } else if (isLocked) {
-      // Normal locked state
-      targetScale = 1.1;
-      useGoldColor = true;
       targetOpacity = 1.0;
     } else {
-      // Normal unlocked state
+      // Normal state (locked or unlocked - no scale/color change)
       targetScale = 1.0;
-      useGoldColor = false;
       targetOpacity = isVisible ? 1.0 : 0.0;
     }
 
-    // Apply animations - direct for highlight, lerped for others
+    // Apply animations - direct for highlight/pop, lerped for others
     if (applyDirectly) {
-      // Direct application - pulse already has its own easing
+      // Direct application - animation already has its own easing
       animatedScaleRef.current = targetScale;
-      animatedColorRef.current.copy(goldColorRef.current);
+      animatedColorRef.current.copy(whiteColorRef.current); // Always white
       animatedOpacityRef.current = targetOpacity;
     } else {
       // Smooth lerp transitions
@@ -486,10 +552,7 @@ export const Die = ({
         targetScale,
         lerpFactor * 1.5
       );
-      const colorTarget = useGoldColor
-        ? goldColorRef.current
-        : whiteColorRef.current;
-      animatedColorRef.current.lerp(colorTarget, lerpFactor * 1.2);
+      animatedColorRef.current.lerp(whiteColorRef.current, lerpFactor * 1.2); // Always lerp to white
       animatedOpacityRef.current = THREE.MathUtils.lerp(
         animatedOpacityRef.current,
         targetOpacity,
@@ -509,8 +572,8 @@ export const Die = ({
       mat.opacity = animatedOpacityRef.current;
     }
 
-    // Keep frame loop running during reveal animation or highlight pulse
-    if (isRevealActive || isHighlighted) {
+    // Keep frame loop running during reveal animation, highlight pulse, or lock pop
+    if (isRevealActive || isHighlighted || lockPopPhaseRef.current !== "none") {
       state.invalidate();
     }
   });
@@ -529,9 +592,9 @@ export const Die = ({
     onTap(index);
   };
 
-  // Metal/Roughness for Gold effect (static, not animated)
-  const metalness = isLocked ? 0.6 : 0.1;
-  const roughness = isLocked ? 0.2 : 0.4;
+  // Metal/Roughness - always use unlocked values (no gold effect)
+  const metalness = 0.1;
+  const roughness = 0.4;
 
   // Base opacity for DieFace pips (matches animation target)
   const pipOpacity =
@@ -614,6 +677,9 @@ export const Die = ({
           position={[0, 0, -FACE_OFFSET]}
           opacity={pipOpacity}
         />
+
+        {/* Lock outline (purple stroke) */}
+        <DieOutline isLocked={isLocked} lockedDiceCount={lockedDiceCount} />
       </group>
     </RigidBody>
   );
