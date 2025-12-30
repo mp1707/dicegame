@@ -3,7 +3,6 @@ import { View, StyleSheet, Image } from "react-native";
 import { PrimaryButton, GameText } from "../shared";
 import { InsetSlot, Surface } from "../ui-kit";
 import { COLORS, SPACING, DIMENSIONS } from "../../constants/theme";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useGameStore } from "../../store/gameStore";
 import {
   triggerLightImpact,
@@ -86,7 +85,7 @@ export const FooterControls = () => {
       return (
         <PrimaryButton
           onPress={() => {}}
-          label="..."
+          label="Zähle..."
           disabled={true}
           variant="cyan"
           compact
@@ -100,23 +99,16 @@ export const FooterControls = () => {
       return (
         <PrimaryButton
           onPress={handleAcceptHand}
-          label="ANNEHMEN"
+          label="Annehmen"
           variant="cyan"
           compact
-          icon={
-            <MaterialCommunityIcons
-              name="pencil-outline"
-              size={DIMENSIONS.iconSize.md}
-              color={COLORS.textDark}
-            />
-          }
           style={styles.ctaButton}
         />
       );
     }
 
     // Default: Roll button
-    const label = isRolling ? "ROLL..." : "WURF";
+    const label = isRolling ? "Würfeln..." : "Würfeln";
 
     return (
       <PrimaryButton
@@ -130,11 +122,12 @@ export const FooterControls = () => {
     );
   };
 
-  // Cash out choice - Two full-width buttons (special case without stats)
-  if (phase === "CASHOUT_CHOICE") {
-    return (
-      <View style={styles.container}>
-        <View style={styles.dualButtonContainer}>
+  // Render the CTA area based on current state
+  const renderCTAArea = () => {
+    // Cash out choice - Two buttons
+    if (phase === "CASHOUT_CHOICE") {
+      return (
+        <View style={styles.ctaArea}>
           <PrimaryButton
             onPress={handleCashOut}
             label="CASH OUT"
@@ -150,33 +143,31 @@ export const FooterControls = () => {
             style={[styles.button, styles.halfButton]}
           />
         </View>
-      </View>
-    );
-  }
+      );
+    }
 
-  // Show stats only during gameplay
-  const showStats = phase === "LEVEL_PLAY" && !isRevealing;
+    // Default: Single CTA button
+    return <View style={styles.ctaArea}>{renderCTA()}</View>;
+  };
 
   return (
     <View style={styles.container}>
       <Surface variant="panel" padding="sm" style={styles.footerStrip}>
-        {showStats && (
-          <View style={styles.statsContainer}>
-            <StatPill
-              icon={GloveIcon}
-              label="Hände:"
-              value={handsRemaining}
-              color={COLORS.cyan}
-            />
-            <StatPill
-              icon={DieIcon}
-              label="Würfe:"
-              value={rollsRemaining}
-              color={COLORS.gold}
-            />
-          </View>
-        )}
-        {renderCTA()}
+        <View style={styles.statsContainer}>
+          <StatPill
+            icon={GloveIcon}
+            label="Hände:"
+            value={handsRemaining}
+            color={COLORS.cyan}
+          />
+          <StatPill
+            icon={DieIcon}
+            label="Würfe:"
+            value={rollsRemaining}
+            color={COLORS.gold}
+          />
+        </View>
+        {renderCTAArea()}
       </Surface>
     </View>
   );
@@ -216,11 +207,11 @@ const styles = StyleSheet.create({
   button: {
     shadowOpacity: 0.6,
   },
-  dualButtonContainer: {
+  ctaArea: {
+    flex: 1,
     flexDirection: "row",
-    gap: SPACING.md,
-    width: "100%",
-    justifyContent: "center",
+    gap: SPACING.sm,
+    justifyContent: "flex-end",
   },
   halfButton: {
     flex: 1,
