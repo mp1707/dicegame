@@ -8,7 +8,7 @@ import React, {
 import { View, Text, StyleSheet } from "react-native";
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import { Physics, RigidBody, CuboidCollider } from "@react-three/rapier";
-import { ContactShadows, Environment, useEnvironment } from "@react-three/drei";
+import { ContactShadows, Environment, useEnvironment, useTexture } from "@react-three/drei";
 import * as THREE from "three";
 import { Die } from "./Die";
 import { useGameStore } from "../store/gameStore";
@@ -106,6 +106,15 @@ const ShaderWarmup = () => {
 const PreloadedEnvironment = () => {
   const envMap = useEnvironment({ preset: "night" });
   return <Environment map={envMap} />;
+};
+
+// Preload lock texture to avoid first-lock flicker
+const LOCK_TEXTURE_PATH = require("../assets/icons/lock.png");
+
+const TexturePreload = () => {
+  // Load texture on mount - drei caches it for later use by DieOutline
+  useTexture(LOCK_TEXTURE_PATH);
+  return null;
 };
 
 // Camera controller for zoom animation during reveal
@@ -362,6 +371,7 @@ export const DiceTray = ({
         <Suspense fallback={null}>
           <RenderWarmup rollTrigger={rollTrigger} />
           <ShaderWarmup />
+          <TexturePreload />
           <CameraController
             defaultHeight={cameraHeight}
             defaultFOV={adjustedFOV}
