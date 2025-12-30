@@ -1,15 +1,50 @@
 import React, { useRef, useMemo } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
-import { RoundedBox } from "@react-three/drei";
+import { RoundedBox, useTexture, Billboard } from "@react-three/drei";
 import { COLORS, ANIMATION } from "../constants/theme";
 
 const DIE_SIZE = 0.8;
+const LOCK_ICON_SIZE = 0.6; // Size of the lock icon in 3D space
 
 // Thickness offsets for the inverted hull strokes (in world units)
 // These create the visual appearance of 2-3px outer and 1-2px inner at typical viewing distance
 const OUTER_STROKE_OFFSET = 0.045; // ~3px at 1080p viewing distance
 const INNER_STROKE_OFFSET = 0.025; // ~1.5px at 1080p viewing distance
+
+// Lock icon component - uses a textured plane
+const LockIcon = ({
+  opacityRef,
+}: {
+  opacityRef: React.MutableRefObject<number>;
+}) => {
+  const texture = useTexture(
+    require("../assets/icons/lock.png")
+  ) as THREE.Texture;
+  const matRef = useRef<THREE.MeshBasicMaterial>(null);
+
+  // Update opacity each frame
+  useFrame(() => {
+    if (matRef.current) {
+      matRef.current.opacity = opacityRef.current;
+      matRef.current.visible = opacityRef.current > 0.01;
+    }
+  });
+
+  return (
+    <mesh>
+      <planeGeometry args={[LOCK_ICON_SIZE, LOCK_ICON_SIZE]} />
+      <meshBasicMaterial
+        ref={matRef}
+        map={texture}
+        transparent
+        opacity={0}
+        depthWrite={false}
+        toneMapped={false}
+      />
+    </mesh>
+  );
+};
 
 interface DieOutlineProps {
   isLocked: boolean;
@@ -203,6 +238,13 @@ export const DieOutline = ({ isLocked, lockedDiceCount }: DieOutlineProps) => {
           depthWrite={false}
         />
       </RoundedBox>
+
+      {/* Lock icon floating above die - billboard centered on die, icon offset directly in screen Y */}
+      <Billboard position={[0, 0, 0]} follow={true}>
+        <group position={[0, DIE_SIZE * 0.5 + 0.45, 0]}>
+          <LockIcon opacityRef={lockProgressRef} />
+        </group>
+      </Billboard>
     </group>
   );
 };
