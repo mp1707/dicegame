@@ -1,7 +1,7 @@
 import React from "react";
 import { View, StyleSheet, Text } from "react-native";
-import { ScrollText, DollarSign, Check } from "lucide-react-native";
-import { TileButton, TileButtonVariant } from "../shared";
+import { DollarSign, Check } from "lucide-react-native";
+import { TileButton, TileButtonState, GameText } from "../shared";
 import { Pressable3DBase } from "../ui/Pressable3DBase";
 import { COLORS, SPACING, DIMENSIONS, TYPOGRAPHY } from "../../constants/theme";
 import { useGameStore, useValidHands, HandId } from "../../store/gameStore";
@@ -9,7 +9,10 @@ import { CATEGORIES } from "../../utils/yahtzeeScoring";
 import { CategoryIcon } from "../ui/CategoryIcon";
 import { triggerSelectionHaptic } from "../../utils/haptics";
 
-const LOWER_HANDS = CATEGORIES.filter((c) => c.section === "lower");
+// Filter lower hands, excluding Chance (becomes consumable elsewhere)
+const LOWER_HANDS_DISPLAY = CATEGORIES.filter(
+  (c) => c.section === "lower" && c.id !== "chance"
+);
 
 interface LowerSlotProps {
   handId: HandId;
@@ -21,6 +24,7 @@ const LowerSlot = ({ handId }: LowerSlotProps) => {
   const selectedHandId = useGameStore((s) => s.selectedHandId);
   const selectHand = useGameStore((s) => s.selectHand);
   const deselectHand = useGameStore((s) => s.deselectHand);
+  const toggleOverview = useGameStore((s) => s.toggleOverview);
   const phase = useGameStore((s) => s.phase);
   const hasRolledThisHand = useGameStore((s) => s.hasRolledThisHand);
   const isRolling = useGameStore((s) => s.isRolling);
@@ -42,31 +46,35 @@ const LowerSlot = ({ handId }: LowerSlotProps) => {
   const canInteract = phase === "LEVEL_PLAY" && hasRolledThisHand && !isRolling;
   const isValid = canInteract && !isUsed && validHands.includes(handId);
   const isSelected = selectedHandId === handId;
-  const isPressable = isValid;
 
-  // Determine variant
-  let variant: TileButtonVariant = "default";
-  if (isUsed) variant = "filled";
-  else if (isValid) variant = "active";
+  // New state mapping
+  const getTileState = (): TileButtonState => {
+    if (isUsed) return "used";
+    if (!canInteract || !isValid) return "invalid";
+    if (isSelected) return "selected";
+    return "active";
+  };
 
-  const iconColor = isUsed
-    ? COLORS.text
-    : isSelected
-    ? COLORS.cyan
-    : isValid
-    ? COLORS.cyan
-    : COLORS.textMuted;
+  const tileState = getTileState();
+
+  // Icon color based on state
+  const iconColor =
+    tileState === "used"
+      ? COLORS.gold // Gold tint for used tiles
+      : tileState === "selected" || tileState === "active"
+      ? COLORS.cyan
+      : COLORS.tileTextMuted;
 
   const handlePress = () => {
-    if (!isPressable) return;
-
     if (isSelected) {
-      triggerSelectionHaptic();
       deselectHand();
     } else {
-      triggerSelectionHaptic();
       selectHand(handId);
     }
+  };
+
+  const handleLongPress = () => {
+    toggleOverview();
   };
 
   return (
@@ -74,35 +82,11 @@ const LowerSlot = ({ handId }: LowerSlotProps) => {
       icon={<CategoryIcon categoryId={handId} size={14} color={iconColor} />}
       label={label}
       level={handLevel}
-      variant={variant}
-      selected={isSelected}
-      disabled={!isPressable}
+      state={tileState}
       onPress={handlePress}
+      onLongPress={handleLongPress}
       style={styles.slotStyle}
     />
-  );
-};
-
-const OverviewButton = () => {
-  const toggleOverview = useGameStore((s) => s.toggleOverview);
-
-  return (
-    <Pressable3DBase
-      onPress={() => {
-        triggerSelectionHaptic();
-        toggleOverview();
-      }}
-      depth={4}
-      borderRadius={DIMENSIONS.borderRadiusSmall}
-      showLighting={false}
-      style={styles.slotStyle}
-      face={<View style={styles.actionFace} />}
-    >
-      <View style={styles.actionContent}>
-        <ScrollText size={20} color={COLORS.cyan} strokeWidth={2} />
-        <Text style={[styles.actionLabel, { color: COLORS.cyan }]}>PUNKTE</Text>
-      </View>
-    </Pressable3DBase>
   );
 };
 
@@ -164,38 +148,46 @@ export const LowerSection = () => {
   const showCashOut = levelWon && phase === "LEVEL_PLAY";
 
   // Calculate spacer count based on what buttons are shown
-  // 7 hand slots + buttons should fill to ~10 columns
-  let spacerCount = showCashOut ? 3 : 4;
+  // 6 hand slots (Chance removed) + buttons should fill to ~10 columns
+  // Layout: 6 hands = first row, spacers + optional CASH OUT = second row
+  let spacerCount = showCashOut ? 4 : 5;
 
   return (
-    <View style={styles.container}>
-      {LOWER_HANDS.map((cat) => (
-        <View key={cat.id} style={styles.slotWrapper}>
-          <LowerSlot handId={cat.id} />
-        </View>
-      ))}
+    <View style={styles.wrapper}>
+      <GameText variant="labelSmall" color={COLORS.textMuted} style={styles.header}>
+        UNTEN
+      </GameText>
+      <View style={styles.container}>
+        {LOWER_HANDS_DISPLAY.map((cat) => (
+          <View key={cat.id} style={styles.slotWrapper}>
+            <LowerSlot handId={cat.id} />
+          </View>
+        ))}
 
-      {/* Spacers */}
-      {[...Array(spacerCount)].map((_, i) => (
-        <View key={`spacer-${i}`} style={styles.slotWrapper} />
-      ))}
+        {/* Spacers */}
+        {[...Array(spacerCount)].map((_, i) => (
+          <View key={`spacer-${i}`} style={styles.slotWrapper} />
+        ))}
 
-      {/* Cash Out button (shown when level is won and pressing on) */}
-      {showCashOut && (
-        <View style={styles.slotWrapper}>
-          <CashOutButton />
-        </View>
-      )}
-
-      {/* Overview button */}
-      <View style={styles.slotWrapper}>
-        <OverviewButton />
+        {/* Cash Out button (shown when level is won and pressing on) */}
+        {showCashOut && (
+          <View style={styles.slotWrapper}>
+            <CashOutButton />
+          </View>
+        )}
       </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  wrapper: {
+    width: "100%",
+  },
+  header: {
+    marginBottom: SPACING.xs,
+    marginLeft: SPACING.xs,
+  },
   container: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -208,17 +200,6 @@ const styles = StyleSheet.create({
     height: 70,
     width: "100%",
     borderRadius: DIMENSIONS.borderRadiusSmall,
-  },
-  actionFace: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: COLORS.surface2,
-    borderRadius: DIMENSIONS.borderRadiusSmall,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.15)",
-    borderBottomWidth: 3,
-    borderBottomColor: "rgba(0,0,0,0.3)",
   },
   cashOutFace: {
     ...StyleSheet.absoluteFillObject,

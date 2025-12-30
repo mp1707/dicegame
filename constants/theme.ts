@@ -36,6 +36,12 @@ export const COLORS = {
   shadow: "#1A1528", // Deep purple shadow
   slotBg: "#352B58", // Alias for components using slotBg
 
+  // Tile-specific colors (TileButton only - don't change surface globally)
+  tile: "#3A2F5E", // Darker, less saturated than surface
+  tilePressed: "#332850", // Slightly darker than tile
+  tileDisabled: "#2D2445", // Close to bg but distinct
+  tileTextMuted: "#8878B0", // Dimmer than textMuted
+
   // Legacy mappings for safe-keep
   background: "#2A2242",
   backgroundDark: "#1A1528",
@@ -67,6 +73,9 @@ export const COLORS = {
     goldMild: "rgba(255, 200, 87, 0.3)",
     coralSubtle: "rgba(255, 90, 122, 0.15)",
     coralMild: "rgba(255, 90, 122, 0.3)",
+    // Tile-specific overlays
+    cyanGlowStrong: "rgba(77, 238, 234, 0.22)", // Active halo effect
+    goldStamp: "rgba(255, 200, 87, 0.20)", // Used tile stamp overlay
   },
 
   // Shadow colors for text glows
@@ -441,6 +450,21 @@ export const ANIMATION = {
     staggerDelay: 50,
     fadeIn: 300,
     colorTransition: 300,
+  },
+
+  // Tile animations (TileButton)
+  tile: {
+    breathe: {
+      duration: 1600, // Full breathe cycle
+      minOpacity: 0.35, // Lowest halo opacity
+      maxOpacity: 0.75, // Highest halo opacity
+    },
+    press: {
+      scaleDown: 0.985, // Scale when pressed
+    },
+    select: {
+      shineDuration: 420, // One-shot shine sweep
+    },
   },
 
   // Phase transitions (PhaseDeck sliding panels)
