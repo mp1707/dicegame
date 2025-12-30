@@ -147,7 +147,12 @@ export const EdgeThermometer: React.FC<EdgeThermometerProps> = ({ height }) => {
         <GameText variant="labelSmall" color={COLORS.textMuted}>
           ZIEL
         </GameText>
-        <GameText variant="displaySmall" color={COLORS.gold}>
+        <GameText
+          variant="displaySmall"
+          color={COLORS.gold}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+        >
           {formatCompactNumber(levelGoal)}
         </GameText>
       </View>
@@ -199,12 +204,13 @@ const styles = StyleSheet.create({
   goalHeader: {
     // Merged cohesive header block (per spec §5.2)
     width: "100%",
-    alignItems: "flex-start", // Left-aligned per spec
+    alignItems: "center",
     gap: SPACING.xxs,
     // InsetSlot-style background for visual definition
     backgroundColor: COLORS.overlays.blackMedium,
     borderRadius: DIMENSIONS.borderRadiusSmall,
-    padding: SPACING.sm,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.xs,
     // Recess cues
     borderWidth: 1,
     borderTopColor: COLORS.overlays.blackStrong,
