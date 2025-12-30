@@ -1,25 +1,18 @@
 import React, { useEffect, useRef } from "react";
-import {
-  View,
-  StyleSheet,
-  ViewStyle,
-  StyleProp,
-  Pressable,
-} from "react-native";
+import { View, StyleSheet, ViewStyle, StyleProp } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
-  withSpring,
   Easing,
   interpolate,
 } from "react-native-reanimated";
 import { Check } from "lucide-react-native";
+import { Pressable3DBase } from "../ui/Pressable3DBase";
 import { GameText } from "./GameText";
 import { COLORS, DIMENSIONS, SPACING, ANIMATION } from "../../constants/theme";
-import { triggerSelectionHaptic } from "../../utils/haptics";
 
-// New 5-state model
+// 5-state model
 export type TileButtonState =
   | "default"
   | "active"
@@ -46,7 +39,7 @@ const getTextColor = (state: TileButtonState): string => {
     case "active":
       return COLORS.text;
     case "used":
-      return COLORS.gold; // Gold tint for used tiles
+      return COLORS.goldDark;
     case "invalid":
     case "default":
     default:
@@ -82,10 +75,8 @@ export const TileButton = ({
   const pressable = isPressableState(state);
   const prevState = useRef(state);
 
-  // Animation values
-  const scale = useSharedValue(1);
+  // Shine sweep animation value
   const shinePosition = useSharedValue(-1);
-  const pressed = useSharedValue(0);
 
   // Shine sweep animation when becoming selected
   useEffect(() => {
@@ -99,45 +90,6 @@ export const TileButton = ({
     prevState.current = state;
   }, [state]);
 
-  // Press handlers
-  const handlePressIn = () => {
-    if (!pressable) return;
-    scale.value = withTiming(ANIMATION.tile.press.scaleDown, {
-      duration: 75,
-      easing: Easing.out(Easing.quad),
-    });
-    pressed.value = withTiming(1, { duration: 75 });
-  };
-
-  const handlePressOut = () => {
-    scale.value = withSpring(1, ANIMATION.springs.button);
-    pressed.value = withTiming(0, { duration: 120 });
-  };
-
-  const handlePress = () => {
-    if (!pressable) return;
-    triggerSelectionHaptic();
-    onPress();
-  };
-
-  const handleLongPress = () => {
-    if (onLongPress) {
-      triggerSelectionHaptic();
-      onLongPress();
-    }
-  };
-
-  // Animated styles
-  const containerAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  const faceAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateY: interpolate(pressed.value, [0, 1], [0, DEPTH / 2]) },
-    ],
-  }));
-
   const shineAnimatedStyle = useAnimatedStyle(() => ({
     transform: [
       { translateX: interpolate(shinePosition.value, [-1, 1.5], [-100, 200]) },
@@ -149,8 +101,7 @@ export const TileButton = ({
     ),
   }));
 
-  // Get styles based on state
-  // IMPORTANT: Use consistent borderWidth (2px) across ALL states to prevent layout shift
+  // Get face styles based on state
   const getFaceStyles = () => {
     const base = {
       backgroundColor: COLORS.tile,
@@ -166,7 +117,6 @@ export const TileButton = ({
       case "active":
         return {
           ...base,
-          // Keep lift effect via thicker bottom shadow
           borderBottomWidth: 4,
           borderBottomColor: COLORS.overlays.blackMedium,
         };
@@ -174,7 +124,6 @@ export const TileButton = ({
       case "selected":
         return {
           ...base,
-          // Only change COLOR, not width (prevents layout shift)
           borderColor: COLORS.cyan,
           borderTopWidth: 2,
           borderTopColor: COLORS.overlays.whiteStrong,
@@ -226,60 +175,48 @@ export const TileButton = ({
       : {};
 
   return (
-    <Pressable
-      onPress={handlePress}
-      onLongPress={handleLongPress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
-      delayLongPress={400}
-      style={[styles.wrapper, style]}
-    >
-      <Animated.View
-        style={[styles.container, containerAnimatedStyle, shadowStyle]}
-      >
-        {/* Base layer (shadow/depth) */}
-        <View style={styles.base} />
-
-        {/* Face layer */}
-        <Animated.View style={[styles.face, faceStyles, faceAnimatedStyle]}>
-          {/* Shine sweep overlay */}
+    <Pressable3DBase
+      onPress={onPress}
+      disabled={!pressable}
+      depth={DEPTH}
+      borderRadius={DIMENSIONS.borderRadiusSmall}
+      hapticOnPressIn={state === "selected" ? "none" : "selection"}
+      hapticOnPress="none"
+      showLighting={false}
+      style={[styles.wrapper, shadowStyle, style]}
+      base={<View style={styles.base} />}
+      face={
+        <View style={[styles.face, faceStyles]}>
+          {/* Shine sweep overlay for selected state */}
           {showShine && (
             <Animated.View style={[styles.shineOverlay, shineAnimatedStyle]} />
           )}
+        </View>
+      }
+    >
+      <View style={[styles.content, { opacity: contentOpacity }]}>
+        {/* Level badge - top right corner */}
+        <View style={styles.levelBadge}>
+          <GameText variant="caption" style={styles.badgeText}>
+            LV{level}
+          </GameText>
+        </View>
 
-          {/* Content */}
-          <View style={[styles.content, { opacity: contentOpacity }]}>
-            {/* Top bar: Level badge (left) + State glyph (right) */}
-            <View style={styles.topBar}>
-              <View style={styles.levelBadge}>
-                <GameText variant="caption" style={styles.badgeText}>
-                  LV{level}
-                </GameText>
-              </View>
-              {/* Only show checkmark for used state */}
-              {state === "used" && (
-                <View style={styles.stateGlyph}>
-                  <Check size={10} color={COLORS.gold} strokeWidth={3} />
-                </View>
-              )}
-            </View>
+        {/* Center: Icon (or checkmark if used) */}
+        <View style={styles.iconContainer}>
+          {state === "used" ? (
+            <Check size={18} color={COLORS.goldDark} strokeWidth={2.5} />
+          ) : (
+            icon
+          )}
+        </View>
 
-            {/* Center: Icon */}
-            <View style={styles.iconContainer}>{icon}</View>
-
-            {/* Bottom: Label */}
-            <GameText
-              variant="caption"
-              color={textColor}
-              numberOfLines={1}
-              style={styles.label}
-            >
-              {label}
-            </GameText>
-          </View>
-        </Animated.View>
-      </Animated.View>
-    </Pressable>
+        {/* Bottom: Label */}
+        <GameText variant="body" color={textColor} numberOfLines={1}>
+          {label}
+        </GameText>
+      </View>
+    </Pressable3DBase>
   );
 };
 
@@ -287,18 +224,13 @@ const styles = StyleSheet.create({
   wrapper: {
     borderRadius: DIMENSIONS.borderRadiusSmall,
   },
-  container: {
-    flex: 1,
-    borderRadius: DIMENSIONS.borderRadiusSmall,
-  },
   base: {
-    ...StyleSheet.absoluteFillObject,
+    flex: 1,
     backgroundColor: COLORS.overlays.blackStrong,
     borderRadius: DIMENSIONS.borderRadiusSmall,
-    top: DEPTH,
   },
   face: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
     borderRadius: DIMENSIONS.borderRadiusSmall,
     overflow: "hidden",
   },
@@ -313,16 +245,14 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: SPACING.xs, // Reduced from SPACING.sm to move badge closer to edge
-  },
-  topBar: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    padding: SPACING.sm,
+    justifyContent: "center",
     alignItems: "center",
-    height: 14,
-    marginBottom: SPACING.xxs, // Reduced from SPACING.xs
   },
   levelBadge: {
+    position: "absolute",
+    top: 5,
+    right: -2,
     paddingHorizontal: SPACING.xs,
     paddingVertical: 1,
     borderRadius: SPACING.xs,
@@ -332,21 +262,9 @@ const styles = StyleSheet.create({
     fontSize: 6,
     letterSpacing: 0.3,
   },
-  stateGlyph: {
-    width: 14,
-    height: 14,
-    justifyContent: "center",
-    alignItems: "center",
-  },
   iconContainer: {
-    flex: 1,
     justifyContent: "center",
     alignItems: "center",
-  },
-  label: {
-    fontSize: 7,
-    textAlign: "center",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
+    marginBottom: SPACING.xs,
   },
 });

@@ -59,10 +59,12 @@ const LowerSlot = ({ handId }: LowerSlotProps) => {
 
   // Icon color based on state
   const iconColor =
-    tileState === "used"
-      ? COLORS.gold // Gold tint for used tiles
-      : tileState === "selected" || tileState === "active"
-      ? COLORS.cyan
+    tileState === "selected"
+      ? COLORS.cyan // Only selected is cyan
+      : tileState === "active"
+      ? COLORS.text // Active/playable is white
+      : tileState === "used"
+      ? COLORS.gold
       : COLORS.tileTextMuted;
 
   const handlePress = () => {

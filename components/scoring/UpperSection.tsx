@@ -37,8 +37,7 @@ const UpperSlot = ({ handId }: UpperSlotProps) => {
 
   // Determine states
   const isUsed = usedHandsThisLevel.includes(handId);
-  const canInteract =
-    phase === "LEVEL_PLAY" && hasRolledThisHand && !isRolling;
+  const canInteract = phase === "LEVEL_PLAY" && hasRolledThisHand && !isRolling;
   const isValid = canInteract && !isUsed && validHands.includes(handId);
   const isSelected = selectedHandId === handId;
 
@@ -54,10 +53,12 @@ const UpperSlot = ({ handId }: UpperSlotProps) => {
 
   // Icon color based on state
   const iconColor =
-    tileState === "used"
-      ? COLORS.gold // Gold tint for used tiles
-      : tileState === "selected" || tileState === "active"
-      ? COLORS.cyan
+    tileState === "selected"
+      ? COLORS.cyan // Only selected is cyan
+      : tileState === "active"
+      ? COLORS.text // Active/playable is white
+      : tileState === "used"
+      ? COLORS.goldDark
       : COLORS.tileTextMuted;
 
   const handlePress = () => {
@@ -95,7 +96,11 @@ const UpperSlot = ({ handId }: UpperSlotProps) => {
 export const UpperSection = () => {
   return (
     <View style={styles.wrapper}>
-      <GameText variant="labelSmall" color={COLORS.textMuted} style={styles.header}>
+      <GameText
+        variant="labelSmall"
+        color={COLORS.textMuted}
+        style={styles.header}
+      >
         OBEN
       </GameText>
       <View style={styles.container}>

@@ -45,7 +45,7 @@ export const COLORS = {
   // Legacy mappings for safe-keep
   background: "#2A2242",
   backgroundDark: "#1A1528",
-  goldDark: "#D9A830",
+  goldDark: "#d9a93064",
   textWhite: "#FFFFFF",
   textBlack: "#1A1528",
   red: "#FF5A7A",
@@ -473,9 +473,9 @@ export const ANIMATION = {
     springConfig: { damping: 22, stiffness: 180 },
     // Parallax ratios for HUD elements (how far they move relative to screen width)
     parallax: {
-      scoreRow: 0.6,     // Moves 60% of screen width
+      scoreRow: 0.6, // Moves 60% of screen width
       scoringGrid: 0.75, // Moves 75% of screen width
-      footer: 0.9,       // Moves 90% of screen width (closest to viewer)
+      footer: 0.9, // Moves 90% of screen width (closest to viewer)
     },
   },
 } as const;
