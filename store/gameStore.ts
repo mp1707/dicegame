@@ -20,8 +20,7 @@ import { CATEGORIES } from "../utils/yahtzeeScoring";
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type GamePhase =
-  | "LEVEL_PLAY" // Rolling/selecting/accepting (also when levelWon=true but pressing on)
-  | "CASHOUT_CHOICE" // Modal: Cash Out or Press On (after reveal completes)
+  | "LEVEL_PLAY" // Rolling/selecting/accepting (CASH OUT button appears when levelWon=true)
   | "LEVEL_RESULT" // Result screen with rewards
   | "SHOP_MAIN" // Shop grid (3 placeholder + 1 upgrade)
   | "SHOP_PICK_UPGRADE" // Pick 1 of 3 hands to upgrade
@@ -93,7 +92,6 @@ interface GameState {
 
   // Cash out flow
   cashOutNow: () => void;
-  pressOn: () => void;
 
   // Shop actions
   openShop: () => void;
@@ -348,41 +346,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       return;
     }
 
-    // Check if this is the first time winning (just crossed goal)
-    const { levelWon: wasAlreadyWon } = get();
-    const justWon = nowWon && !wasAlreadyWon;
-
-    if (justWon) {
-      // Show cash out choice
-      set({
-        levelScore: newScore,
-        handsRemaining: newHandsRemaining,
-        usedHandsThisLevel: newUsedHands,
-        levelWon: true,
-        phase: "CASHOUT_CHOICE",
-        revealState: null,
-        selectedHandId: null,
-      });
-      return;
-    }
-
-    // Player is pressing on (already won) and just used another hand
-    if (nowWon && newHandsRemaining === 0) {
-      // Auto cash out - no more hands
-      set({
-        levelScore: newScore,
-        handsRemaining: newHandsRemaining,
-        usedHandsThisLevel: newUsedHands,
-        levelWon: true,
-        phase: "LEVEL_RESULT",
-        revealState: null,
-        selectedHandId: null,
-        diceVisible: false,
-      });
-      return;
-    }
-
-    // Continue playing - reset for next hand attempt
+    // Player won - set levelWon: true and stay in LEVEL_PLAY
+    // The CASH OUT button will appear in the footer
     set({
       levelScore: newScore,
       handsRemaining: newHandsRemaining,
@@ -405,18 +370,6 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({
       phase: "LEVEL_RESULT",
       diceVisible: false,
-    });
-  },
-
-  pressOn: () => {
-    // Continue playing with remaining hands
-    set({
-      ...getInitialHandState(),
-      selectedDice: [false, false, false, false, false],
-      diceVisible: false,
-      phase: "LEVEL_PLAY",
-      selectedHandId: null,
-      revealState: null,
     });
   },
 
@@ -492,12 +445,12 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   forceWin: () => {
-    // Debug helper
+    // Debug helper - sets levelWon: true so CASH OUT button appears
     const { levelGoal } = get();
     set({
       levelScore: levelGoal,
       levelWon: true,
-      phase: "CASHOUT_CHOICE",
+      phase: "LEVEL_PLAY",
     });
   },
 }));

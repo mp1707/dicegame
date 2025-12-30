@@ -43,7 +43,7 @@ export const FooterControls = () => {
   const acceptHand = useGameStore((s) => s.acceptHand);
   const revealState = useGameStore((s) => s.revealState);
   const cashOutNow = useGameStore((s) => s.cashOutNow);
-  const pressOn = useGameStore((s) => s.pressOn);
+  const levelWon = useGameStore((s) => s.levelWon);
 
   const canRoll =
     rollsRemaining > 0 &&
@@ -67,11 +67,6 @@ export const FooterControls = () => {
     triggerSelectionHaptic();
   };
 
-  const handlePressOn = () => {
-    pressOn();
-    triggerSelectionHaptic();
-  };
-
   const onPressRoll = () => {
     if (!canRoll) return;
     triggerRoll();
@@ -80,6 +75,19 @@ export const FooterControls = () => {
 
   // Render the CTA button based on current state
   const renderCTA = () => {
+    // Level won - show CASH OUT button
+    if (levelWon && phase === "LEVEL_PLAY" && !isRevealing) {
+      return (
+        <PrimaryButton
+          onPress={handleCashOut}
+          label="CASH OUT"
+          variant="mint"
+          compact
+          style={styles.ctaButton}
+        />
+      );
+    }
+
     // Reveal animation in progress
     if (isRevealing) {
       return (
@@ -122,31 +130,8 @@ export const FooterControls = () => {
     );
   };
 
-  // Render the CTA area based on current state
+  // Render the CTA area
   const renderCTAArea = () => {
-    // Cash out choice - Two buttons
-    if (phase === "CASHOUT_CHOICE") {
-      return (
-        <View style={styles.ctaArea}>
-          <PrimaryButton
-            onPress={handleCashOut}
-            label="CASH OUT"
-            variant="mint"
-            compact
-            style={[styles.button, styles.halfButton]}
-          />
-          <PrimaryButton
-            onPress={handlePressOn}
-            label="PRESS ON"
-            variant="cyan"
-            compact
-            style={[styles.button, styles.halfButton]}
-          />
-        </View>
-      );
-    }
-
-    // Default: Single CTA button
     return <View style={styles.ctaArea}>{renderCTA()}</View>;
   };
 
@@ -204,17 +189,10 @@ const styles = StyleSheet.create({
     flex: 1,
     shadowOpacity: 0.6,
   },
-  button: {
-    shadowOpacity: 0.6,
-  },
   ctaArea: {
     flex: 1,
     flexDirection: "row",
     gap: SPACING.sm,
     justifyContent: "flex-end",
-  },
-  halfButton: {
-    flex: 1,
-    maxWidth: 160,
   },
 });

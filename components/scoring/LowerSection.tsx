@@ -150,7 +150,11 @@ export const LowerSection = () => {
 
   return (
     <View style={styles.wrapper}>
-      <GameText variant="labelSmall" color={COLORS.textMuted} style={styles.header}>
+      <GameText
+        variant="labelSmall"
+        color={COLORS.textMuted}
+        style={styles.header}
+      >
         UNTEN
       </GameText>
       <View style={styles.container}>
@@ -159,18 +163,6 @@ export const LowerSection = () => {
             <LowerSlot handId={cat.id} />
           </View>
         ))}
-
-        {/* Spacers */}
-        {[...Array(spacerCount)].map((_, i) => (
-          <View key={`spacer-${i}`} style={styles.slotWrapper} />
-        ))}
-
-        {/* Cash Out button (shown when level is won and pressing on) */}
-        {showCashOut && (
-          <View style={styles.slotWrapper}>
-            <CashOutButton />
-          </View>
-        )}
       </View>
     </View>
   );
@@ -186,7 +178,6 @@ const styles = StyleSheet.create({
   },
   container: {
     flexDirection: "row",
-    flexWrap: "wrap",
     gap: SPACING.slotGapHorizontal,
   },
   slotWrapper: {

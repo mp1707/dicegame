@@ -129,12 +129,11 @@ Key state properties:
 - **Dice state**: `diceValues`, `selectedDice`, `isRolling`, `rollTrigger`
 - **UI state**: `phase`, `selectedHandId`, `revealState`
 
-Key actions: `rollDice`, `selectHand`, `acceptHand`, `finalizeHand`, `cashOutNow`, `pressOn`, `startNewRun`, `startLevel`
+Key actions: `rollDice`, `selectHand`, `acceptHand`, `finalizeHand`, `cashOutNow`, `startNewRun`, `startLevel`
 
 ### Game Phase Model
 
-- `LEVEL_PLAY`: Main gameplay. Roll dice (up to 3 per hand), lock/unlock, select a hand, press ANNEHMEN to accept. When `levelWon === true`, CASH OUT button appears in grid.
-- `CASHOUT_CHOICE`: Modal after reveal animation if score >= goal. Choose CASH OUT or PRESS ON.
+- `LEVEL_PLAY`: Main gameplay. Roll dice (up to 3 per hand), lock/unlock, select a hand, press ANNEHMEN to accept. When `levelWon === true`, CASH OUT button appears in footer.
 - `LEVEL_RESULT`: Shows reward breakdown (base win, unused hands/rolls, tier bonus). CTA: SHOP.
 - `SHOP_MAIN`: Shop grid with 3 placeholder items + UPGRADE HAND. CTA: NEXT LEVEL.
 - `SHOP_PICK_UPGRADE`: Pick 1 of 3 random hands to upgrade. Cost: $6 + handLevel.
@@ -307,7 +306,7 @@ PhaseDeck orchestrates Balatro-style sliding panel transitions between game phas
 
 | Position | Phases | What's Visible |
 |----------|--------|----------------|
-| 0 | LEVEL_PLAY, CASHOUT_CHOICE | HUD (ScoreRow, ScoringGrid, Footer) |
+| 0 | LEVEL_PLAY | HUD (ScoreRow, ScoringGrid, Footer) |
 | 1 | LEVEL_RESULT | ResultPanel |
 | 2 | SHOP_MAIN | ShopPanel |
 | 3 | SHOP_PICK_UPGRADE | UpgradePickerPanel |

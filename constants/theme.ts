@@ -433,16 +433,6 @@ export const ANIMATION = {
     overshootGold: 1.05,
   },
 
-  // Win overlay
-  winOverlay: {
-    fadeIn: 400,
-    fadeOut: 300,
-    pulseUp: 800,
-    pulseDown: 800,
-    pulseScaleMin: 0.98,
-    pulseScaleMax: 1.02,
-  },
-
   // End screen stagger delays
   endScreen: {
     iconDelay: 200,

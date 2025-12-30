@@ -21,7 +21,6 @@ import { EndPanel } from "../../screens/EndScreen";
 import { ScoreRow } from "../../ui/ScoreRow";
 import { ScoringGrid } from "../../scoring/ScoringGrid";
 import { FooterControls } from "../../ui/FooterControls";
-import { WinOverlay } from "../../ui/WinOverlay";
 import { EdgeThermometer } from "../../ui/EdgeThermometer";
 import { TrayModule } from "../../ui/TrayModule";
 
@@ -45,7 +44,6 @@ interface PhaseDeckProps {
 const getDeckPosition = (phase: GamePhase): number => {
   switch (phase) {
     case "LEVEL_PLAY":
-    case "CASHOUT_CHOICE":
       return 0;
     case "LEVEL_RESULT":
       return 1;
@@ -162,8 +160,7 @@ export const PhaseDeck: React.FC<PhaseDeckProps> = ({
   const endStyle = useSlideStyle(deckPosition, 4, screenWidth);
 
   // Determine which layers should be rendered (for performance)
-  const isGameplayVisible =
-    phase === "LEVEL_PLAY" || phase === "CASHOUT_CHOICE";
+  const isGameplayVisible = phase === "LEVEL_PLAY";
   const isResultVisible = phase === "LEVEL_RESULT" || isGameplayVisible;
   const isShopVisible = phase === "SHOP_MAIN" || phase === "LEVEL_RESULT";
   const isUpgradeVisible =
@@ -180,7 +177,6 @@ export const PhaseDeck: React.FC<PhaseDeckProps> = ({
           feltContent={
             <View style={styles.feltContentWrapper}>
               {diceTray}
-              <WinOverlay />
             </View>
           }
         />
