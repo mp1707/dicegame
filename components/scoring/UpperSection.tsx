@@ -5,6 +5,7 @@ import { COLORS, SPACING, DIMENSIONS } from "../../constants/theme";
 import { useGameStore, useValidHands, HandId } from "../../store/gameStore";
 import { CATEGORIES } from "../../utils/yahtzeeScoring";
 import { CategoryIcon } from "../ui/CategoryIcon";
+import { useLayout } from "../../utils/LayoutContext";
 
 const UPPER_HANDS: HandId[] = [
   "ones",
@@ -17,9 +18,10 @@ const UPPER_HANDS: HandId[] = [
 
 interface UpperSlotProps {
   handId: HandId;
+  slotHeight: number;
 }
 
-const UpperSlot = ({ handId }: UpperSlotProps) => {
+const UpperSlot = ({ handId, slotHeight }: UpperSlotProps) => {
   const handLevels = useGameStore((s) => s.handLevels);
   const usedHandsThisLevel = useGameStore((s) => s.usedHandsThisLevel);
   const selectedHandId = useGameStore((s) => s.selectedHandId);
@@ -88,12 +90,17 @@ const UpperSlot = ({ handId }: UpperSlotProps) => {
       state={tileState}
       onPress={handlePress}
       onLongPress={handleLongPress}
-      style={styles.slotStyle}
+      style={{
+        height: slotHeight,
+        borderRadius: DIMENSIONS.borderRadiusSmall,
+      }}
     />
   );
 };
 
 export const UpperSection = () => {
+  const layout = useLayout();
+
   return (
     <View style={styles.wrapper}>
       <GameText
@@ -106,7 +113,7 @@ export const UpperSection = () => {
       <View style={styles.container}>
         {UPPER_HANDS.map((id) => (
           <View key={id} style={styles.slotWrapper}>
-            <UpperSlot handId={id} />
+            <UpperSlot handId={id} slotHeight={layout.upperSlotHeight} />
           </View>
         ))}
       </View>
@@ -117,7 +124,6 @@ export const UpperSection = () => {
 const styles = StyleSheet.create({
   wrapper: {
     width: "100%",
-    marginBottom: SPACING.slotGapHorizontal,
   },
   header: {
     marginBottom: SPACING.xs,
@@ -130,9 +136,5 @@ const styles = StyleSheet.create({
   },
   slotWrapper: {
     width: "15%",
-  },
-  slotStyle: {
-    aspectRatio: 0.85,
-    borderRadius: DIMENSIONS.borderRadiusSmall,
   },
 });

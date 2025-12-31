@@ -8,6 +8,7 @@ import { useGameStore, useValidHands, HandId } from "../../store/gameStore";
 import { CATEGORIES } from "../../utils/yahtzeeScoring";
 import { CategoryIcon } from "../ui/CategoryIcon";
 import { triggerSelectionHaptic } from "../../utils/haptics";
+import { useLayout } from "../../utils/LayoutContext";
 
 // Filter lower hands, excluding Chance (becomes consumable elsewhere)
 const LOWER_HANDS_DISPLAY = CATEGORIES.filter(
@@ -16,9 +17,10 @@ const LOWER_HANDS_DISPLAY = CATEGORIES.filter(
 
 interface LowerSlotProps {
   handId: HandId;
+  slotHeight: number;
 }
 
-const LowerSlot = ({ handId }: LowerSlotProps) => {
+const LowerSlot = ({ handId, slotHeight }: LowerSlotProps) => {
   const handLevels = useGameStore((s) => s.handLevels);
   const usedHandsThisLevel = useGameStore((s) => s.usedHandsThisLevel);
   const selectedHandId = useGameStore((s) => s.selectedHandId);
@@ -81,7 +83,11 @@ const LowerSlot = ({ handId }: LowerSlotProps) => {
       state={tileState}
       onPress={handlePress}
       onLongPress={handleLongPress}
-      style={styles.slotStyle}
+      style={{
+        height: slotHeight,
+        width: "100%",
+        borderRadius: DIMENSIONS.borderRadiusSmall,
+      }}
     />
   );
 };
@@ -137,6 +143,7 @@ const WinButton = () => {
 };
 
 export const LowerSection = () => {
+  const layout = useLayout();
   const levelWon = useGameStore((s) => s.levelWon);
   const phase = useGameStore((s) => s.phase);
 
@@ -160,7 +167,7 @@ export const LowerSection = () => {
       <View style={styles.container}>
         {LOWER_HANDS_DISPLAY.map((cat) => (
           <View key={cat.id} style={styles.slotWrapper}>
-            <LowerSlot handId={cat.id} />
+            <LowerSlot handId={cat.id} slotHeight={layout.lowerSlotHeight} />
           </View>
         ))}
       </View>
@@ -183,6 +190,7 @@ const styles = StyleSheet.create({
   slotWrapper: {
     width: "15%",
   },
+  // Action button style for CashOut/Win (fixed height, not scaled)
   slotStyle: {
     height: 70,
     width: "100%",

@@ -241,9 +241,10 @@ export const ScoreRow = () => {
 
 const styles = StyleSheet.create({
   outerContainer: {
+    flex: 1,
     marginHorizontal: SPACING.sm,
-    marginTop: SPACING.sm,
     overflow: "hidden",
+    justifyContent: "center",
   },
 
   // Row 1: Hand Info + Score
@@ -251,8 +252,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: SPACING.containerPaddingHorizontal,
-    paddingVertical: 10,
-    minHeight: 48,
+    paddingVertical: SPACING.xs,
     gap: SPACING.sm,
   },
   leftSection: {

@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo } from "react";
-import { View, StyleSheet, useWindowDimensions } from "react-native";
+import React, { useEffect } from "react";
+import { View, StyleSheet } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -10,6 +10,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useGameStore, GamePhase } from "../../../store/gameStore";
 import { ANIMATION, COLORS, SPACING } from "../../../constants/theme";
+import { useLayout } from "../../../utils/LayoutContext";
 
 // Import panels
 import { ShopPanel } from "../../screens/ShopScreen";
@@ -118,7 +119,9 @@ export const PhaseDeck: React.FC<PhaseDeckProps> = ({
   diceTray,
   diceTrayHeight,
 }) => {
-  const { width: screenWidth } = useWindowDimensions();
+  // Layout from context - stable game-like proportions
+  const layout = useLayout();
+  const { screenWidth } = layout;
   const phase = useGameStore((s) => s.phase);
 
   // Animated deck position
@@ -206,25 +209,40 @@ export const PhaseDeck: React.FC<PhaseDeckProps> = ({
   return (
     <View style={styles.container}>
       {/* Base Layer: Unified TrayModule (Rail + Felt) - NOW ANIMATED */}
-      <Animated.View style={[styles.trayWrapper, trayModuleStyle]}>
+      <Animated.View
+        style={[
+          styles.trayWrapper,
+          { height: layout.diceTrayHeight },
+          trayModuleStyle,
+        ]}
+      >
         <TrayModule
-          height={diceTrayHeight}
+          height={layout.diceTrayHeight}
           railContent={<EdgeThermometer />}
           feltContent={
-            <View style={styles.feltContentWrapper}>
-              {diceTray}
-            </View>
+            <View style={styles.feltContentWrapper}>{diceTray}</View>
           }
         />
       </Animated.View>
 
-      {/* HUD Layer: ScoreRow, ScoringGrid, Footer - slides with parallax */}
-      <Animated.View style={[styles.hudLayer, scoreRowStyle]}>
+      {/* HUD Layer: ScoreRow - explicit height */}
+      <Animated.View
+        style={[
+          styles.hudLayer,
+          { height: layout.scoreRowHeight },
+          scoreRowStyle,
+        ]}
+      >
         <ScoreRow />
       </Animated.View>
 
-      {/* Scoring Area: Contains both ScoringGrid and CashoutResultList */}
-      <View style={styles.scoringAreaContainer}>
+      {/* Scoring Area: Contains both ScoringGrid and CashoutResultList - explicit height */}
+      <View
+        style={[
+          styles.scoringAreaContainer,
+          { height: layout.scoringGridHeight },
+        ]}
+      >
         {/* ScoringGrid - slides out left */}
         <Animated.View style={[styles.scoringGridLayer, scoringGridStyle]}>
           <View style={styles.scoringDashboard}>
@@ -241,7 +259,14 @@ export const PhaseDeck: React.FC<PhaseDeckProps> = ({
         </Animated.View>
       </View>
 
-      <Animated.View style={[styles.footerLayer, footerStyle]}>
+      {/* Footer - explicit height */}
+      <Animated.View
+        style={[
+          styles.footerLayer,
+          { height: layout.footerHeight },
+          footerStyle,
+        ]}
+      >
         <FooterControls />
       </Animated.View>
 
@@ -282,17 +307,22 @@ const styles = StyleSheet.create({
   trayWrapper: {
     paddingHorizontal: SPACING.sm,
     zIndex: 10,
+    // Height set via inline style from layout
   },
   feltContentWrapper: {
     flex: 1,
     position: "relative",
   },
   hudLayer: {
-    // ScoreRow position
+    // Height set via inline style from layout
+    justifyContent: "center",
+    marginTop: SPACING.sectionGap, // Gap after TrayModule
   },
   scoringAreaContainer: {
-    flex: 1,
+    // Height set via inline style from layout (no flex: 1)
     position: "relative",
+    overflow: "hidden",
+    marginTop: SPACING.sectionGap, // Gap after ScoreRow
   },
   scoringGridLayer: {
     flex: 1,
@@ -300,14 +330,14 @@ const styles = StyleSheet.create({
   scoringDashboard: {
     flex: 1,
     width: "100%",
-    marginTop: 8,
   },
   cashoutResultLayer: {
     ...StyleSheet.absoluteFillObject,
-    marginTop: 8,
   },
   footerLayer: {
-    // Footer position - handled by FooterControls internally
+    // Height set via inline style from layout
+    justifyContent: "center",
+    marginTop: SPACING.sectionGap, // Gap after ScoringGrid
   },
   overlayPanel: {
     ...StyleSheet.absoluteFillObject,

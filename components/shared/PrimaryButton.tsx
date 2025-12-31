@@ -109,7 +109,9 @@ export const PrimaryButton = ({
 
 const styles = StyleSheet.create({
   wrapper: {
-    height: DIMENSIONS.rollButtonHeight,
+    // Height controlled via style prop from parent (layout-based)
+    // Fallback to rollButtonHeight if not specified
+    minHeight: DIMENSIONS.rollButtonHeight,
     width: "100%",
     borderRadius: DIMENSIONS.borderRadius,
   },

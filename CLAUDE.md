@@ -106,6 +106,7 @@ dice-game/
 │   │   └── flow/
 │   │       └── PhaseDeck.tsx # Sliding transition orchestrator
 │   ├── scoring/
+│   │   ├── SpecialSection.tsx # Special row (placeholder, coming soon)
 │   │   ├── UpperSection.tsx # 6 dice slots (1-6)
 │   │   └── LowerSection.tsx # 7 poker hand slots
 │   ├── screens/
@@ -249,6 +250,69 @@ All 13 hand slots use 3 states defined in `theme.ts`:
 ### Dice Tray Sizing
 
 To change the dice tray size in the UI and keep the 3D scene in sync, adjust the UI height in `App.tsx` via `calculateDiceTrayHeight` (in `constants/theme.ts`) and pass both `containerHeight` and `containerWidth` into `DiceTray`. Inside `components/DiceTray.tsx`, derive the 3D floor dimensions from the canvas aspect ratio (e.g., `floorDepth = floorWidth / aspect`) and compute the camera height from the floor size and FOV so the floor fills the viewport without cropping. This keeps the tray full width across devices, prevents dice from rolling out of view, and makes the 3D bounds track the UI layout.
+
+### Layout System
+
+The layout system uses percentage-based weights to create stable, game-like proportions across all screen sizes.
+
+**Section Weights (from `LAYOUT.weights` in theme.ts):**
+
+Each major section gets a percentage of usable height (screen height minus safe areas):
+
+| Section | Weight | Purpose |
+|---------|--------|---------|
+| `header` | 6% | GlassHeader (level, score, money) |
+| `diceTray` | 28% | 3D dice tray with EdgeThermometer |
+| `scoreRow` | 6% | Selected hand display |
+| `scoringGrid` | 43% | Three scoring sections |
+| `footer` | 8% | Action buttons |
+| `gaps` | 9% | Spacing between sections |
+
+**Gap System:**
+
+Major section gaps use `SPACING.sectionGap` (16px), applied via `marginTop` in PhaseDeck:
+
+```typescript
+// PhaseDeck.tsx - Each layer after TrayModule gets marginTop
+hudLayer: { marginTop: SPACING.sectionGap },      // ScoreRow
+scoringAreaContainer: { marginTop: SPACING.sectionGap },  // ScoringGrid
+footerLayer: { marginTop: SPACING.sectionGap },   // Footer
+```
+
+**ScoringGrid Structure (3 Equal Rows):**
+
+The ScoringGrid contains three sections with equal height ratios (from `LAYOUT.scoring`):
+
+| Section | Ratio | Component |
+|---------|-------|-----------|
+| Special | 0.28 (28%) | `SpecialSection` - placeholder row |
+| Upper | 0.28 (28%) | `UpperSection` - 6 dice slots (1-6) |
+| Lower | 0.28 (28%) | `LowerSection` - 7 poker hand slots |
+| Labels | 0.09 (9%) | Section headers (3% each × 3) |
+| Gaps | 0.07 (7%) | Internal spacing |
+
+Internal distribution uses `justifyContent: "space-evenly"` for natural spacing.
+
+**Accessing Layout Values:**
+
+```typescript
+import { useLayout } from "../utils/LayoutContext";
+
+const MyComponent = () => {
+  const layout = useLayout();
+
+  return (
+    <View style={{ height: layout.specialSlotHeight }}>
+      {/* Uses calculated height from layout system */}
+    </View>
+  );
+};
+
+// Available properties:
+// layout.headerHeight, diceTrayHeight, scoreRowHeight, scoringGridHeight, footerHeight
+// layout.specialSlotHeight, upperSlotHeight, lowerSlotHeight, sectionLabelHeight
+// layout.fontScale, screenWidth, screenHeight, usableHeight, insets
+```
 
 ### UI Kit (`components/ui-kit/`)
 

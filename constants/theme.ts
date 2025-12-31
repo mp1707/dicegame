@@ -256,6 +256,42 @@ export const SPACING = {
   iconGapLarge: 8,
 } as const;
 
+// Layout System - Stable game-like proportions (like Balatro)
+// All sections defined as percentages of usable screen height
+// Reference device: iPhone Air (420×912pt, ~818pt usable)
+export const LAYOUT = {
+  // Reference dimensions for scaling calculations
+  reference: {
+    usableHeight: 818, // iPhone Air usable height after safe areas
+  },
+
+  // Section weights (percentages of usable height, total = 100)
+  weights: {
+    header: 8, // ~65pt on reference - Level + money pods
+    diceTray: 32, // ~262pt on reference - 3D scene with thermometer
+    scoreRow: 6, // ~49pt on reference - Selected hand + formula
+    scoringGrid: 42, // ~344pt on reference - 13 hand slots
+    footer: 12, // ~98pt on reference - Stats + CTA button
+  },
+
+  // Scoring grid internal distribution (ratios within scoringGrid height)
+  // 3 equal rows: Special, Upper, Lower
+  scoring: {
+    specialRatio: 0.28, // Special section (new) gets 28% of scoring area
+    upperRatio: 0.28, // Upper section (6 slots) gets 28%
+    lowerRatio: 0.28, // Lower section (7 slots) gets 28%
+    labelsRatio: 0.09, // Section labels (3% each × 3) get 9%
+    gapRatio: 0.07, // Gaps between sections get 7%
+  },
+
+  // Font scaling limits (prevent extremes on very small/large screens)
+  minFontScale: 0.7,
+  maxFontScale: 1.2,
+
+  // Minimum touch target (accessibility)
+  minTouchTarget: 44,
+} as const;
+
 // Dimensions
 export const DIMENSIONS = {
   // Border radii
@@ -286,9 +322,10 @@ export const DIMENSIONS = {
   },
 } as const;
 
-// Responsive Helper
+// @deprecated - Use useLayout().diceTrayHeight instead
+// Kept for backwards compatibility during migration
 export const calculateDiceTrayHeight = (screenHeight: number): number => {
-  return Math.round(screenHeight * 0.32); // Slightly tighter dice area
+  return Math.round(screenHeight * 0.32);
 };
 
 // Slot Visual States - Continuous rounded stroke, "Toy" bevels

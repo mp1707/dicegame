@@ -3,7 +3,6 @@ import {
   View,
   StyleSheet,
   StatusBar,
-  useWindowDimensions,
   ImageBackground,
   Platform,
 } from "react-native";
@@ -14,7 +13,8 @@ import { GlassHeader } from "./components/ui/GlassHeader";
 import { OverviewModal } from "./components/modals/OverviewModal";
 import { PhaseDeck } from "./components/ui-kit/flow";
 import { useGameStore } from "./store/gameStore";
-import { COLORS, SPACING, calculateDiceTrayHeight } from "./constants/theme";
+import { COLORS, SPACING } from "./constants/theme";
+import { LayoutProvider, useLayout } from "./utils/LayoutContext";
 
 // Layout constants - TrayModule internal dimensions
 const RAIL_WIDTH = 56; // Per spec: 52-64px range, 56px primary target
@@ -23,35 +23,14 @@ const FRAME_BORDER = 3; // Outer frame border
 const INNER_LIP = 2; // Left-side inner border only (right side has no border)
 // Note: feltInset fills to rightedge, only left side has inner lip
 
+/**
+ * Main App component - wraps everything in providers
+ */
 export default function App() {
   // Load single font (M6x11)
   const [fontsLoaded] = useFonts({
     "M6x11-Regular": require("./assets/fonts/m6x11plus.ttf"),
   });
-
-  // Game states
-  const overviewVisible = useGameStore((s) => s.overviewVisible);
-  const toggleOverview = useGameStore((s) => s.toggleOverview);
-
-  const { height: screenHeight, width: screenWidth } = useWindowDimensions();
-  const diceTrayHeight = calculateDiceTrayHeight(screenHeight);
-  const hideStatusBar = Platform.OS === "ios";
-
-  // Calculate tray width: full width minus all TrayModule internal elements
-  const trayPadding = SPACING.sm * 2; // paddingHorizontal in trayWrapper
-  // Left: FRAME_BORDER + INNER_LIP + RAIL_WIDTH + DIVIDER
-  // Right: FRAME_BORDER only (no inner lip on right)
-  const moduleInternals =
-    RAIL_WIDTH + DIVIDER_WIDTH + FRAME_BORDER * 2 + INNER_LIP;
-  const diceTrayWidth = screenWidth - trayPadding - moduleInternals;
-
-  // Scanline overlay style
-  const scanlineOverlayStyle = {
-    position: "absolute" as const,
-    width: screenWidth,
-    height: screenHeight,
-    opacity: 0.04,
-  };
 
   if (!fontsLoaded) {
     return (
@@ -68,6 +47,44 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
+      <LayoutProvider>
+        <AppContent />
+      </LayoutProvider>
+    </SafeAreaProvider>
+  );
+}
+
+/**
+ * Inner app content - has access to layout context
+ */
+const AppContent: React.FC = () => {
+  // Layout from context (stable game-like proportions)
+  const layout = useLayout();
+
+  // Game states
+  const overviewVisible = useGameStore((s) => s.overviewVisible);
+  const toggleOverview = useGameStore((s) => s.toggleOverview);
+
+  const hideStatusBar = Platform.OS === "ios";
+
+  // Calculate tray width: full width minus all TrayModule internal elements
+  const trayPadding = SPACING.sm * 2; // paddingHorizontal in trayWrapper
+  // Left: FRAME_BORDER + INNER_LIP + RAIL_WIDTH + DIVIDER
+  // Right: FRAME_BORDER only (no inner lip on right)
+  const moduleInternals =
+    RAIL_WIDTH + DIVIDER_WIDTH + FRAME_BORDER * 2 + INNER_LIP;
+  const diceTrayWidth = layout.screenWidth - trayPadding - moduleInternals;
+
+  // Scanline overlay style
+  const scanlineOverlayStyle = {
+    position: "absolute" as const,
+    width: layout.screenWidth,
+    height: layout.screenHeight,
+    opacity: 0.04,
+  };
+
+  return (
+    <>
       <View style={styles.mainContainer}>
         <StatusBar
           hidden={hideStatusBar}
@@ -91,12 +108,12 @@ export default function App() {
               diceTray={
                 <View style={styles.crtScreenInner}>
                   <DiceTray
-                    containerHeight={diceTrayHeight}
+                    containerHeight={layout.diceTrayHeight}
                     containerWidth={diceTrayWidth}
                   />
                 </View>
               }
-              diceTrayHeight={diceTrayHeight}
+              diceTrayHeight={layout.diceTrayHeight}
             />
           </View>
 
@@ -117,7 +134,7 @@ export default function App() {
           resizeMode="repeat"
         />
       </View>
-    </SafeAreaProvider>
+    </>
   );
 }
 

@@ -8,6 +8,7 @@ import {
   triggerLightImpact,
   triggerSelectionHaptic,
 } from "../../utils/haptics";
+import { useLayout } from "../../utils/LayoutContext";
 
 // Import icons
 const DieIcon = require("../../assets/icons/die.png");
@@ -34,6 +35,7 @@ const StatPill: React.FC<StatPillProps> = ({ icon, label, value }) => (
 );
 
 export const FooterControls = () => {
+  const layout = useLayout();
   const rollsRemaining = useGameStore((s) => s.rollsRemaining);
   const handsRemaining = useGameStore((s) => s.handsRemaining);
   const isRolling = useGameStore((s) => s.isRolling);
@@ -45,6 +47,9 @@ export const FooterControls = () => {
   const cashOutNow = useGameStore((s) => s.cashOutNow);
   const openShop = useGameStore((s) => s.openShop);
   const levelWon = useGameStore((s) => s.levelWon);
+
+  // Button height is ~55% of footer height (proportional to layout)
+  const buttonHeight = Math.max(44, layout.footerHeight * 0.55);
 
   const canRoll =
     rollsRemaining > 0 &&
@@ -81,6 +86,9 @@ export const FooterControls = () => {
 
   // Render the CTA button based on current state
   const renderCTA = () => {
+    // Common button style with proportional height
+    const buttonStyle = [styles.ctaButton, { height: buttonHeight }];
+
     // LEVEL_RESULT phase - show SHOP button
     if (phase === "LEVEL_RESULT") {
       return (
@@ -89,7 +97,7 @@ export const FooterControls = () => {
           label="SHOP"
           variant="mint"
           compact
-          style={styles.ctaButton}
+          style={buttonStyle}
         />
       );
     }
@@ -102,7 +110,7 @@ export const FooterControls = () => {
           label="CASH OUT"
           variant="mint"
           compact
-          style={styles.ctaButton}
+          style={buttonStyle}
         />
       );
     }
@@ -116,7 +124,7 @@ export const FooterControls = () => {
           disabled={true}
           variant="cyan"
           compact
-          style={styles.ctaButton}
+          style={buttonStyle}
         />
       );
     }
@@ -129,7 +137,7 @@ export const FooterControls = () => {
           label="Annehmen"
           variant="cyan"
           compact
-          style={styles.ctaButton}
+          style={buttonStyle}
         />
       );
     }
@@ -144,7 +152,7 @@ export const FooterControls = () => {
         disabled={!canRoll}
         variant="cyan"
         compact
-        style={styles.ctaButton}
+        style={buttonStyle}
       />
     );
   };
@@ -179,8 +187,9 @@ export const FooterControls = () => {
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.sectionGap,
+    justifyContent: "center",
   },
   footerStrip: {
     flexDirection: "row",

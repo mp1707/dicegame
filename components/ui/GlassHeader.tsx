@@ -1,29 +1,27 @@
 import React from "react";
 import { View, StyleSheet, Platform, Image } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { COLORS, SPACING, DIMENSIONS } from "../../constants/theme";
 import { GameText } from "../shared";
 import { Surface, InsetSlot } from "../ui-kit";
 import { useGameStore } from "../../store/gameStore";
 import { formatNumber } from "../../utils/yahtzeeScoring";
+import { useLayout } from "../../utils/LayoutContext";
 
 export const GlassHeader = () => {
-  const insets = useSafeAreaInsets();
+  const layout = useLayout();
   const currentLevelIndex = useGameStore((s) => s.currentLevelIndex);
   const money = useGameStore((s) => s.money);
 
   const levelNumber = currentLevelIndex + 1;
 
+  // Header gets explicit height from layout, plus safe area padding at top
+  const headerStyle = {
+    height: layout.headerHeight + layout.insets.top,
+    paddingTop: layout.insets.top,
+  };
+
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          paddingTop:
-            Platform.OS === "ios" ? SPACING.xxl : insets.top + SPACING.sm,
-        },
-      ]}
-    >
+    <View style={[styles.container, headerStyle]}>
       {/* Left Pod: Level */}
       <Surface variant="panel" padding="none" style={styles.pod}>
         <GameText
@@ -63,7 +61,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: SPACING.containerPaddingHorizontal,
-    paddingBottom: SPACING.md,
+    // Height and paddingTop set via inline style from layout
   },
   pod: {
     flexDirection: "row",
