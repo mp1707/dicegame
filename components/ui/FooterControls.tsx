@@ -43,6 +43,7 @@ export const FooterControls = () => {
   const acceptHand = useGameStore((s) => s.acceptHand);
   const revealState = useGameStore((s) => s.revealState);
   const cashOutNow = useGameStore((s) => s.cashOutNow);
+  const openShop = useGameStore((s) => s.openShop);
   const levelWon = useGameStore((s) => s.levelWon);
 
   const canRoll =
@@ -67,6 +68,11 @@ export const FooterControls = () => {
     triggerSelectionHaptic();
   };
 
+  const handleOpenShop = () => {
+    openShop();
+    triggerSelectionHaptic();
+  };
+
   const onPressRoll = () => {
     if (!canRoll) return;
     triggerRoll();
@@ -75,6 +81,19 @@ export const FooterControls = () => {
 
   // Render the CTA button based on current state
   const renderCTA = () => {
+    // LEVEL_RESULT phase - show SHOP button
+    if (phase === "LEVEL_RESULT") {
+      return (
+        <PrimaryButton
+          onPress={handleOpenShop}
+          label="SHOP"
+          variant="mint"
+          compact
+          style={styles.ctaButton}
+        />
+      );
+    }
+
     // Level won - show CASH OUT button
     if (levelWon && phase === "LEVEL_PLAY" && !isRevealing) {
       return (

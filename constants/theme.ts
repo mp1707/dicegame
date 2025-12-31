@@ -471,6 +471,7 @@ export const ANIMATION = {
     springConfig: { damping: 22, stiffness: 180 },
     // Parallax ratios for HUD elements (how far they move relative to screen width)
     parallax: {
+      trayModule: 0.5, // Moves 50% of screen width (furthest back)
       scoreRow: 0.6, // Moves 60% of screen width
       scoringGrid: 0.75, // Moves 75% of screen width
       footer: 0.9, // Moves 90% of screen width (closest to viewer)

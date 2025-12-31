@@ -12,7 +12,6 @@ import { useGameStore, GamePhase } from "../../../store/gameStore";
 import { ANIMATION, COLORS, SPACING } from "../../../constants/theme";
 
 // Import panels
-import { ResultPanel } from "../../screens/ResultScreen";
 import { ShopPanel } from "../../screens/ShopScreen";
 import { UpgradePickerPanel } from "../../screens/UpgradePickerScreen";
 import { EndPanel } from "../../screens/EndScreen";
@@ -23,6 +22,7 @@ import { ScoringGrid } from "../../scoring/ScoringGrid";
 import { FooterControls } from "../../ui/FooterControls";
 import { EdgeThermometer } from "../../ui/EdgeThermometer";
 import { TrayModule } from "../../ui/TrayModule";
+import { CashoutResultList } from "../../ui/CashoutResultList";
 
 interface PhaseDeckProps {
   /** The DiceTray component (3D scene) - rendered as base layer */
@@ -130,38 +130,74 @@ export const PhaseDeck: React.FC<PhaseDeckProps> = ({
     deckPosition.value = withTiming(targetPosition, timingConfig);
   }, [phase, deckPosition]);
 
-  // HUD layer animated styles with parallax
-  const scoreRowStyle = useSlideStyle(
-    deckPosition,
-    0,
-    screenWidth,
-    true,
-    ANIMATION.phase.parallax.scoreRow
-  );
+  // TrayModule, ScoreRow, Footer: animate at SHOP transition (position 1→2)
+  // These stay visible during LEVEL_RESULT, then slide out when going to SHOP
+  const trayModuleStyle = useAnimatedStyle(() => {
+    const position = deckPosition.value;
+    const translateX = interpolate(
+      position,
+      [1, 2],
+      [0, -screenWidth * ANIMATION.phase.parallax.trayModule],
+      "clamp"
+    );
+    return { transform: [{ translateX }] };
+  });
+
+  const scoreRowStyle = useAnimatedStyle(() => {
+    const position = deckPosition.value;
+    const translateX = interpolate(
+      position,
+      [1, 2],
+      [0, -screenWidth * ANIMATION.phase.parallax.scoreRow],
+      "clamp"
+    );
+    return { transform: [{ translateX }] };
+  });
+
+  const footerStyle = useAnimatedStyle(() => {
+    const position = deckPosition.value;
+    const translateX = interpolate(
+      position,
+      [1, 2],
+      [0, -screenWidth * ANIMATION.phase.parallax.footer],
+      "clamp"
+    );
+    return { transform: [{ translateX }] };
+  });
+
+  // ScoringGrid: animate at LEVEL_RESULT transition (position 0→1)
+  // Use 1.0 ratio to fully slide off-screen (not 0.75 which leaves part visible)
   const scoringGridStyle = useSlideStyle(
     deckPosition,
     0,
     screenWidth,
     true,
-    ANIMATION.phase.parallax.scoringGrid
-  );
-  const footerStyle = useSlideStyle(
-    deckPosition,
-    0,
-    screenWidth,
-    true,
-    ANIMATION.phase.parallax.footer
+    1.0
   );
 
-  // Overlay panel animated styles
-  const resultStyle = useSlideStyle(deckPosition, 1, screenWidth);
+  // CashoutResultList slides in from right at position 1, then out left at position 2+
+  const cashoutSlideStyle = useAnimatedStyle(() => {
+    const position = deckPosition.value;
+    // At position 0: off-screen right
+    // At position 1: visible (center)
+    // At position 2+: off-screen left
+    const translateX = interpolate(
+      position,
+      [0, 1, 2],
+      [screenWidth, 0, -screenWidth],
+      "clamp"
+    );
+    return { transform: [{ translateX }] };
+  });
+
+  // Overlay panel animated styles (ResultPanel removed - now inline CashoutResultList)
   const shopStyle = useSlideStyle(deckPosition, 2, screenWidth);
   const upgradeStyle = useSlideStyle(deckPosition, 3, screenWidth);
   const endStyle = useSlideStyle(deckPosition, 4, screenWidth);
 
   // Determine which layers should be rendered (for performance)
   const isGameplayVisible = phase === "LEVEL_PLAY";
-  const isResultVisible = phase === "LEVEL_RESULT" || isGameplayVisible;
+  const isCashoutVisible = phase === "LEVEL_RESULT" || isGameplayVisible;
   const isShopVisible = phase === "SHOP_MAIN" || phase === "LEVEL_RESULT";
   const isUpgradeVisible =
     phase === "SHOP_PICK_UPGRADE" || phase === "SHOP_MAIN";
@@ -169,8 +205,8 @@ export const PhaseDeck: React.FC<PhaseDeckProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* Base Layer: Unified TrayModule (Rail + Felt) - always visible */}
-      <View style={styles.trayWrapper}>
+      {/* Base Layer: Unified TrayModule (Rail + Felt) - NOW ANIMATED */}
+      <Animated.View style={[styles.trayWrapper, trayModuleStyle]}>
         <TrayModule
           height={diceTrayHeight}
           railContent={<EdgeThermometer />}
@@ -180,31 +216,37 @@ export const PhaseDeck: React.FC<PhaseDeckProps> = ({
             </View>
           }
         />
-      </View>
+      </Animated.View>
 
       {/* HUD Layer: ScoreRow, ScoringGrid, Footer - slides with parallax */}
       <Animated.View style={[styles.hudLayer, scoreRowStyle]}>
         <ScoreRow />
       </Animated.View>
 
-      <Animated.View style={[styles.scoringGridLayer, scoringGridStyle]}>
-        <View style={styles.scoringDashboard}>
-          <ScoringGrid />
-        </View>
-      </Animated.View>
+      {/* Scoring Area: Contains both ScoringGrid and CashoutResultList */}
+      <View style={styles.scoringAreaContainer}>
+        {/* ScoringGrid - slides out left */}
+        <Animated.View style={[styles.scoringGridLayer, scoringGridStyle]}>
+          <View style={styles.scoringDashboard}>
+            <ScoringGrid />
+          </View>
+        </Animated.View>
+
+        {/* CashoutResultList - slides in from right at position 1 */}
+        <Animated.View
+          style={[styles.cashoutResultLayer, cashoutSlideStyle]}
+          pointerEvents={phase === "LEVEL_RESULT" ? "auto" : "none"}
+        >
+          {isCashoutVisible && <CashoutResultList />}
+        </Animated.View>
+      </View>
 
       <Animated.View style={[styles.footerLayer, footerStyle]}>
         <FooterControls />
       </Animated.View>
 
       {/* Overlay Layer: Panels that slide in from right */}
-      {/* Result Panel */}
-      <Animated.View
-        style={[styles.overlayPanel, resultStyle]}
-        pointerEvents={phase === "LEVEL_RESULT" ? "auto" : "none"}
-      >
-        {isResultVisible && <ResultPanel />}
-      </Animated.View>
+      {/* Note: ResultPanel removed - now using inline CashoutResultList */}
 
       {/* Shop Panel */}
       <Animated.View
@@ -248,12 +290,20 @@ const styles = StyleSheet.create({
   hudLayer: {
     // ScoreRow position
   },
+  scoringAreaContainer: {
+    flex: 1,
+    position: "relative",
+  },
   scoringGridLayer: {
     flex: 1,
   },
   scoringDashboard: {
     flex: 1,
     width: "100%",
+    marginTop: 8,
+  },
+  cashoutResultLayer: {
+    ...StyleSheet.absoluteFillObject,
     marginTop: 8,
   },
   footerLayer: {

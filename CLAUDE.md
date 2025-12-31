@@ -93,7 +93,8 @@ dice-game/
 │   ├── ui/
 │   │   ├── GlassHeader.tsx  # Level, score, money (fixed, never slides)
 │   │   ├── ScoreRow.tsx     # Selected hand + reveal animation
-│   │   └── FooterControls.tsx
+│   │   ├── FooterControls.tsx
+│   │   └── CashoutResultList.tsx # Inline reward breakdown (replaces ScoringGrid at LEVEL_RESULT)
 │   ├── ui-kit/              # Material layer system
 │   │   ├── Surface.tsx      # Base container (panel, inset, chip, overlay)
 │   │   ├── HUDCard.tsx      # Panel wrapper with optional header
@@ -134,8 +135,8 @@ Key actions: `rollDice`, `selectHand`, `acceptHand`, `finalizeHand`, `cashOutNow
 ### Game Phase Model
 
 - `LEVEL_PLAY`: Main gameplay. Roll dice (up to 3 per hand), lock/unlock, select a hand, press ANNEHMEN to accept. When `levelWon === true`, CASH OUT button appears in footer.
-- `LEVEL_RESULT`: Shows reward breakdown (base win, unused hands/rolls, tier bonus). CTA: SHOP.
-- `SHOP_MAIN`: Shop grid with 3 placeholder items + UPGRADE HAND. CTA: NEXT LEVEL.
+- `LEVEL_RESULT`: ScoringGrid slides out, CashoutResultList slides in showing reward breakdown (base win, unused hands/rolls, tier bonus). TrayModule, ScoreRow, Footer stay visible. CTA: SHOP (in footer).
+- `SHOP_MAIN`: Full overlay. Shop grid with 3 placeholder items + UPGRADE HAND. CTA: NEXT LEVEL.
 - `SHOP_PICK_UPGRADE`: Pick 1 of 3 random hands to upgrade. Cost: $6 + handLevel.
 - `WIN_SCREEN`: Beat all 8 levels. CTA: NEW RUN.
 - `LOSE_SCREEN`: Ran out of hands with score < goal. CTA: NEW RUN.
@@ -297,30 +298,45 @@ import { Surface, HUDCard, InsetSlot, Chip, SectionHeader, Divider } from "../ui
 PhaseDeck orchestrates Balatro-style sliding panel transitions between game phases. It replaces conditional screen rendering with smooth horizontal animations.
 
 **Architecture:**
-1. **Base Layer** - DiceTray (3D scene) - always visible, never animates
+1. **Base Layer** - TrayModule (3D scene + EdgeThermometer) - animates at SHOP transition
 2. **Fixed Layer** - GlassHeader - always visible, never animates
-3. **HUD Layer** - ScoreRow, ScoringGrid, FooterControls - slides out with parallax
-4. **Overlay Layer** - ResultPanel, ShopPanel, UpgradePickerPanel, EndPanel - slides in on demand
+3. **HUD Layer** - ScoreRow, ScoringGrid, FooterControls, CashoutResultList - different slide timings
+4. **Overlay Layer** - ShopPanel, UpgradePickerPanel, EndPanel - slides in on demand
 
 **Deck Position Mapping:**
 
-| Position | Phases | What's Visible |
-|----------|--------|----------------|
-| 0 | LEVEL_PLAY | HUD (ScoreRow, ScoringGrid, Footer) |
-| 1 | LEVEL_RESULT | ResultPanel |
-| 2 | SHOP_MAIN | ShopPanel |
+| Position | Phase | What's Visible |
+|----------|-------|----------------|
+| 0 | LEVEL_PLAY | TrayModule, ScoreRow, ScoringGrid, Footer |
+| 1 | LEVEL_RESULT | TrayModule, ScoreRow, CashoutResultList (replaces ScoringGrid), Footer |
+| 2 | SHOP_MAIN | ShopPanel (full overlay) |
 | 3 | SHOP_PICK_UPGRADE | UpgradePickerPanel |
 | 4 | WIN_SCREEN, LOSE_SCREEN | EndPanel |
 
-**Parallax Effect (HUD only):**
+**Two-Stage Slide Animation:**
 
-When transitioning away from gameplay, HUD elements slide left at different speeds to create depth:
+Elements slide at different phase transitions:
+
+1. **Position 0→1 (LEVEL_PLAY → LEVEL_RESULT):**
+   - ScoringGrid slides OUT left (1.0x - fully off-screen)
+   - CashoutResultList slides IN from right
+   - TrayModule, ScoreRow, Footer **stay visible**
+
+2. **Position 1→2 (LEVEL_RESULT → SHOP_MAIN):**
+   - TrayModule slides out (0.5x parallax - slowest)
+   - ScoreRow slides out (0.6x parallax)
+   - CashoutResultList slides out left
+   - Footer slides out (0.9x parallax - fastest)
+   - ShopPanel slides in from right
+
+**Parallax Ratios (from theme.ts):**
 
 ```typescript
 // From ANIMATION.phase.parallax in theme.ts
-scoreRow: 0.6,      // Moves 60% of screen width (slowest - appears farthest)
-scoringGrid: 0.75,  // Moves 75% of screen width
-footer: 0.9,        // Moves 90% of screen width (fastest - appears closest)
+trayModule: 0.5,    // Moves 50% of screen width (furthest back)
+scoreRow: 0.6,      // Moves 60% of screen width
+scoringGrid: 0.75,  // Moves 75% of screen width (unused - hardcoded to 1.0)
+footer: 0.9,        // Moves 90% of screen width (closest to viewer)
 ```
 
 **Integration in App.tsx:**
@@ -340,14 +356,18 @@ import { PhaseDeck } from "./components/ui-kit/flow";
 Each screen exports both a full `Screen` wrapper and a `Panel` for PhaseDeck:
 
 ```typescript
-// ResultScreen.tsx
-export const ResultPanel = () => { ... };  // Inner content for PhaseDeck
-export const ResultScreen = () => (        // Full screen wrapper (legacy)
+// ShopScreen.tsx
+export const ShopPanel = () => { ... };    // Inner content for PhaseDeck
+export const ShopScreen = () => (          // Full screen wrapper (legacy)
   <View style={styles.container}>
-    <ResultPanel />
+    <ShopPanel />
   </View>
 );
 ```
+
+**CashoutResultList (inline, not overlay):**
+
+Unlike shop/upgrade/end panels which are full-screen overlays, CashoutResultList is an inline component that slides into the ScoringGrid's position during LEVEL_RESULT. It uses ui-kit components (HUDCard, InsetSlot, Divider, Chip) and displays the same reward breakdown as the legacy ResultPanel.
 
 **Animation Config:**
 
