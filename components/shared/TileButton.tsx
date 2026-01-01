@@ -22,7 +22,8 @@ export type TileButtonState =
 
 export interface TileButtonProps {
   icon: React.ReactNode;
-  label: string;
+  labelLine1: string;
+  labelLine2?: string;
   level?: number;
   state: TileButtonState;
   onPress: () => void;
@@ -65,7 +66,8 @@ const isPressableState = (state: TileButtonState): boolean => {
 
 export const TileButton = ({
   icon,
-  label,
+  labelLine1,
+  labelLine2,
   level = 1,
   state,
   onPress,
@@ -186,43 +188,51 @@ export const TileButton = ({
         showLighting={false}
         style={styles.pressable}
         base={<View style={styles.base} />}
-      face={
-        <View style={[styles.face, faceStyles]}>
-          {/* Shine sweep overlay for selected state */}
-          {showShine && (
-            <Animated.View style={[styles.shineOverlay, shineAnimatedStyle]} />
-          )}
-        </View>
-      }
-    >
-      <View style={[styles.content, { opacity: contentOpacity }]}>
-        {/* Level badge - top right corner */}
-        <View style={styles.levelBadge}>
-          <GameText variant="caption" style={styles.badgeText}>
-            LV{level}
-          </GameText>
-        </View>
+        face={
+          <View style={[styles.face, faceStyles]}>
+            {/* Shine sweep overlay for selected state */}
+            {showShine && (
+              <Animated.View
+                style={[styles.shineOverlay, shineAnimatedStyle]}
+              />
+            )}
+          </View>
+        }
+      >
+        <View style={[styles.content, { opacity: contentOpacity }]}>
+          {/* Level badge - top right corner */}
+          <View style={styles.levelBadge}>
+            <GameText variant="caption" style={styles.badgeText}>
+              LV{level}
+            </GameText>
+          </View>
 
-        {/* Center: Icon (or checkmark if used) */}
-        <View style={styles.iconContainer}>
-          {state === "used" ? (
-            <Check size={18} color={COLORS.goldDark} strokeWidth={2.5} />
-          ) : (
-            icon
-          )}
-        </View>
+          {/* Center: Icon (or checkmark if used) */}
+          <View style={styles.iconContainer}>
+            {state === "used" ? (
+              <Check size={18} color={COLORS.goldDark} strokeWidth={2.5} />
+            ) : (
+              icon
+            )}
+          </View>
 
-        {/* Bottom: Label (supports two lines for lower section hands) */}
-        <GameText
-          variant="body"
-          color={textColor}
-          numberOfLines={2}
-          style={styles.labelText}
-        >
-          {label}
-        </GameText>
-      </View>
-    </Pressable3DBase>
+          {/* Bottom: Label (explicit two-line support) */}
+          <View style={styles.labelContainer}>
+            <GameText variant="body" color={textColor} style={styles.labelText}>
+              {labelLine1}
+            </GameText>
+            {labelLine2 !== undefined && (
+              <GameText
+                variant="body"
+                color={textColor}
+                style={styles.labelText}
+              >
+                {labelLine2}
+              </GameText>
+            )}
+          </View>
+        </View>
+      </Pressable3DBase>
     </View>
   );
 };
@@ -230,6 +240,7 @@ export const TileButton = ({
 const styles = StyleSheet.create({
   wrapper: {
     borderRadius: DIMENSIONS.borderRadiusSmall,
+    overflow: "hidden",
   },
   pressable: {
     width: "100%",
@@ -264,7 +275,7 @@ const styles = StyleSheet.create({
   levelBadge: {
     position: "absolute",
     top: 5,
-    right: -2,
+    right: -4,
     paddingHorizontal: SPACING.xs,
     paddingVertical: 1,
     borderRadius: SPACING.xs,
@@ -278,6 +289,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginBottom: SPACING.xxs,
+  },
+  labelContainer: {
+    alignItems: "center",
   },
   labelText: {
     textAlign: "center",
