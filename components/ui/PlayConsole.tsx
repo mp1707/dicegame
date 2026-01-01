@@ -154,6 +154,12 @@ export const PlayConsole: React.FC<PlayConsoleProps> = ({
         </View>
       </View>
 
+      {/* === Seam Divider (Tray to ScoreLip) === */}
+      <View style={styles.seamDivider}>
+        <View style={styles.seamHighlight} />
+        <View style={styles.seamShadow} />
+      </View>
+
       {/* === ScoreLip Section (Score Readout) === */}
       <View style={styles.scoreLip}>{scoreLip}</View>
     </Surface>
@@ -255,10 +261,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.bg,
     overflow: "hidden",
     // Inset appearance (top edge shadow only, no side borders)
-    borderTopWidth: 2,
-    borderTopColor: COLORS.overlays.blackMedium,
-    borderBottomWidth: 2,
-    borderBottomColor: COLORS.overlays.whiteSubtle,
   },
   trayContent: {
     flex: 1,
