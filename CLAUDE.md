@@ -91,8 +91,8 @@ dice-game/
 │   ├── Die.tsx              # 3D die with tap-to-lock
 │   ├── DiceTray.tsx         # 3D scene with physics
 │   ├── ui/
-│   │   ├── GlassHeader.tsx  # Level, score, money (fixed, never slides)
-│   │   ├── ScoreRow.tsx     # Selected hand + reveal animation
+│   │   ├── PlayConsole.tsx  # Unified container: HUDHeader + TrayWindow + ScoreLip
+│   │   ├── ScoreLip.tsx     # Integrated score readout strip (inside PlayConsole)
 │   │   ├── FooterControls.tsx
 │   │   └── CashoutResultList.tsx # Inline reward breakdown (replaces ScoringGrid at LEVEL_RESULT)
 │   ├── ui-kit/              # Material layer system
@@ -100,6 +100,8 @@ dice-game/
 │   │   ├── HUDCard.tsx      # Panel wrapper with optional header
 │   │   ├── InsetSlot.tsx    # Recessed sub-surface
 │   │   ├── Chip.tsx         # Non-interactive status badge
+│   │   ├── ProgressBar.tsx  # Horizontal progress bar with animation
+│   │   ├── NumericCapsule.tsx # Fixed-width number display (prevents layout shift)
 │   │   ├── SectionHeader.tsx # Section title with icon
 │   │   ├── Divider.tsx      # Visual separator
 │   │   ├── index.ts         # Barrel exports
@@ -259,14 +261,14 @@ The layout system uses percentage-based weights to create stable, game-like prop
 
 Each major section gets a percentage of usable height (screen height minus safe areas):
 
-| Section | Weight | Purpose |
-|---------|--------|---------|
-| `header` | 6% | GlassHeader (level, score, money) |
-| `diceTray` | 28% | 3D dice tray with EdgeThermometer |
-| `scoreRow` | 6% | Selected hand display |
-| `scoringGrid` | 43% | Three scoring sections |
-| `footer` | 8% | Action buttons |
-| `gaps` | 9% | Spacing between sections |
+| Section       | Weight | Purpose                                           |
+| ------------- | ------ | ------------------------------------------------- |
+| `header`      | 8%     | HUDHeader inside PlayConsole (LV, Goal, Progress) |
+| `diceTray`    | 32%    | TrayWindow inside PlayConsole                     |
+| `scoreRow`    | 6%     | ScoreLip inside PlayConsole                       |
+| `scoringGrid` | 38%    | Three scoring sections                            |
+| `footer`      | 12%    | Action buttons                                    |
+| `gaps`        | 4%     | Spacing between sections                          |
 
 **Gap System:**
 
@@ -283,13 +285,13 @@ footerLayer: { marginTop: SPACING.sectionGap },   // Footer
 
 The ScoringGrid contains three sections with equal height ratios (from `LAYOUT.scoring`):
 
-| Section | Ratio | Component |
-|---------|-------|-----------|
-| Special | 0.28 (28%) | `SpecialSection` - placeholder row |
-| Upper | 0.28 (28%) | `UpperSection` - 6 dice slots (1-6) |
-| Lower | 0.28 (28%) | `LowerSection` - 7 poker hand slots |
-| Labels | 0.09 (9%) | Section headers (3% each × 3) |
-| Gaps | 0.07 (7%) | Internal spacing |
+| Section | Ratio      | Component                           |
+| ------- | ---------- | ----------------------------------- |
+| Special | 0.28 (28%) | `SpecialSection` - placeholder row  |
+| Upper   | 0.28 (28%) | `UpperSection` - 6 dice slots (1-6) |
+| Lower   | 0.28 (28%) | `LowerSection` - 7 poker hand slots |
+| Labels  | 0.09 (9%)  | Section headers (3% each × 3)       |
+| Gaps    | 0.07 (7%)  | Internal spacing                    |
 
 Internal distribution uses `justifyContent: "space-evenly"` for natural spacing.
 
@@ -319,6 +321,7 @@ const MyComponent = () => {
 The UI kit provides material layers to differentiate containers from interactive elements. Containers should look flat and matte; only buttons should have 3D bevels and glows.
 
 **Material Hierarchy (back to front):**
+
 1. **Background** (`COLORS.bg`) - Main app background
 2. **Panel** (`Surface variant="panel"`) - Card/section containers
 3. **Inset** (`Surface variant="inset"`) - Recessed data displays inside panels
@@ -349,12 +352,26 @@ import { Surface, HUDCard, InsetSlot, Chip, SectionHeader, Divider } from "../ui
 
 // Divider - Visual separator
 <Divider spacing="md" />
+
+// ProgressBar - Horizontal progress with animation
+<ProgressBar value={score} max={goal} size="sm" />
 ```
 
+**ProgressBar Features:**
+
+- InsetSlot-style track (recessed appearance)
+- Smooth fill animation with subtle overshoot and settle
+- Gradient fill with leading edge shine
+- Color transition: cyan → gold at 100%
+- Glow effect when near/at goal
+- Sizes: `sm` (8px height), `md` (14px height)
+
 **Visual Rules:**
+
 - Panels: Flat fill (`COLORS.surface`), subtle top border (`overlays.whiteMild`), NO outer glow
 - Insets: Darker fill (`COLORS.bg`), top dark border for recessed effect
 - Chips: Minimal flat badge, NO bevel, color variants (cyan, gold, mint, coral, muted)
+- ProgressBar: Inset track, animated gradient fill, leading shine
 - Only `PrimaryButton` and `TileButton` should have 3D bevels and glows
 
 ### PhaseDeck Sliding Transitions (`components/ui-kit/flow/PhaseDeck.tsx`)
@@ -362,26 +379,42 @@ import { Surface, HUDCard, InsetSlot, Chip, SectionHeader, Divider } from "../ui
 PhaseDeck orchestrates Balatro-style sliding panel transitions between game phases. It replaces conditional screen rendering with smooth horizontal animations.
 
 **Architecture:**
-1. **Base Layer** - TrayModule (3D scene + EdgeThermometer) - animates at SHOP transition
-2. **Fixed Layer** - GlassHeader - always visible, never animates
-3. **HUD Layer** - ScoreRow, ScoringGrid, FooterControls, CashoutResultList - different slide timings
+
+1. **PlayConsole** - Unified container (HUDHeader + TrayWindow + ScoreLip) - animates at SHOP transition
+2. **ScoringGrid** - Hand selection area - slides out at LEVEL_RESULT
+3. **Footer** - CTA buttons - slides with parallax
 4. **Overlay Layer** - ShopPanel, UpgradePickerPanel, EndPanel - slides in on demand
+
+**PlayConsole Structure:**
+
+```
+PlayConsole (Surface variant="panel")
+├── HUDHeader (3-row stack)
+│   ├── Row 1: Status (LV chip left, $ chip right)
+│   ├── Row 2: Objective (ZIEL label + goal value)
+│   └── Row 3: Progress (full-width bar, no numbers)
+├── Seam divider
+├── TrayWindow (inset cutout for dice)
+├── Seam divider
+└── ScoreLip (integrated score readout)
+```
 
 **Deck Position Mapping:**
 
-| Position | Phase | What's Visible |
-|----------|-------|----------------|
-| 0 | LEVEL_PLAY | TrayModule, ScoreRow, ScoringGrid, Footer |
-| 1 | LEVEL_RESULT | TrayModule, ScoreRow, CashoutResultList (replaces ScoringGrid), Footer |
-| 2 | SHOP_MAIN | ShopPanel (full overlay) |
-| 3 | SHOP_PICK_UPGRADE | UpgradePickerPanel |
-| 4 | WIN_SCREEN, LOSE_SCREEN | EndPanel |
+| Position | Phase                   | What's Visible                                                         |
+| -------- | ----------------------- | ---------------------------------------------------------------------- |
+| 0        | LEVEL_PLAY              | PlayConsole, ScoringGrid, Footer                                       |
+| 1        | LEVEL_RESULT            | TrayModule, ScoreRow, CashoutResultList (replaces ScoringGrid), Footer |
+| 2        | SHOP_MAIN               | ShopPanel (full overlay)                                               |
+| 3        | SHOP_PICK_UPGRADE       | UpgradePickerPanel                                                     |
+| 4        | WIN_SCREEN, LOSE_SCREEN | EndPanel                                                               |
 
 **Two-Stage Slide Animation:**
 
 Elements slide at different phase transitions:
 
 1. **Position 0→1 (LEVEL_PLAY → LEVEL_RESULT):**
+
    - ScoringGrid slides OUT left (1.0x - fully off-screen)
    - CashoutResultList slides IN from right
    - TrayModule, ScoreRow, Footer **stay visible**
@@ -501,6 +534,7 @@ import { GameText } from "../shared";
 ```
 
 **Available variants:**
+
 - Display: `displayHuge` (44px), `displayLarge` (32px), `displayMedium` (24px), `displaySmall` (20px)
 - Scoreboard: `scoreboardLarge` (28px), `scoreboardMedium` (22px), `scoreboardSmall` (18px) - with tabular nums
 - Body: `bodyLarge` (16px), `bodyMedium` (14px), `bodySmall` (12px)
@@ -513,17 +547,17 @@ import { GameText } from "../shared";
 import { COLORS } from "../constants/theme";
 
 // Core colors
-COLORS.bg          // #2A2242 - Main background
-COLORS.surface     // #352B58 - Panel/card background
-COLORS.text        // #FFFFFF - Primary text
-COLORS.textMuted   // #AA9ECF - Secondary text
-COLORS.textDark    // #1A1528 - Text on bright backgrounds
+COLORS.bg; // #2A2242 - Main background
+COLORS.surface; // #352B58 - Panel/card background
+COLORS.text; // #FFFFFF - Primary text
+COLORS.textMuted; // #AA9ECF - Secondary text
+COLORS.textDark; // #1A1528 - Text on bright backgrounds
 
 // Accent colors
-COLORS.cyan        // #4DEEEA - Selection, info, neutral
-COLORS.gold        // #FFC857 - Goals, progress, money
-COLORS.coral       // #FF5A7A - Danger, cancel, locked
-COLORS.mint        // #6CFFB8 - Success, confirm, buy
+COLORS.cyan; // #4DEEEA - Selection, info, neutral
+COLORS.gold; // #FFC857 - Goals, progress, money
+COLORS.coral; // #FF5A7A - Danger, cancel, locked
+COLORS.mint; // #6CFFB8 - Success, confirm, buy
 ```
 
 ### Overlay Colors
@@ -532,31 +566,31 @@ Use these for borders, bevels, and semi-transparent backgrounds instead of hardc
 
 ```typescript
 // White overlays (for highlights, top bevels)
-COLORS.overlays.whiteSubtle   // rgba(255,255,255,0.05)
-COLORS.overlays.whiteMild     // rgba(255,255,255,0.1)
-COLORS.overlays.whiteMedium   // rgba(255,255,255,0.15)
-COLORS.overlays.whiteStrong   // rgba(255,255,255,0.2)
+COLORS.overlays.whiteSubtle; // rgba(255,255,255,0.05)
+COLORS.overlays.whiteMild; // rgba(255,255,255,0.1)
+COLORS.overlays.whiteMedium; // rgba(255,255,255,0.15)
+COLORS.overlays.whiteStrong; // rgba(255,255,255,0.2)
 
 // Black overlays (for shadows, bottom bevels)
-COLORS.overlays.blackSubtle   // rgba(0,0,0,0.1)
-COLORS.overlays.blackMild     // rgba(0,0,0,0.2)
-COLORS.overlays.blackMedium   // rgba(0,0,0,0.3)
-COLORS.overlays.backdrop      // rgba(0,0,0,0.7) - Modal backdrops
+COLORS.overlays.blackSubtle; // rgba(0,0,0,0.1)
+COLORS.overlays.blackMild; // rgba(0,0,0,0.2)
+COLORS.overlays.blackMedium; // rgba(0,0,0,0.3)
+COLORS.overlays.backdrop; // rgba(0,0,0,0.7) - Modal backdrops
 
 // Accent overlays
-COLORS.overlays.cyanSubtle    // rgba(77,238,234,0.1)
-COLORS.overlays.cyanMild      // rgba(77,238,234,0.15)
-COLORS.overlays.goldSubtle    // rgba(255,200,87,0.15)
-COLORS.overlays.coralSubtle   // rgba(255,90,122,0.15)
+COLORS.overlays.cyanSubtle; // rgba(77,238,234,0.1)
+COLORS.overlays.cyanMild; // rgba(77,238,234,0.15)
+COLORS.overlays.goldSubtle; // rgba(255,200,87,0.15)
+COLORS.overlays.coralSubtle; // rgba(255,90,122,0.15)
 ```
 
 ### Shadow Colors (for text glow effects)
 
 ```typescript
-COLORS.shadows.gold       // rgba(255,200,87,0.3)
-COLORS.shadows.goldStrong // rgba(255,200,87,0.5)
-COLORS.shadows.cyan       // rgba(77,238,234,0.4)
-COLORS.shadows.black      // rgba(0,0,0,0.6)
+COLORS.shadows.gold; // rgba(255,200,87,0.3)
+COLORS.shadows.goldStrong; // rgba(255,200,87,0.5)
+COLORS.shadows.cyan; // rgba(77,238,234,0.4)
+COLORS.shadows.black; // rgba(0,0,0,0.6)
 ```
 
 ### Spacing
@@ -565,18 +599,18 @@ COLORS.shadows.black      // rgba(0,0,0,0.6)
 import { SPACING } from "../constants/theme";
 
 // Base scale
-SPACING.xxs  // 2
-SPACING.xs   // 4
-SPACING.sm   // 8
-SPACING.md   // 12
-SPACING.lg   // 16
-SPACING.xl   // 20
-SPACING.xxl  // 24
+SPACING.xxs; // 2
+SPACING.xs; // 4
+SPACING.sm; // 8
+SPACING.md; // 12
+SPACING.lg; // 16
+SPACING.xl; // 20
+SPACING.xxl; // 24
 
 // Semantic
-SPACING.sectionGap              // 16
-SPACING.containerPaddingHorizontal  // 16
-SPACING.modalPadding            // 20
+SPACING.sectionGap; // 16
+SPACING.containerPaddingHorizontal; // 16
+SPACING.modalPadding; // 20
 ```
 
 ### Dimensions
@@ -585,21 +619,21 @@ SPACING.modalPadding            // 20
 import { DIMENSIONS } from "../constants/theme";
 
 // Border radii
-DIMENSIONS.borderRadius       // 12 (default)
-DIMENSIONS.borderRadiusSmall  // 8
-DIMENSIONS.borderRadiusLarge  // 16
+DIMENSIONS.borderRadius; // 12 (default)
+DIMENSIONS.borderRadiusSmall; // 8
+DIMENSIONS.borderRadiusLarge; // 16
 
 // Border widths
-DIMENSIONS.borderWidthThin    // 1
-DIMENSIONS.borderWidth        // 2
-DIMENSIONS.borderWidthThick   // 3
+DIMENSIONS.borderWidthThin; // 1
+DIMENSIONS.borderWidth; // 2
+DIMENSIONS.borderWidthThick; // 3
 
 // Icon sizes
-DIMENSIONS.iconSize.xs  // 14
-DIMENSIONS.iconSize.sm  // 18
-DIMENSIONS.iconSize.md  // 24
-DIMENSIONS.iconSize.lg  // 28
-DIMENSIONS.iconSize.xl  // 32
+DIMENSIONS.iconSize.xs; // 14
+DIMENSIONS.iconSize.sm; // 18
+DIMENSIONS.iconSize.md; // 24
+DIMENSIONS.iconSize.lg; // 28
+DIMENSIONS.iconSize.xl; // 32
 ```
 
 ### Animation Constants
@@ -608,25 +642,25 @@ DIMENSIONS.iconSize.xl  // 32
 import { ANIMATION } from "../constants/theme";
 
 // Durations
-ANIMATION.duration.fast    // 75ms
-ANIMATION.duration.normal  // 100ms
-ANIMATION.duration.slow    // 200ms
+ANIMATION.duration.fast; // 75ms
+ANIMATION.duration.normal; // 100ms
+ANIMATION.duration.slow; // 200ms
 
 // Counting animation (ScoreRow)
-ANIMATION.counting.initialDelay      // 640ms
-ANIMATION.counting.perDieDelay       // 560ms
-ANIMATION.counting.handScoreDisplay  // 1000ms
-ANIMATION.counting.totalScoreDisplay // 1600ms
+ANIMATION.counting.initialDelay; // 640ms
+ANIMATION.counting.perDieDelay; // 560ms
+ANIMATION.counting.handScoreDisplay; // 1000ms
+ANIMATION.counting.totalScoreDisplay; // 1600ms
 
 // Spring configs (for reanimated)
-ANIMATION.springs.button  // { damping: 20, stiffness: 400 }
-ANIMATION.springs.modal   // { damping: 25, stiffness: 400, mass: 0.8 }
+ANIMATION.springs.button; // { damping: 20, stiffness: 400 }
+ANIMATION.springs.modal; // { damping: 25, stiffness: 400, mass: 0.8 }
 
 // Phase transitions (PhaseDeck sliding panels)
-ANIMATION.phase.springConfig  // { damping: 22, stiffness: 180 }
-ANIMATION.phase.parallax.scoreRow     // 0.6 (60% of screen width)
-ANIMATION.phase.parallax.scoringGrid  // 0.75
-ANIMATION.phase.parallax.footer       // 0.9
+ANIMATION.phase.springConfig; // { damping: 22, stiffness: 180 }
+ANIMATION.phase.parallax.scoreRow; // 0.6 (60% of screen width)
+ANIMATION.phase.parallax.scoringGrid; // 0.75
+ANIMATION.phase.parallax.footer; // 0.9
 ```
 
 ### Physics Constants
@@ -634,9 +668,9 @@ ANIMATION.phase.parallax.footer       // 0.9
 ```typescript
 import { PHYSICS } from "../constants/theme";
 
-PHYSICS.die.size          // 0.8
-PHYSICS.reveal.positionLerpSpeed  // 8
-PHYSICS.settle.speedThreshold     // 0.05
+PHYSICS.die.size; // 0.8
+PHYSICS.reveal.positionLerpSpeed; // 8
+PHYSICS.settle.speedThreshold; // 0.05
 ```
 
 ### Bevel Pattern (3D Button Effect)
@@ -657,5 +691,5 @@ const styles = StyleSheet.create({
     borderBottomWidth: DIMENSIONS.borderWidthThick,
     borderBottomColor: COLORS.overlays.blackMedium,
   },
-})
+});
 ```

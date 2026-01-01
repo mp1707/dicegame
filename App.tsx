@@ -9,19 +9,16 @@ import {
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { useFonts } from "expo-font";
 import { DiceTray } from "./components/DiceTray";
-import { GlassHeader } from "./components/ui/GlassHeader";
 import { OverviewModal } from "./components/modals/OverviewModal";
 import { PhaseDeck } from "./components/ui-kit/flow";
 import { useGameStore } from "./store/gameStore";
 import { COLORS, SPACING } from "./constants/theme";
 import { LayoutProvider, useLayout } from "./utils/LayoutContext";
 
-// Layout constants - TrayModule internal dimensions
-const RAIL_WIDTH = 56; // Per spec: 52-64px range, 56px primary target
-const DIVIDER_WIDTH = 3;
-const FRAME_BORDER = 3; // Outer frame border
-const INNER_LIP = 2; // Left-side inner border only (right side has no border)
-// Note: feltInset fills to rightedge, only left side has inner lip
+// Layout constants - PlayConsole internal dimensions
+const FRAME_BORDER = 3; // Outer frame border (from Surface panel)
+const TRAY_INSET_BORDER = 2; // TrayWindow inset border
+const TRAY_PADDING = 4; // xs padding around tray inset
 
 /**
  * Main App component - wraps everything in providers
@@ -67,13 +64,14 @@ const AppContent: React.FC = () => {
 
   const hideStatusBar = Platform.OS === "ios";
 
-  // Calculate tray width: full width minus all TrayModule internal elements
-  const trayPadding = SPACING.sm * 2; // paddingHorizontal in trayWrapper
-  // Left: FRAME_BORDER + INNER_LIP + RAIL_WIDTH + DIVIDER
-  // Right: FRAME_BORDER only (no inner lip on right)
-  const moduleInternals =
-    RAIL_WIDTH + DIVIDER_WIDTH + FRAME_BORDER * 2 + INNER_LIP;
-  const diceTrayWidth = layout.screenWidth - trayPadding - moduleInternals;
+  // Calculate tray width inside PlayConsole:
+  // Screen width - PlayConsole horizontal padding - tray inset padding/borders
+  const playConsolePadding = SPACING.sm * 2; // paddingHorizontal in playConsoleWrapper
+  const trayInternals =
+    SPACING.xs * 2 + // trayWindow paddingHorizontal
+    TRAY_INSET_BORDER * 2; // trayInset border
+  const diceTrayWidth =
+    layout.screenWidth - playConsolePadding - trayInternals - 4; // -4 for panel border
 
   // Scanline overlay style
   const scanlineOverlayStyle = {
@@ -97,23 +95,19 @@ const AppContent: React.FC = () => {
 
         <SafeAreaView
           style={styles.safeArea}
-          edges={["bottom", "left", "right"]}
+          edges={["top", "bottom", "left", "right"]}
         >
-          {/* Top HUD - always visible, does NOT animate */}
-          <GlassHeader />
-
-          {/* Main Content Area - PhaseDeck handles all phase transitions */}
+          {/* Main Content Area - PhaseDeck with PlayConsole handles everything */}
           <View style={styles.mainContent}>
             <PhaseDeck
               diceTray={
-                <View style={styles.crtScreenInner}>
+                <View style={styles.diceTrayInner}>
                   <DiceTray
                     containerHeight={layout.diceTrayHeight}
                     containerWidth={diceTrayWidth}
                   />
                 </View>
               }
-              diceTrayHeight={layout.diceTrayHeight}
             />
           </View>
 
@@ -136,7 +130,7 @@ const AppContent: React.FC = () => {
       </View>
     </>
   );
-}
+};
 
 const styles = StyleSheet.create({
   mainContainer: {
@@ -160,7 +154,7 @@ const styles = StyleSheet.create({
   mainContent: {
     flex: 1,
   },
-  crtScreenInner: {
+  diceTrayInner: {
     flex: 1,
     width: "100%",
   },

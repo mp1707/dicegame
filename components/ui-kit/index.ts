@@ -11,5 +11,8 @@ export type { ChipColor } from "./Chip";
 
 export { SectionHeader } from "./SectionHeader";
 export { Divider } from "./Divider";
+export { ProgressBar } from "./ProgressBar";
+export type { ProgressBarSize } from "./ProgressBar";
+export { NumericCapsule } from "./NumericCapsule";
 
 // Flow components (PhaseDeck) - will be exported from ./flow
