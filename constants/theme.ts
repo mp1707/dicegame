@@ -23,6 +23,7 @@ export const COLORS = {
   // Accent Trio (The "Fun" Layer)
   cyan: "#4DEEEA", // Info / Selection / Neutral interactable
   gold: "#FFC857", // Goals / Progress / Best option / Money
+  goldHighlight: "#FFD985", // Brighter gold for shines
   coral: "#FF5A7A", // Strike / Cancel / Danger / Locked
   mint: "#6CFFB8", // Confirm / Success / Buy
 
@@ -273,9 +274,9 @@ export const LAYOUT = {
   // Scoring grid internal distribution (ratios within scoringGrid height)
   // 3 equal rows: Special, Upper, Lower - compact for better spacing
   scoring: {
-    specialRatio: 0.20, // Special section - 20% of scoring area (compact)
-    upperRatio: 0.20, // Upper section (6 slots) - 20%
-    lowerRatio: 0.20, // Lower section (6 slots) - 20%
+    specialRatio: 0.2, // Special section - 20% of scoring area (compact)
+    upperRatio: 0.2, // Upper section (6 slots) - 20%
+    lowerRatio: 0.2, // Lower section (6 slots) - 20%
     labelsRatio: 0.09, // Section labels (3% each × 3) get 9%
     gapRatio: 0.31, // Remaining space for gaps/padding
   },
@@ -419,6 +420,12 @@ export const ANIMATION = {
     slow: 200,
     verySlow: 400,
     fade: 300,
+    // Win Moment
+    winCTAOut: 180,
+    winCTAIn: 220,
+    winGoalColor: 240,
+    winGoalPopUp: 80,
+    winGoalPopSettle: 160,
   },
 
   // Counting animation (ScoreRow)

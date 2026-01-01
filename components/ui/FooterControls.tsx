@@ -9,6 +9,13 @@ import {
   triggerSelectionHaptic,
 } from "../../utils/haptics";
 import { useLayout } from "../../utils/LayoutContext";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withDelay,
+  Easing,
+} from "react-native-reanimated";
 
 // Import icons
 // StatPill removed - shifted to HUDHeader
@@ -26,6 +33,30 @@ export const FooterControls = () => {
   const cashOutNow = useGameStore((s) => s.cashOutNow);
   const openShop = useGameStore((s) => s.openShop);
   const levelWon = useGameStore((s) => s.levelWon);
+  const isWinAnimating = useGameStore((s) => s.isWinAnimating);
+
+  // Animation shared val
+  const ctaTranslateY = useSharedValue(0);
+
+  React.useEffect(() => {
+    if (isWinAnimating) {
+      // Slide out (down)
+      ctaTranslateY.value = withTiming(100, {
+        duration: 180,
+        easing: Easing.in(Easing.cubic),
+      });
+    } else if (levelWon) {
+      // Slide in (up) - show Cash Out
+      // Small delay to ensure text update happened (though React render is fast)
+      ctaTranslateY.value = withDelay(
+        100,
+        withTiming(0, { duration: 240, easing: Easing.out(Easing.back(1.5)) })
+      );
+    } else {
+      // Reset for normal play
+      ctaTranslateY.value = 0;
+    }
+  }, [isWinAnimating, levelWon]);
 
   // Button height is ~55% of footer height (proportional to layout)
   const buttonHeight = Math.max(44, layout.footerHeight * 0.55);
@@ -82,7 +113,8 @@ export const FooterControls = () => {
     }
 
     // Level won - show CASH OUT button
-    if (levelWon && phase === "LEVEL_PLAY" && !isRevealing) {
+    // Hide this during win animation so we render "Roll" (sliding out) instead
+    if (levelWon && phase === "LEVEL_PLAY" && !isRevealing && !isWinAnimating) {
       return (
         <PrimaryButton
           onPress={handleCashOut}
@@ -136,9 +168,18 @@ export const FooterControls = () => {
     );
   };
 
-  // Render the CTA area
+  // Render the CTA area with animation
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: ctaTranslateY.value }],
+    opacity: 1 - Math.min(Math.max(ctaTranslateY.value / 50, 0), 1),
+  }));
+
   const renderCTAArea = () => {
-    return <View style={styles.ctaArea}>{renderCTA()}</View>;
+    return (
+      <Animated.View style={[styles.ctaArea, animatedStyle]}>
+        {renderCTA()}
+      </Animated.View>
+    );
   };
 
   return (

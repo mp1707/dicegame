@@ -50,6 +50,8 @@ interface GameState {
   usedHandsThisLevel: HandId[];
   rollsUsedThisLevel: number;
   levelWon: boolean;
+  winShownYet: boolean;
+  isWinAnimating: boolean;
 
   // Hand attempt state (resets each hand)
   rollsRemaining: number;
@@ -102,6 +104,7 @@ interface GameState {
   // Utility
   toggleOverview: () => void;
   forceWin: () => void;
+  setIsWinAnimating: (isAnimating: boolean) => void;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -121,6 +124,8 @@ const getInitialLevelState = (levelIndex: number) => ({
   usedHandsThisLevel: [] as HandId[],
   rollsUsedThisLevel: 0,
   levelWon: false,
+  winShownYet: false,
+  isWinAnimating: false,
 });
 
 const getInitialHandState = () => ({
@@ -355,10 +360,29 @@ export const useGameStore = create<GameState>((set, get) => ({
       levelWon: nowWon,
       ...getInitialHandState(),
       selectedDice: [false, false, false, false, false],
-      diceVisible: false,
+      diceVisible: nowWon && !get().winShownYet, // Keep visible for animation if new win
       phase: "LEVEL_PLAY",
       revealState: null,
       selectedHandId: null,
+    });
+
+    // Trigger win moment if just won and not shown yet
+    if (nowWon && !get().winShownYet) {
+      set({
+        winShownYet: true,
+        isWinAnimating: true, // Blocks interaction
+        diceVisible: true, // Explicitly ensure they are visible
+      });
+      // Animation sequence will be handled by UI components observing this state
+      // They will call setIsWinAnimating(false) when done
+    }
+  },
+
+  setIsWinAnimating: (isAnimating: boolean) => {
+    // When animation ends, hide dice
+    set({
+      isWinAnimating: isAnimating,
+      diceVisible: isAnimating ? true : false,
     });
   },
 
@@ -450,6 +474,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({
       levelScore: levelGoal,
       levelWon: true,
+      winShownYet: true, // Mark as shown so we don't re-trigger animation
       phase: "LEVEL_PLAY",
     });
   },

@@ -209,6 +209,7 @@ export const DiceTray = ({
   const toggleDiceLock = useGameStore((state) => state.toggleDiceLock);
   const selectedHandId = useGameStore((state) => state.selectedHandId);
   const revealState = useGameStore((state) => state.revealState);
+  const isWinAnimating = useGameStore((state) => state.isWinAnimating);
 
   // Determine contributing indices
   const contributingIndices =
@@ -438,6 +439,7 @@ export const DiceTray = ({
                 }
                 isContributing={contributingSet.has(i)}
                 isRevealActive={!!revealState?.active}
+                isWinAnimating={isWinAnimating}
                 lockedDiceCount={lockedDiceCount}
               />
             ))}

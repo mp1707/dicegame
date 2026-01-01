@@ -5,14 +5,28 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
+  withSequence,
+  withDelay,
   Easing,
+  interpolateColor,
+  runOnJS,
 } from "react-native-reanimated";
-import { COLORS, SPACING, DIMENSIONS } from "../../constants/theme";
+import {
+  COLORS,
+  SPACING,
+  DIMENSIONS,
+  TYPOGRAPHY,
+  ANIMATION,
+} from "../../constants/theme";
 import { GameText } from "../shared";
 import { Surface, InsetSlot } from "../ui-kit";
+import { Sparks } from "../ui-kit/Sparks";
 import { useGameStore } from "../../store/gameStore";
 import { formatNumber } from "../../utils/yahtzeeScoring";
 import { formatCompactNumber } from "../../utils/formatting";
+import { triggerNotificationSuccess } from "../../utils/haptics";
+
+// Animated components - Use Animated.View/Text directly from reanimated
 
 interface PlayConsoleProps {
   /** The DiceTray component (3D scene) */
@@ -43,23 +57,100 @@ export const PlayConsole: React.FC<PlayConsoleProps> = ({
   const levelGoal = useGameStore((s) => s.levelGoal);
   const levelScore = useGameStore((s) => s.levelScore);
 
+  const levelWon = useGameStore((s) => s.levelWon);
+  const winShownYet = useGameStore((s) => s.winShownYet);
+  const isWinAnimating = useGameStore((s) => s.isWinAnimating);
+  const setIsWinAnimating = useGameStore((s) => s.setIsWinAnimating);
+
   const levelNumber = currentLevelIndex + 1;
   const rollsRemaining = useGameStore((s) => s.rollsRemaining);
   const handsRemaining = useGameStore((s) => s.handsRemaining);
 
-  // Animation for progress bar
+  // Animation values
   const progress = useSharedValue(0);
+  const goalScale = useSharedValue(1);
+  const goalColorAnim = useSharedValue(0); // 0 = gold, 1 = mint
+  const barHeightPulse = useSharedValue(0); // 0 = normal, 1 = +1px
+  const shineProgress = useSharedValue(-1); // -1 = off, 0-1 = sweep
+
+  // Track previous score to detect fills
+  const prevScore = React.useRef(levelScore);
 
   useEffect(() => {
     const targetProgress = Math.min(Math.max(levelScore / levelGoal, 0), 1);
+
+    // Normal fill animation
     progress.value = withTiming(targetProgress, {
-      duration: 500,
+      duration: isWinAnimating ? 220 : 500, // Faster on win
       easing: Easing.out(Easing.cubic),
     });
+
+    // Detect score increase for pulse
+    if (levelScore > prevScore.current) {
+      // Pulse height: Up 70ms, Down 120ms
+      barHeightPulse.value = withSequence(
+        withTiming(1, { duration: 70 }),
+        withTiming(0, { duration: 120 })
+      );
+    }
+    prevScore.current = levelScore;
   }, [levelScore, levelGoal]);
+
+  // Win Moment Triggers
+  useEffect(() => {
+    if (levelWon && isWinAnimating) {
+      // Trigger Haptics
+      runOnJS(triggerNotificationSuccess)();
+
+      // 1. Goal Number Color & Pop
+      goalColorAnim.value = withTiming(1, {
+        duration: ANIMATION.duration.winGoalColor,
+        easing: Easing.out(Easing.cubic),
+      });
+
+      goalScale.value = withSequence(
+        withTiming(1.08, { duration: ANIMATION.duration.winGoalPopUp }),
+        withTiming(1, { duration: ANIMATION.duration.winGoalPopSettle })
+      );
+
+      // 2. Progress Bar Shine (starts after ~120ms)
+      shineProgress.value = withDelay(
+        120,
+        withTiming(1, { duration: 260, easing: Easing.linear }, (finished) => {
+          if (finished) {
+            runOnJS(setIsWinAnimating)(false); // End interaction lock after shine (plus buffer)
+          }
+        })
+      );
+    } else if (!levelWon) {
+      // Reset specific values when level resets
+      goalColorAnim.value = withTiming(0, { duration: 0 });
+      goalScale.value = withTiming(1, { duration: 0 });
+    }
+  }, [levelWon, isWinAnimating]);
 
   const progressStyle = useAnimatedStyle(() => ({
     width: `${progress.value * 100}%`,
+  }));
+
+  const barTrackStyle = useAnimatedStyle(() => ({
+    height: 2 + barHeightPulse.value, // 2px -> 3px
+    marginTop: -barHeightPulse.value, // Grow upward to keep baseline? Or simply grow.
+    // Spec: "Corner radius should adjust". At 2-3px height, radius is tiny.
+  }));
+
+  const goalNumberStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: goalScale.value }],
+    color: interpolateColor(
+      goalColorAnim.value,
+      [0, 1],
+      [COLORS.gold, COLORS.mint]
+    ),
+  }));
+
+  const shineStyle = useAnimatedStyle(() => ({
+    left: `${shineProgress.value * 150 - 50}%`, // Sweep from -50% to 100%
+    opacity: shineProgress.value < 0 ? 0 : 0.8,
   }));
 
   return (
@@ -93,23 +184,85 @@ export const PlayConsole: React.FC<PlayConsoleProps> = ({
           <View style={styles.centerColumn}>
             <InsetSlot padding="none" style={styles.goalSlot}>
               <View style={styles.goalTextContainer}>
-                <GameText variant="labelSmall" color={COLORS.textMuted}>
-                  ERREICHE
-                </GameText>
-                <GameText variant="scoreboardLarge" color={COLORS.gold}>
-                  {formatCompactNumber(levelGoal)}
-                </GameText>
-                <GameText variant="labelSmall" color={COLORS.textMuted}>
-                  PUNKTE
-                </GameText>
+                {levelWon ? (
+                  // Win State Layout
+                  <View style={styles.winTextWrapper}>
+                    <GameText
+                      variant="label"
+                      color={COLORS.mint}
+                      style={styles.winLabel}
+                    >
+                      ZIEL ERREICHT!
+                    </GameText>
+                    <Animated.Text
+                      style={[
+                        TYPOGRAPHY.displayMedium,
+                        { fontFamily: "M6x11-Regular" },
+                        goalNumberStyle,
+                      ]}
+                    >
+                      {formatCompactNumber(levelGoal)}
+                    </Animated.Text>
+                    {/* Placeholder for spacing stability */}
+                    <View style={{ height: 10 }} />
+                  </View>
+                ) : (
+                  // Normal State Layout
+                  <>
+                    <GameText variant="labelSmall" color={COLORS.textMuted}>
+                      ERREICHE
+                    </GameText>
+                    <Animated.Text
+                      style={[
+                        TYPOGRAPHY.scoreboardLarge,
+                        { fontFamily: "M6x11-Regular" },
+                        goalNumberStyle,
+                      ]}
+                    >
+                      {formatCompactNumber(levelGoal)}
+                    </Animated.Text>
+                    <GameText variant="labelSmall" color={COLORS.textMuted}>
+                      PUNKTE
+                    </GameText>
+                  </>
+                )}
               </View>
 
-              <View style={styles.progressBarTrack}>
-                <Animated.View
-                  style={[styles.progressBarFill, progressStyle]}
-                />
-              </View>
+              <Animated.View style={[styles.progressBarTrack, barTrackStyle]}>
+                <Animated.View style={[styles.progressBarFill, progressStyle]}>
+                  {/* Shine Effect */}
+                  <Animated.View
+                    style={[
+                      StyleSheet.absoluteFill,
+                      { width: "40%" },
+                      shineStyle,
+                    ]}
+                  >
+                    <LinearGradient
+                      colors={[
+                        "transparent",
+                        COLORS.overlays.whiteStrong,
+                        "transparent",
+                      ]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      style={StyleSheet.absoluteFill}
+                    />
+                  </Animated.View>
+                </Animated.View>
+              </Animated.View>
             </InsetSlot>
+            {isWinAnimating && (
+              <Sparks
+                count={12}
+                style={{
+                  position: "absolute",
+                  bottom: -10,
+                  alignSelf: "center",
+                  zIndex: 10,
+                }}
+              />
+            )}
           </View>
 
           {/* Right Column: Hands and Rolls */}
@@ -144,6 +297,20 @@ export const PlayConsole: React.FC<PlayConsoleProps> = ({
           </View>
         </View>
       </View>
+
+      {/* === Win Banner (Toast) === */}
+      {/* === Win Overlay (in Tray) === */}
+      {isWinAnimating && (
+        <View style={styles.winOverlay} pointerEvents="none">
+          <Animated.Text
+            entering={require("react-native-reanimated").FadeIn.duration(300)}
+            exiting={require("react-native-reanimated").FadeOut.duration(400)}
+            style={styles.bigWinText}
+          >
+            Geschafft!
+          </Animated.Text>
+        </View>
+      )}
 
       {/* === Seam Divider (Header to Tray) === */}
       <View style={styles.seamDivider}>
@@ -348,5 +515,37 @@ const styles = StyleSheet.create({
   progressBarFill: {
     height: "100%",
     backgroundColor: COLORS.gold,
+    overflow: "hidden", // Clip shine
+  },
+
+  // === Win Banner ===
+  winOverlay: {
+    position: "absolute",
+    top: 100, // Starts at felt top
+    left: 0,
+    right: 0,
+    // Remove bottom to let it sit at top
+    justifyContent: "flex-start",
+    paddingTop: 60, // Push down slightly into top 3rd
+    alignItems: "center",
+    zIndex: 200,
+  },
+  bigWinText: {
+    fontFamily: "M6x11-Regular",
+    fontSize: 64, // Larger for impact
+    color: "#FFFFFF",
+    textAlign: "center",
+    textShadowColor: "rgba(0,0,0,0.5)",
+    textShadowOffset: { width: 0, height: 4 },
+    textShadowRadius: 8,
+    transform: [{ rotate: "-6deg" }, { translateX: -10 }], // Off-center feel
+  },
+  winTextWrapper: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 2,
+  },
+  winLabel: {
+    marginBottom: -2,
   },
 });

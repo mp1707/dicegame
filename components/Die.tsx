@@ -103,6 +103,7 @@ interface DieProps {
   isHighlighted: boolean;
   isContributing: boolean;
   isRevealActive: boolean;
+  isWinAnimating?: boolean; // Optional to avoid breaking other usages if any
   lockedDiceCount: number;
 }
 
@@ -120,6 +121,7 @@ export const Die = ({
   isHighlighted,
   isContributing,
   isRevealActive,
+  isWinAnimating,
   lockedDiceCount,
 }: DieProps & { onWake: (index: number) => void }) => {
   const rigidBody = useRef<RapierRigidBody>(null);
@@ -149,6 +151,10 @@ export const Die = ({
   // Highlight pulse tracking
   const wasHighlightedRef = useRef(false);
   const highlightStartTimeRef = useRef(0);
+
+  // Win animation tracking
+  const wasWinAnimatingRef = useRef(false);
+  const winAnimStartRef = useRef(0);
 
   // Lock micro-pop animation tracking
   const wasLockedRef = useRef(isLocked);
@@ -433,6 +439,12 @@ export const Die = ({
     const lerpFactor = 1 - Math.exp(-12 * delta);
     const now = performance.now();
 
+    // Detect win animation start
+    if (isWinAnimating && !wasWinAnimatingRef.current) {
+      winAnimStartRef.current = now;
+    }
+    wasWinAnimatingRef.current = !!isWinAnimating;
+
     // Detect lock state transitions for micro-pop
     if (isLocked !== wasLockedRef.current) {
       wasLockedRef.current = isLocked;
@@ -533,6 +545,25 @@ export const Die = ({
       // Contributing but not currently highlighted
       targetScale = 1.0;
       targetOpacity = 1.0;
+    } else if (isWinAnimating) {
+      // Win animation: Start 150ms delay, then 250ms fade/shrink
+      const elapsed = now - winAnimStartRef.current;
+      const delay = 150;
+      const duration = 250;
+
+      if (elapsed < delay) {
+        targetScale = 1.0;
+        targetOpacity = 1.0;
+      } else {
+        const t = Math.min((elapsed - delay) / duration, 1.0);
+        targetScale = 1.0 - 0.08 * t; // 1.0 -> 0.92
+        targetOpacity = 1.0 - t; // 1.0 -> 0.0
+      }
+      // Force direct application for smooth linear fade controlled here,
+      // or let lerp handle it?
+      // Lerp is exponential, we might want linear or custom.
+      // Let's set applyDirectly = true to strictly follow the timing.
+      applyDirectly = true;
     } else {
       // Normal state (locked or unlocked - no scale/color change)
       targetScale = 1.0;
@@ -572,8 +603,13 @@ export const Die = ({
       mat.opacity = animatedOpacityRef.current;
     }
 
-    // Keep frame loop running during reveal animation, highlight pulse, or lock pop
-    if (isRevealActive || isHighlighted || lockPopPhaseRef.current !== "none") {
+    // Keep frame loop running during active animations
+    if (
+      isRevealActive ||
+      isHighlighted ||
+      isWinAnimating ||
+      lockPopPhaseRef.current !== "none"
+    ) {
       state.invalidate();
     }
   });
