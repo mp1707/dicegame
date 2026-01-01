@@ -1,8 +1,3 @@
-/**
- * Theme constants for Roguelike Yahtzee
- * Based on Balatro Vibe Code (Bright Felt + Warm Casino Neon)
- */
-
 import { Platform, TextStyle } from "react-native";
 
 // Color Palette - Bolder, Warmer, Tactile
@@ -270,18 +265,19 @@ export const LAYOUT = {
     header: 8, // ~65pt on reference - Level + money pods
     diceTray: 32, // ~262pt on reference - 3D scene with thermometer
     scoreRow: 6, // ~49pt on reference - Selected hand + formula
-    scoringGrid: 42, // ~344pt on reference - 13 hand slots
+    scoringGrid: 38, // ~311pt on reference - 13 hand slots (compact)
     footer: 12, // ~98pt on reference - Stats + CTA button
+    // gaps: 4% implicit (100 - 96)
   },
 
   // Scoring grid internal distribution (ratios within scoringGrid height)
-  // 3 equal rows: Special, Upper, Lower
+  // 3 equal rows: Special, Upper, Lower - compact for better spacing
   scoring: {
-    specialRatio: 0.28, // Special section (new) gets 28% of scoring area
-    upperRatio: 0.28, // Upper section (6 slots) gets 28%
-    lowerRatio: 0.28, // Lower section (7 slots) gets 28%
+    specialRatio: 0.20, // Special section - 20% of scoring area (compact)
+    upperRatio: 0.20, // Upper section (6 slots) - 20%
+    lowerRatio: 0.20, // Lower section (6 slots) - 20%
     labelsRatio: 0.09, // Section labels (3% each × 3) get 9%
-    gapRatio: 0.07, // Gaps between sections get 7%
+    gapRatio: 0.31, // Remaining space for gaps/padding
   },
 
   // Font scaling limits (prevent extremes on very small/large screens)

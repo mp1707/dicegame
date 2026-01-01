@@ -19,6 +19,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: SPACING.screenPadding,
-    justifyContent: "space-evenly", // Distribute sections evenly in available space
+    justifyContent: "flex-start", // Align to top, no stretching
+    gap: SPACING.md, // 12px consistent gap between sections
   },
 });

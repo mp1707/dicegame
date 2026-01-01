@@ -2,7 +2,7 @@
  * Layout Units Hook - Stable game-like proportions
  *
  * Calculates all layout dimensions based on screen size.
- * All sections scale proportionally, like Balatro.
+ * All sections scale proportionally.
  *
  * Reference device: iPhone Air (420×912pt, ~818pt usable)
  */
