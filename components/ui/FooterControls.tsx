@@ -11,28 +11,7 @@ import {
 import { useLayout } from "../../utils/LayoutContext";
 
 // Import icons
-const DieIcon = require("../../assets/icons/die.png");
-const GloveIcon = require("../../assets/icons/Glove.png");
-
-// Stat Pill Component - Icon + Label + Value as single unified component
-interface StatPillProps {
-  icon: any;
-  label: string;
-  value: number;
-  color: string;
-}
-
-const StatPill: React.FC<StatPillProps> = ({ icon, label, value }) => (
-  <InsetSlot style={styles.statPill}>
-    <Image source={icon} style={styles.statIcon} />
-    <GameText variant="body" color={COLORS.textMuted}>
-      {label}
-    </GameText>
-    <GameText variant="body" color={COLORS.textMuted}>
-      {value}
-    </GameText>
-  </InsetSlot>
-);
+// StatPill removed - shifted to HUDHeader
 
 export const FooterControls = () => {
   const layout = useLayout();
@@ -165,20 +144,6 @@ export const FooterControls = () => {
   return (
     <View style={styles.container}>
       <Surface variant="panel" padding="sm" style={styles.footerStrip}>
-        <View style={styles.statsContainer}>
-          <StatPill
-            icon={GloveIcon}
-            label="Hände:"
-            value={handsRemaining}
-            color={COLORS.cyan}
-          />
-          <StatPill
-            icon={DieIcon}
-            label="Würfe:"
-            value={rollsRemaining}
-            color={COLORS.gold}
-          />
-        </View>
         {renderCTAArea()}
       </Surface>
     </View>
@@ -194,24 +159,8 @@ const styles = StyleSheet.create({
   footerStrip: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center", // Center the button since it's alone now
     gap: SPACING.sm,
-  },
-  statsContainer: {
-    flexDirection: "column",
-    alignItems: "stretch",
-    gap: SPACING.xs,
-  },
-  statPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.xs,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-  },
-  statIcon: {
-    width: 20,
-    height: 20,
-    resizeMode: "contain",
   },
   ctaButton: {
     flex: 1,
@@ -221,6 +170,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     gap: SPACING.sm,
-    justifyContent: "flex-end",
+    // ensure full width/centered
+    justifyContent: "center",
   },
 });
