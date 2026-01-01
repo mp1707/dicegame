@@ -3,11 +3,10 @@ import { View, StyleSheet, Image, ViewStyle } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { COLORS, SPACING, DIMENSIONS } from "../../constants/theme";
 import { GameText } from "../shared";
-import { Surface, InsetSlot, ProgressBar } from "../ui-kit";
+import { Surface, InsetSlot } from "../ui-kit";
 import { useGameStore } from "../../store/gameStore";
 import { formatNumber } from "../../utils/yahtzeeScoring";
 import { formatCompactNumber } from "../../utils/formatting";
-import { triggerNotificationSuccess } from "../../utils/haptics";
 
 interface PlayConsoleProps {
   /** The DiceTray component (3D scene) */
@@ -22,7 +21,7 @@ interface PlayConsoleProps {
  * PlayConsole - Unified play area container
  *
  * Combines Header + DiceTray + ScoreRow into one cohesive "physical object":
- * - HUDHeader: 3-row stack (Status, Objective, Progress)
+ * - HUDHeader: 3-row stack (Status, Objective)
  * - TrayWindow: Dice felt area as inset cutout
  * - ScoreLip: Integrated score readout strip
  *
@@ -36,27 +35,13 @@ export const PlayConsole: React.FC<PlayConsoleProps> = ({
   const currentLevelIndex = useGameStore((s) => s.currentLevelIndex);
   const money = useGameStore((s) => s.money);
   const levelGoal = useGameStore((s) => s.levelGoal);
-  const levelScore = useGameStore((s) => s.levelScore);
-  const revealState = useGameStore((s) => s.revealState);
 
   const levelNumber = currentLevelIndex + 1;
   const rollsRemaining = useGameStore((s) => s.rollsRemaining);
   const handsRemaining = useGameStore((s) => s.handsRemaining);
 
-  // Calculate effective score (handles reveal "total" phase)
-  const effectiveScore =
-    revealState?.active && revealState.animationPhase === "total"
-      ? revealState.displayTotal || levelScore
-      : levelScore;
-
-  // Goal reached haptic
-  const handleGoalReached = () => {
-    triggerNotificationSuccess();
-  };
-
   return (
     <Surface variant="panel" padding="none" style={[styles.container, style]}>
-      {/* === HUDHeader Section === */}
       {/* === HUDHeader Section === */}
       <View style={styles.hudHeader}>
         {/* 3-column layout */}
@@ -169,16 +154,6 @@ export const PlayConsole: React.FC<PlayConsoleProps> = ({
         </View>
       </View>
 
-      {/* === Progress Bar Seam (Tray to ScoreLip) === */}
-      <View style={styles.progressSeam}>
-        <ProgressBar
-          value={effectiveScore}
-          max={levelGoal}
-          size="sm"
-          onGoalReached={handleGoalReached}
-        />
-      </View>
-
       {/* === ScoreLip Section (Score Readout) === */}
       <View style={styles.scoreLip}>{scoreLip}</View>
     </Surface>
@@ -197,12 +172,13 @@ const styles = StyleSheet.create({
   hudHeader: {
     paddingHorizontal: SPACING.sm,
     paddingVertical: SPACING.sm,
+    gap: SPACING.xs,
   },
 
   // 3-column header layout
   headerRow: {
     flexDirection: "row",
-    gap: SPACING.sm,
+    gap: SPACING.xs,
     alignItems: "center", // Ensure all columns are vertically centered relative to each other if heights differ
   },
 
@@ -268,11 +244,6 @@ const styles = StyleSheet.create({
     right: 0,
     height: 2,
     backgroundColor: COLORS.overlays.blackMild,
-  },
-
-  // === Progress Bar Seam ===
-  progressSeam: {
-    paddingHorizontal: 0,
   },
 
   // === TrayWindow ===
