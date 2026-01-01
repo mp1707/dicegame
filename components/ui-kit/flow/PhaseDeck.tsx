@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
   },
   playConsoleWrapper: {
     paddingHorizontal: SPACING.sm,
-    marginTop: SPACING.xs,
+    marginTop: SPACING.sm,
     zIndex: 10,
   },
   diceTrayWrapper: {

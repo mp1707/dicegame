@@ -235,18 +235,22 @@ export const DiceTray = ({
   const fovScale = BASE_HEIGHT / containerHeight;
   const adjustedFOV = Math.min(Math.max(baseFOV * fovScale, 35), 65);
 
-  // Scaled dimensions for 3D scene to fit the full-width, shorter tray
-  const floorWidth = 10 * widthScale;
+  // Floor dimensions - oversized to bleed past viewport edges (no visible bezels)
+  const FLOOR_OVERSIZE = 1.15; // Floor is 15% larger than visible area
+  const floorWidth = 10 * widthScale * FLOOR_OVERSIZE;
   const floorDepth = floorWidth / aspect;
   const depthScale = floorDepth / 6;
   const wallXPosition = floorWidth / 2;
   const wallZPosition = floorDepth / 2;
   const diceSpawnY = 4 * depthScale;
-  const diceSpacing = floorWidth / 6;
+  const diceSpacing = (10 * widthScale) / 6; // Use base floor width for dice spacing
+
+  // Camera height calculation (original logic)
+  const baseFloorWidth = 10 * widthScale;
+  const baseFloorDepth = baseFloorWidth / aspect;
   const halfFovTan = Math.tan((adjustedFOV * Math.PI) / 360);
-  const fitHeight = floorDepth / 2 / halfFovTan;
-  const fitWidth = floorWidth / 2 / (halfFovTan * aspect);
-  // Camera height to ensure floor fills viewport (no negative margin to prevent edge cropping)
+  const fitHeight = baseFloorDepth / 2 / halfFovTan;
+  const fitWidth = baseFloorWidth / 2 / (halfFovTan * aspect);
   const cameraHeight = Math.max(fitHeight, fitWidth);
 
   // Calculate arranged positions for reveal animation

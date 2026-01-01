@@ -16,9 +16,7 @@ import { COLORS, SPACING } from "./constants/theme";
 import { LayoutProvider, useLayout } from "./utils/LayoutContext";
 
 // Layout constants - PlayConsole internal dimensions
-const FRAME_BORDER = 3; // Outer frame border (from Surface panel)
-const TRAY_INSET_BORDER = 2; // TrayWindow inset border
-const TRAY_PADDING = 4; // xs padding around tray inset
+const PANEL_BORDER = 2; // Surface panel border
 
 /**
  * Main App component - wraps everything in providers
@@ -65,13 +63,10 @@ const AppContent: React.FC = () => {
   const hideStatusBar = Platform.OS === "ios";
 
   // Calculate tray width inside PlayConsole:
-  // Screen width - PlayConsole horizontal padding - tray inset padding/borders
+  // Screen width - PlayConsole horizontal padding (sm*2) - panel borders
   const playConsolePadding = SPACING.sm * 2; // paddingHorizontal in playConsoleWrapper
-  const trayInternals =
-    SPACING.xs * 2 + // trayWindow paddingHorizontal
-    TRAY_INSET_BORDER * 2; // trayInset border
   const diceTrayWidth =
-    layout.screenWidth - playConsolePadding - trayInternals - 4; // -4 for panel border
+    layout.screenWidth - playConsolePadding - PANEL_BORDER * 2;
 
   // Scanline overlay style
   const scanlineOverlayStyle = {
