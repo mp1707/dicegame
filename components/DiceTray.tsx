@@ -8,7 +8,12 @@ import React, {
 import { View, Text, StyleSheet } from "react-native";
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import { Physics, RigidBody, CuboidCollider } from "@react-three/rapier";
-import { ContactShadows, Environment, useEnvironment, useTexture } from "@react-three/drei";
+import {
+  ContactShadows,
+  Environment,
+  useEnvironment,
+  useTexture,
+} from "@react-three/drei";
 import * as THREE from "three";
 import { Die } from "./Die";
 import { useGameStore } from "../store/gameStore";
@@ -241,8 +246,8 @@ export const DiceTray = ({
   const halfFovTan = Math.tan((adjustedFOV * Math.PI) / 360);
   const fitHeight = floorDepth / 2 / halfFovTan;
   const fitWidth = floorWidth / 2 / (halfFovTan * aspect);
-  // Negative margin = camera closer = floor fills/overflows edges
-  const cameraHeight = Math.max(fitHeight, fitWidth) - 0.3;
+  // Camera height to ensure floor fills viewport (no negative margin to prevent edge cropping)
+  const cameraHeight = Math.max(fitHeight, fitWidth);
 
   // Calculate arranged positions for reveal animation
   // Dice line up in center with consistent spacing

@@ -3,11 +3,10 @@ import { View, StyleSheet, Image, ViewStyle } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { COLORS, SPACING, DIMENSIONS } from "../../constants/theme";
 import { GameText } from "../shared";
-import { Surface, InsetSlot, ProgressBar, NumericCapsule } from "../ui-kit";
+import { Surface, InsetSlot, ProgressBar } from "../ui-kit";
 import { useGameStore } from "../../store/gameStore";
 import { formatNumber } from "../../utils/yahtzeeScoring";
 import { formatCompactNumber } from "../../utils/formatting";
-import { useLayout } from "../../utils/LayoutContext";
 import { triggerNotificationSuccess } from "../../utils/haptics";
 
 interface PlayConsoleProps {
@@ -34,7 +33,6 @@ export const PlayConsole: React.FC<PlayConsoleProps> = ({
   scoreLip,
   style,
 }) => {
-  const layout = useLayout();
   const currentLevelIndex = useGameStore((s) => s.currentLevelIndex);
   const money = useGameStore((s) => s.money);
   const levelGoal = useGameStore((s) => s.levelGoal);
@@ -58,61 +56,41 @@ export const PlayConsole: React.FC<PlayConsoleProps> = ({
     <Surface variant="panel" padding="none" style={[styles.container, style]}>
       {/* === HUDHeader Section === */}
       <View style={styles.hudHeader}>
-        {/* Row 1: Status Row (LV left, $ right) */}
-        <View style={styles.statusRow}>
-          {/* LV Chip */}
-          <View style={styles.statusChip}>
+        {/* 2-column layout: Left (LV + Money stacked) | Right (Goal spanning) */}
+        <View style={styles.headerRow}>
+          {/* Left Column: LV and Money stacked */}
+          <View style={styles.leftColumn}>
+            {/* LV Row */}
+            <InsetSlot style={styles.headerSlot}>
+              <GameText variant="labelSmall" color={COLORS.textMuted}>
+                LV
+              </GameText>
+              <GameText variant="scoreboardSmall" color={COLORS.cyan}>
+                {levelNumber}
+              </GameText>
+            </InsetSlot>
+
+            {/* Money Row */}
+            <InsetSlot style={styles.headerSlot}>
+              <Image
+                source={require("../../assets/icons/coin.png")}
+                style={styles.coinIcon}
+              />
+              <GameText variant="scoreboardSmall" color={COLORS.gold}>
+                {formatNumber(money)}
+              </GameText>
+            </InsetSlot>
+          </View>
+
+          {/* Right Column: Goal spanning both rows */}
+          <InsetSlot style={styles.goalSlot}>
             <GameText variant="labelSmall" color={COLORS.textMuted}>
-              LV
+              ZIEL
             </GameText>
-            <NumericCapsule
-              value={levelNumber}
-              digits={2}
-              size="sm"
-              color={COLORS.cyan}
-            />
-          </View>
-
-          {/* Empty center space */}
-          <View style={styles.statusSpacer} />
-
-          {/* Coin Chip */}
-          <View style={styles.statusChip}>
-            <Image
-              source={require("../../assets/icons/coin.png")}
-              style={styles.coinIcon}
-            />
-            <NumericCapsule
-              value={formatNumber(money)}
-              digits={4}
-              size="sm"
-              color={COLORS.gold}
-            />
-          </View>
-        </View>
-
-        {/* Row 2: Objective Row (ZIEL + goal value) */}
-        <View style={styles.objectiveRow}>
-          <GameText variant="labelSmall" color={COLORS.textMuted}>
-            ZIEL
-          </GameText>
-          <NumericCapsule
-            value={formatCompactNumber(levelGoal)}
-            digits={3}
-            size="md"
-            color={COLORS.gold}
-            style={styles.goalCapsule}
-          />
-        </View>
-
-        {/* Row 3: Progress Row (full-width bar, no numbers) */}
-        <View style={styles.progressRow}>
-          <ProgressBar
-            value={effectiveScore}
-            max={levelGoal}
-            size="sm"
-            onGoalReached={handleGoalReached}
-          />
+            <GameText variant="scoreboardMedium" color={COLORS.gold}>
+              {formatCompactNumber(levelGoal)}
+            </GameText>
+          </InsetSlot>
         </View>
       </View>
 
@@ -155,10 +133,14 @@ export const PlayConsole: React.FC<PlayConsoleProps> = ({
         </View>
       </View>
 
-      {/* === Seam Divider (Tray to ScoreLip) === */}
-      <View style={styles.seamDivider}>
-        <View style={styles.seamHighlight} />
-        <View style={styles.seamShadow} />
+      {/* === Progress Bar Seam (Tray to ScoreLip) === */}
+      <View style={styles.progressSeam}>
+        <ProgressBar
+          value={effectiveScore}
+          max={levelGoal}
+          size="sm"
+          onGoalReached={handleGoalReached}
+        />
       </View>
 
       {/* === ScoreLip Section (Score Readout) === */}
@@ -177,43 +159,38 @@ const styles = StyleSheet.create({
 
   // === HUDHeader ===
   hudHeader: {
-    paddingHorizontal: SPACING.md,
-    paddingTop: SPACING.sm,
-    paddingBottom: SPACING.xs,
-    gap: SPACING.xs,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.sm,
   },
 
-  // Row 1: Status
-  statusRow: {
+  // 2-column header layout
+  headerRow: {
     flexDirection: "row",
-    alignItems: "center",
+    gap: SPACING.sm,
   },
-  statusChip: {
+  leftColumn: {
+    flex: 1,
+    gap: SPACING.xs,
+  },
+  headerSlot: {
     flexDirection: "row",
     alignItems: "center",
     gap: SPACING.xs,
-  },
-  statusSpacer: {
-    flex: 1,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
   },
   coinIcon: {
     width: DIMENSIONS.iconSize.sm,
     height: DIMENSIONS.iconSize.sm,
   },
-
-  // Row 2: Objective
-  objectiveRow: {
-    flexDirection: "row",
+  goalSlot: {
+    flex: 1,
+    flexDirection: "column",
     alignItems: "center",
-    gap: SPACING.sm,
-  },
-  goalCapsule: {
-    // Extra emphasis on goal
-  },
-
-  // Row 3: Progress
-  progressRow: {
-    paddingTop: SPACING.xxs,
+    justifyContent: "center",
+    gap: SPACING.xxs,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
   },
 
   // === Seam Dividers ===
@@ -235,32 +212,31 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.overlays.blackMild,
   },
 
+  // === Progress Bar Seam ===
+  progressSeam: {
+    paddingHorizontal: 0,
+  },
+
   // === TrayWindow ===
   trayWindow: {
     flex: 1,
-    paddingHorizontal: SPACING.xs,
-    paddingVertical: SPACING.xs,
   },
   trayInset: {
     flex: 1,
     backgroundColor: COLORS.bg,
-    borderRadius: INNER_RADIUS,
     overflow: "hidden",
-    // Inset appearance
-    borderWidth: 2,
+    // Inset appearance (top edge shadow only, no side borders)
+    borderTopWidth: 2,
     borderTopColor: COLORS.overlays.blackMedium,
-    borderLeftColor: COLORS.overlays.blackMild,
-    borderRightColor: COLORS.overlays.whiteSubtle,
+    borderBottomWidth: 2,
     borderBottomColor: COLORS.overlays.whiteSubtle,
   },
   trayContent: {
     flex: 1,
-    borderRadius: INNER_RADIUS - 2,
     overflow: "hidden",
   },
   depthOverlay: {
     ...StyleSheet.absoluteFillObject,
-    borderRadius: INNER_RADIUS - 2,
     overflow: "hidden",
     pointerEvents: "none",
   },

@@ -10,7 +10,7 @@ import Animated, {
   interpolateColor,
 } from "react-native-reanimated";
 import { COLORS, SPACING, FONT_FAMILY } from "../../constants/theme";
-import { InsetSlot, Chip, NumericCapsule } from "../ui-kit";
+import { InsetSlot, Chip } from "../ui-kit";
 import { GameText } from "../shared";
 import { useGameStore } from "../../store/gameStore";
 import { CATEGORIES } from "../../utils/yahtzeeScoring";
@@ -212,32 +212,23 @@ export const ScoreLip = () => {
         )}
       </View>
 
-      {/* Right: Score Display (fixed-width region) */}
-      <View style={styles.scoreRegion}>
+      {/* Right: Score Display (inside InsetSlot for consistent styling) */}
+      <InsetSlot style={styles.scoreSlot}>
         {!selectedHandId ? (
-          <NumericCapsule
-            value={levelScore}
-            digits={5}
-            size="lg"
-            color={COLORS.text}
-          />
+          <GameText variant="scoreboardMedium" color={COLORS.text}>
+            {levelScore}
+          </GameText>
         ) : revealState?.active && revealState.animationPhase === "total" ? (
           <Animated.View style={totalScoreAnimatedStyle}>
-            <NumericCapsule
-              value={displayTotal ?? 0}
-              digits={5}
-              size="lg"
-              color={COLORS.gold}
-            />
+            <GameText variant="scoreboardMedium" color={COLORS.gold}>
+              {displayTotal}
+            </GameText>
           </Animated.View>
         ) : revealState?.active && revealState.animationPhase === "final" ? (
           <Animated.View style={finalScoreAnimatedStyle}>
-            <NumericCapsule
-              value={revealState.breakdown?.finalScore ?? 0}
-              digits={5}
-              size="lg"
-              color={COLORS.text}
-            />
+            <GameText variant="scoreboardMedium" color={COLORS.text}>
+              {revealState.breakdown?.finalScore}
+            </GameText>
           </Animated.View>
         ) : (
           <View style={styles.scoreFormula}>
@@ -252,7 +243,7 @@ export const ScoreLip = () => {
             </GameText>
           </View>
         )}
-      </View>
+      </InsetSlot>
     </View>
   );
 };
@@ -269,10 +260,13 @@ const styles = StyleSheet.create({
     gap: 8,
     flex: 1,
   },
-  scoreRegion: {
-    // Fixed-width region for score display
-    minWidth: 120,
-    alignItems: "flex-end",
+  scoreSlot: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.md,
   },
   scoreFormula: {
     flexDirection: "row",

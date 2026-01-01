@@ -389,14 +389,19 @@ PhaseDeck orchestrates Balatro-style sliding panel transitions between game phas
 
 ```
 PlayConsole (Surface variant="panel")
-├── HUDHeader (3-row stack)
-│   ├── Row 1: Status (LV chip left, $ chip right)
-│   ├── Row 2: Objective (ZIEL label + goal value)
-│   └── Row 3: Progress (full-width bar, no numbers)
+├── HUDHeader (2-column layout)
+│   ├── Left Column: 2 stacked InsetSlots
+│   │   ├── LV: label + level number
+│   │   └── Money: coin icon + value
+│   └── Right Column: Goal InsetSlot (spans both rows)
+│       ├── "ZIEL" label
+│       └── Goal number
 ├── Seam divider
-├── TrayWindow (inset cutout for dice)
+├── TrayWindow (full-width felt, no padding/border-radius)
 ├── Seam divider
 └── ScoreLip (integrated score readout)
+    ├── ProgressBar (at top)
+    └── Hand/Score row (label + score display)
 ```
 
 **Deck Position Mapping:**
