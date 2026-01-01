@@ -1,6 +1,12 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { View, StyleSheet, Image, ViewStyle } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  Easing,
+} from "react-native-reanimated";
 import { COLORS, SPACING, DIMENSIONS } from "../../constants/theme";
 import { GameText } from "../shared";
 import { Surface, InsetSlot } from "../ui-kit";
@@ -35,10 +41,26 @@ export const PlayConsole: React.FC<PlayConsoleProps> = ({
   const currentLevelIndex = useGameStore((s) => s.currentLevelIndex);
   const money = useGameStore((s) => s.money);
   const levelGoal = useGameStore((s) => s.levelGoal);
+  const levelScore = useGameStore((s) => s.levelScore);
 
   const levelNumber = currentLevelIndex + 1;
   const rollsRemaining = useGameStore((s) => s.rollsRemaining);
   const handsRemaining = useGameStore((s) => s.handsRemaining);
+
+  // Animation for progress bar
+  const progress = useSharedValue(0);
+
+  useEffect(() => {
+    const targetProgress = Math.min(Math.max(levelScore / levelGoal, 0), 1);
+    progress.value = withTiming(targetProgress, {
+      duration: 500,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [levelScore, levelGoal]);
+
+  const progressStyle = useAnimatedStyle(() => ({
+    width: `${progress.value * 100}%`,
+  }));
 
   return (
     <Surface variant="panel" padding="none" style={[styles.container, style]}>
@@ -69,16 +91,24 @@ export const PlayConsole: React.FC<PlayConsoleProps> = ({
 
           {/* Center Column: Goal */}
           <View style={styles.centerColumn}>
-            <InsetSlot style={styles.goalSlot}>
-              <GameText variant="labelSmall" color={COLORS.textMuted}>
-                ERREICHE
-              </GameText>
-              <GameText variant="scoreboardLarge" color={COLORS.gold}>
-                {formatCompactNumber(levelGoal)}
-              </GameText>
-              <GameText variant="labelSmall" color={COLORS.textMuted}>
-                PUNKTE
-              </GameText>
+            <InsetSlot padding="none" style={styles.goalSlot}>
+              <View style={styles.goalTextContainer}>
+                <GameText variant="labelSmall" color={COLORS.textMuted}>
+                  ERREICHE
+                </GameText>
+                <GameText variant="scoreboardLarge" color={COLORS.gold}>
+                  {formatCompactNumber(levelGoal)}
+                </GameText>
+                <GameText variant="labelSmall" color={COLORS.textMuted}>
+                  PUNKTE
+                </GameText>
+              </View>
+
+              <View style={styles.progressBarTrack}>
+                <Animated.View
+                  style={[styles.progressBarFill, progressStyle]}
+                />
+              </View>
             </InsetSlot>
           </View>
 
@@ -185,7 +215,7 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: "row",
     gap: SPACING.xs,
-    alignItems: "center", // Ensure all columns are vertically centered relative to each other if heights differ
+    alignItems: "stretch", // Ensure all columns stretch to match height
   },
 
   // Left Column: Level + Money
@@ -202,12 +232,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   goalSlot: {
+    // paddingHorizontal: SPACING.md, <- REMOVED (handled by internal containers)
+    // paddingVertical: SPACING.xs,   <- REMOVED
+    alignItems: "stretch", // Stretch to allow full width bars
+    justifyContent: "space-between", // Distribute text and bar
+    gap: 0,
+    width: "100%",
+    flex: 1,
+    overflow: "hidden",
+  },
+  goalTextContainer: {
     paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs,
+    paddingTop: SPACING.xs, // Top padding only
+    flex: 1, // Take available space above bar
     alignItems: "center",
     justifyContent: "center",
-    gap: 0, // Tight stacking
-    width: "100%", // Explicitly width 100% to match others if needed, but center column content is centered
   },
 
   // Right Column: Hands + Rolls
@@ -297,5 +336,17 @@ const styles = StyleSheet.create({
   scoreLip: {
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
+  },
+
+  // === Progress Bar ===
+  progressBarTrack: {
+    width: "100%",
+    height: 2,
+    backgroundColor: COLORS.overlays.blackMild,
+    // marginTop: SPACING.xs, <- REMOVE margin to sit flush bottom if desired, or keep small spacing from text
+  },
+  progressBarFill: {
+    height: "100%",
+    backgroundColor: COLORS.gold,
   },
 });
