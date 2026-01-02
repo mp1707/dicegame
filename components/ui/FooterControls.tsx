@@ -1,7 +1,7 @@
 import React from "react";
 import { View, StyleSheet, Image } from "react-native";
 import { PrimaryButton, GameText } from "../shared";
-import { InsetSlot, Surface } from "../ui-kit";
+// InsetSlot and Surface removed
 import { COLORS, SPACING, DIMENSIONS } from "../../constants/theme";
 import { useGameStore } from "../../store/gameStore";
 import {
@@ -182,13 +182,7 @@ export const FooterControls = () => {
     );
   };
 
-  return (
-    <View style={styles.container}>
-      <Surface variant="panel" padding="sm" style={styles.footerStrip}>
-        {renderCTAArea()}
-      </Surface>
-    </View>
-  );
+  return <View style={styles.container}>{renderCTAArea()}</View>;
 };
 
 const styles = StyleSheet.create({
@@ -196,12 +190,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: SPACING.lg,
     justifyContent: "center",
-  },
-  footerStrip: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center", // Center the button since it's alone now
-    gap: SPACING.sm,
   },
   ctaButton: {
     flex: 1,
