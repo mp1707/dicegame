@@ -98,9 +98,8 @@ const HandSlot = ({
   handId,
   labelLine1,
   labelLine2,
-  slotHeight,
   iconSource,
-}: HandSlotProps) => {
+}: Omit<HandSlotProps, "slotHeight">) => {
   const handLevels = useGameStore((s) => s.handLevels);
   const usedHandsThisLevel = useGameStore((s) => s.usedHandsThisLevel);
   const selectedHandId = useGameStore((s) => s.selectedHandId);
@@ -168,7 +167,7 @@ const HandSlot = ({
       state={tileState}
       onPress={handlePress}
       onLongPress={handleLongPress}
-      style={{ height: slotHeight }}
+      style={{ flex: 1 }}
     />
   );
 };
@@ -178,7 +177,16 @@ export const ScoringGrid = () => {
 
   return (
     <View style={styles.container}>
-      <SpecialSection />
+      <View style={styles.section}>
+        <GameText
+          variant="labelSmall"
+          color={COLORS.textMuted}
+          style={styles.header}
+        >
+          SPEZIAL
+        </GameText>
+        <SpecialSection style={{ flex: 1 }} />
+      </View>
 
       {/* Upper Section */}
       <View style={styles.section}>
@@ -195,7 +203,6 @@ export const ScoringGrid = () => {
               <HandSlot
                 handId={hand.id}
                 labelLine1={hand.line1}
-                slotHeight={layout.upperSlotHeight}
                 iconSource={hand.icon}
               />
             </View>
@@ -219,7 +226,6 @@ export const ScoringGrid = () => {
                 handId={hand.id}
                 labelLine1={hand.line1}
                 labelLine2={hand.line2}
-                slotHeight={layout.lowerSlotHeight}
                 iconSource={hand.icon}
               />
             </View>
@@ -239,6 +245,7 @@ const styles = StyleSheet.create({
   },
   section: {
     width: "100%",
+    flex: 1,
   },
   header: {
     marginBottom: SPACING.xs,
@@ -247,6 +254,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     gap: SPACING.slotGapHorizontal,
+    flex: 1,
   },
   slotWrapper: {
     flex: 1,

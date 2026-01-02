@@ -198,6 +198,7 @@ export const TileButton = ({
             width: 28,
             height: 28,
             opacity: state === "selected" ? 1 : 0.8,
+            margin: -5,
           }}
           resizeMode="contain"
         />
@@ -296,6 +297,7 @@ const styles = StyleSheet.create({
     padding: SPACING.sm,
     justifyContent: "center",
     alignItems: "center",
+    gap: SPACING.xxs,
   },
   levelBadge: {
     position: "absolute",
@@ -313,7 +315,6 @@ const styles = StyleSheet.create({
   iconContainer: {
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: SPACING.xxs,
   },
   labelContainer: {
     alignItems: "center",

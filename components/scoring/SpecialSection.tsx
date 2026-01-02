@@ -1,44 +1,27 @@
 import React from "react";
-import { View, StyleSheet } from "react-native";
+import { StyleProp, StyleSheet, ViewStyle } from "react-native";
 import { GameText } from "../shared";
 import { Surface } from "../ui-kit";
-import { COLORS, SPACING } from "../../constants/theme";
-import { useLayout } from "../../utils/LayoutContext";
+import { COLORS } from "../../constants/theme";
 
-export const SpecialSection = () => {
-  const layout = useLayout();
+interface SpecialSectionProps {
+  style?: StyleProp<ViewStyle>;
+}
 
+export const SpecialSection = ({ style }: SpecialSectionProps) => {
   return (
-    <View style={styles.wrapper}>
-      <GameText
-        variant="labelSmall"
-        color={COLORS.textMuted}
-        style={styles.header}
-      >
-        SPEZIAL
+    <Surface variant="panel" style={[styles.container, style]}>
+      <GameText variant="bodyMedium" color={COLORS.textMuted}>
+        Coming soon...
       </GameText>
-      <Surface
-        variant="panel"
-        style={[styles.container, { height: layout.specialSlotHeight }]}
-      >
-        <GameText variant="bodyMedium" color={COLORS.textMuted}>
-          Coming soon...
-        </GameText>
-      </Surface>
-    </View>
+    </Surface>
   );
 };
 
 const styles = StyleSheet.create({
-  wrapper: {
-    width: "100%",
-  },
-  header: {
-    marginBottom: SPACING.xs,
-    marginLeft: SPACING.xs,
-  },
   container: {
     justifyContent: "center",
     alignItems: "center",
+    flex: 1,
   },
 });
