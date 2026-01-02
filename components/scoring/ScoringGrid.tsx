@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, ImageSourcePropType } from "react-native";
 import { SpecialSection } from "./SpecialSection";
 import { TileButton, TileButtonState, GameText } from "../shared";
 import { COLORS, SPACING } from "../../constants/theme";
@@ -7,23 +7,83 @@ import { useGameStore, useValidHands, HandId } from "../../store/gameStore";
 import { CategoryIcon } from "../ui/CategoryIcon";
 import { useLayout } from "../../utils/LayoutContext";
 
-// Hand configuration with explicit label lines
-const UPPER_HANDS: { id: HandId; line1: string }[] = [
-  { id: "ones", line1: "Einser" },
-  { id: "twos", line1: "Zweier" },
-  { id: "threes", line1: "Dreier" },
-  { id: "fours", line1: "Vierer" },
-  { id: "fives", line1: "Fünfer" },
-  { id: "sixes", line1: "Sechser" },
-];
+// Hand configuration with explicit label lines and icons
+const UPPER_HANDS: { id: HandId; line1: string; icon: ImageSourcePropType }[] =
+  [
+    {
+      id: "ones",
+      line1: "Einser",
+      icon: require("../../assets/icons/1die.png"),
+    },
+    {
+      id: "twos",
+      line1: "Zweier",
+      icon: require("../../assets/icons/2die.png"),
+    },
+    {
+      id: "threes",
+      line1: "Dreier",
+      icon: require("../../assets/icons/3die.png"),
+    },
+    {
+      id: "fours",
+      line1: "Vierer",
+      icon: require("../../assets/icons/4die.png"),
+    },
+    {
+      id: "fives",
+      line1: "Fünfer",
+      icon: require("../../assets/icons/5die.png"),
+    },
+    {
+      id: "sixes",
+      line1: "Sechser",
+      icon: require("../../assets/icons/6die.png"),
+    },
+  ];
 
-const LOWER_HANDS: { id: HandId; line1: string; line2: string }[] = [
-  { id: "threeOfKind", line1: "Dreier", line2: "Pasch" },
-  { id: "fourOfKind", line1: "Vierer", line2: "Pasch" },
-  { id: "fullHouse", line1: "Full", line2: "House" },
-  { id: "smallStraight", line1: "Kleine", line2: "Straße" },
-  { id: "largeStraight", line1: "Große", line2: "Straße" },
-  { id: "yahtzee", line1: "Fünfer", line2: "Pasch" },
+const LOWER_HANDS: {
+  id: HandId;
+  line1: string;
+  line2: string;
+  icon: ImageSourcePropType;
+}[] = [
+  {
+    id: "threeOfKind",
+    line1: "Dreier",
+    line2: "Pasch",
+    icon: require("../../assets/icons/3x.png"),
+  },
+  {
+    id: "fourOfKind",
+    line1: "Vierer",
+    line2: "Pasch",
+    icon: require("../../assets/icons/4x.png"),
+  },
+  {
+    id: "fullHouse",
+    line1: "Full",
+    line2: "House",
+    icon: require("../../assets/icons/fullHouse.png"),
+  },
+  {
+    id: "smallStraight",
+    line1: "Kleine",
+    line2: "Straße",
+    icon: require("../../assets/icons/smStraight.png"),
+  },
+  {
+    id: "largeStraight",
+    line1: "Große",
+    line2: "Straße",
+    icon: require("../../assets/icons/lgStraight.png"),
+  },
+  {
+    id: "yahtzee",
+    line1: "Fünfer",
+    line2: "Pasch",
+    icon: require("../../assets/icons/5x.png"),
+  },
 ];
 
 interface HandSlotProps {
@@ -31,9 +91,16 @@ interface HandSlotProps {
   labelLine1: string;
   labelLine2?: string;
   slotHeight: number;
+  iconSource: ImageSourcePropType;
 }
 
-const HandSlot = ({ handId, labelLine1, labelLine2, slotHeight }: HandSlotProps) => {
+const HandSlot = ({
+  handId,
+  labelLine1,
+  labelLine2,
+  slotHeight,
+  iconSource,
+}: HandSlotProps) => {
   const handLevels = useGameStore((s) => s.handLevels);
   const usedHandsThisLevel = useGameStore((s) => s.usedHandsThisLevel);
   const selectedHandId = useGameStore((s) => s.selectedHandId);
@@ -62,7 +129,7 @@ const HandSlot = ({ handId, labelLine1, labelLine2, slotHeight }: HandSlotProps)
 
   const tileState = getTileState();
 
-  // Icon color based on state
+  // Icon color based on state (Only relevant if we fallback to vector icons, but we have images now)
   const iconColor =
     tileState === "selected"
       ? COLORS.cyan
@@ -86,7 +153,15 @@ const HandSlot = ({ handId, labelLine1, labelLine2, slotHeight }: HandSlotProps)
 
   return (
     <TileButton
-      icon={<CategoryIcon categoryId={handId} size={16} strokeWidth={2.5} color={iconColor} />}
+      icon={
+        <CategoryIcon
+          categoryId={handId}
+          size={16}
+          strokeWidth={2.5}
+          color={iconColor}
+        />
+      }
+      iconSource={iconSource}
       labelLine1={labelLine1}
       labelLine2={labelLine2}
       level={handLevel}
@@ -107,7 +182,11 @@ export const ScoringGrid = () => {
 
       {/* Upper Section */}
       <View style={styles.section}>
-        <GameText variant="labelSmall" color={COLORS.textMuted} style={styles.header}>
+        <GameText
+          variant="labelSmall"
+          color={COLORS.textMuted}
+          style={styles.header}
+        >
           OBEN
         </GameText>
         <View style={styles.row}>
@@ -117,6 +196,7 @@ export const ScoringGrid = () => {
                 handId={hand.id}
                 labelLine1={hand.line1}
                 slotHeight={layout.upperSlotHeight}
+                iconSource={hand.icon}
               />
             </View>
           ))}
@@ -125,7 +205,11 @@ export const ScoringGrid = () => {
 
       {/* Lower Section */}
       <View style={styles.section}>
-        <GameText variant="labelSmall" color={COLORS.textMuted} style={styles.header}>
+        <GameText
+          variant="labelSmall"
+          color={COLORS.textMuted}
+          style={styles.header}
+        >
           UNTEN
         </GameText>
         <View style={styles.row}>
@@ -136,6 +220,7 @@ export const ScoringGrid = () => {
                 labelLine1={hand.line1}
                 labelLine2={hand.line2}
                 slotHeight={layout.lowerSlotHeight}
+                iconSource={hand.icon}
               />
             </View>
           ))}

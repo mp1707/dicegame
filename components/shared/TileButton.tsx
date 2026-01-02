@@ -1,5 +1,12 @@
 import React, { useEffect, useRef } from "react";
-import { View, StyleSheet, ViewStyle, StyleProp } from "react-native";
+import {
+  View,
+  StyleSheet,
+  ViewStyle,
+  StyleProp,
+  Image,
+  ImageSourcePropType,
+} from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -21,7 +28,8 @@ export type TileButtonState =
   | "invalid";
 
 export interface TileButtonProps {
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
+  iconSource?: ImageSourcePropType;
   labelLine1: string;
   labelLine2?: string;
   level?: number;
@@ -66,6 +74,7 @@ const isPressableState = (state: TileButtonState): boolean => {
 
 export const TileButton = ({
   icon,
+  iconSource,
   labelLine1,
   labelLine2,
   level = 1,
@@ -176,6 +185,28 @@ export const TileButton = ({
         }
       : {};
 
+  const renderIcon = () => {
+    if (state === "used") {
+      return <Check size={18} color={COLORS.goldDark} strokeWidth={2.5} />;
+    }
+
+    if (iconSource) {
+      return (
+        <Image
+          source={iconSource}
+          style={{
+            width: 28,
+            height: 28,
+            opacity: state === "selected" ? 1 : 0.8,
+          }}
+          resizeMode="contain"
+        />
+      );
+    }
+
+    return icon;
+  };
+
   return (
     <View style={[styles.wrapper, glowStyle, style]}>
       <Pressable3DBase
@@ -208,13 +239,7 @@ export const TileButton = ({
           </View>
 
           {/* Center: Icon (or checkmark if used) */}
-          <View style={styles.iconContainer}>
-            {state === "used" ? (
-              <Check size={18} color={COLORS.goldDark} strokeWidth={2.5} />
-            ) : (
-              icon
-            )}
-          </View>
+          <View style={styles.iconContainer}>{renderIcon()}</View>
 
           {/* Bottom: Label (explicit two-line support) */}
           <View style={styles.labelContainer}>
