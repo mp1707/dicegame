@@ -34,6 +34,11 @@ export const FooterControls = () => {
   const openShop = useGameStore((s) => s.openShop);
   const levelWon = useGameStore((s) => s.levelWon);
   const isWinAnimating = useGameStore((s) => s.isWinAnimating);
+  const closeShopNextLevel = useGameStore((s) => s.closeShopNextLevel);
+  const startNewRun = useGameStore((s) => s.startNewRun);
+  const currentLevelIndex = useGameStore((s) => s.currentLevelIndex);
+
+  const isLastLevel = currentLevelIndex >= 7;
 
   // Animation shared val
   const ctaTranslateY = useSharedValue(0);
@@ -88,6 +93,16 @@ export const FooterControls = () => {
     triggerSelectionHaptic();
   };
 
+  const handleNextLevel = () => {
+    closeShopNextLevel();
+    triggerSelectionHaptic();
+  };
+
+  const handleNewRun = () => {
+    startNewRun();
+    triggerSelectionHaptic();
+  };
+
   const onPressRoll = () => {
     if (!canRoll) return;
     triggerRoll();
@@ -98,6 +113,37 @@ export const FooterControls = () => {
   const renderCTA = () => {
     // Common button style with proportional height
     const buttonStyle = [styles.ctaButton, { height: buttonHeight }];
+
+    // WIN/LOSE screens - New Run button
+    if (phase === "WIN_SCREEN" || phase === "LOSE_SCREEN") {
+      return (
+        <PrimaryButton
+          onPress={handleNewRun}
+          label="NEUER RUN"
+          variant={phase === "WIN_SCREEN" ? "mint" : "coral"}
+          compact
+          style={buttonStyle}
+        />
+      );
+    }
+
+    // SHOP_MAIN phase - Next Level button
+    if (phase === "SHOP_MAIN") {
+      return (
+        <PrimaryButton
+          onPress={handleNextLevel}
+          label={isLastLevel ? "FINISH RUN" : "NEXT LEVEL"}
+          variant="cyan"
+          compact
+          style={buttonStyle}
+        />
+      );
+    }
+
+    // SHOP_PICK_UPGRADE phase - no footer CTA (selection in content)
+    if (phase === "SHOP_PICK_UPGRADE") {
+      return null;
+    }
 
     // LEVEL_RESULT phase - show SHOP button
     if (phase === "LEVEL_RESULT") {
