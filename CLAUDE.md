@@ -96,7 +96,8 @@ dice-game/
 │   │   ├── FooterControls.tsx
 │   │   ├── CashoutResultList.tsx # Inline reward breakdown
 │   │   ├── ShopContent.tsx  # Shop grid with upgrade items
-│   │   ├── DiceEditorModal.tsx # Fullscreen dice enhancement flow
+│   │   ├── DieEditorContent.tsx # Die selection panel (DICE_EDITOR_DIE phase)
+│   │   ├── FaceEditorContent.tsx # Face selection panel (DICE_EDITOR_FACE phase)
 │   │   └── DiePreview3D.tsx # 3D die viewer for face selection
 │   ├── ui-kit/              # Material layer system
 │   │   ├── Surface.tsx      # Base container (panel, inset, chip, overlay)
@@ -143,8 +144,10 @@ Key actions: `rollDice`, `selectHand`, `acceptHand`, `finalizeHand`, `cashOutNow
 
 - `LEVEL_PLAY`: Main gameplay. Roll dice (up to 3 per hand), lock/unlock, select a hand, press ANNEHMEN to accept. When `levelWon === true`, CASH OUT button appears in footer.
 - `LEVEL_RESULT`: ScoringGrid slides out, CashoutResultList slides in showing reward breakdown (base win, unused hands/rolls, tier bonus). TrayModule, ScoreRow, Footer stay visible. CTA: SHOP (in footer).
-- `SHOP_MAIN`: Full overlay. Shop grid with 3 placeholder items + UPGRADE HAND. CTA: NEXT LEVEL.
+- `SHOP_MAIN`: Shop grid with UPGRADE HAND + dice enhancement card + placeholders. CTA: NEXT LEVEL.
 - `SHOP_PICK_UPGRADE`: Pick 1 of 3 random hands to upgrade. Cost: $6 + handLevel.
+- `DICE_EDITOR_DIE`: Select which die to enhance. Single row of 5 TileButtons. CTAs: ZURÜCK + WEITER.
+- `DICE_EDITOR_FACE`: Select which face to enhance. 2x3 grid of TileButtons. Single rotatable 3D die in tray. CTAs: ZURÜCK + VERBESSERN.
 - `WIN_SCREEN`: Beat all 8 levels. CTA: NEW RUN.
 - `LOSE_SCREEN`: Ran out of hands with score < goal. CTA: NEW RUN.
 
@@ -191,12 +194,14 @@ interface DieEnhancement {
 - Only spawns if at least one pip across all dice is enhanceable
 - Costs: Points = $8, Mult = $14
 
-**Dice Editor Flow** (`DiceEditorModal.tsx` + `DiePreview3D.tsx`):
+**Dice Editor Flow** (Phase-based, integrated into PhaseDeck):
 
-1. **Screen A (Die Picker)**: 2+3 grid of dice, tap to select, "WÜRFEL VERBESSERN" CTA
-2. **Screen B (Face Picker)**: 3D die with drag-to-rotate, face strip, "SEITE VERBESSERN" CTA
-   - **3D Rotation**: Uses World Axis rotation (not local) for consistent "follow-finger" dragging behavior
-   - **Face Strip**: Direct 1-6 face selection via tap, synchronized with 3D view
+1. **DICE_EDITOR_DIE phase** (`DieEditorContent.tsx`): Single row of 5 TileButtons for die selection. Icons use `die.png`. Labels: "Würfel 1" through "Würfel 5". CTAs: ZURÜCK (back to shop) + WEITER (advance to face selection).
+
+2. **DICE_EDITOR_FACE phase** (`FaceEditorContent.tsx`): 2x3 grid of TileButtons for face selection. Icons use `1die.png` through `6die.png`. Labels: "Seite 1" through "Seite 6". CTAs: ZURÜCK (back to die selection) + VERBESSERN (apply upgrade).
+   - **3D Die in Tray**: During this phase, PlayConsole shows a single large rotatable die (`SingleDiePreview.tsx`)
+   - **3D Rotation**: Uses World Axis rotation for consistent "follow-finger" dragging behavior
+   - **Face Sync**: Tapping a face button rotates the 3D die to that face; manually rotating the die updates the selected face button
    - Snaps to nearest face on release with haptic feedback
 
 **Colored Pip Rendering** (`Die.tsx`):
@@ -518,36 +523,48 @@ PhaseDeck is the main game layout orchestrator. PlayConsole is **always visible*
 PhaseDeck
 ├── PlayConsole (ALWAYS VISIBLE)
 │   ├── HUDHeader (LV, Money, Goal)
-│   ├── TrayWindow (Dice 3D scene)
+│   ├── TrayWindow (Dice 3D scene OR SingleDiePreview)
 │   └── ScoreLip (Score + Progress)
 ├── BottomPanel (CONTENT SWITCHES)
 │   ├── LEVEL_PLAY → ScoringGrid
 │   ├── LEVEL_RESULT → CashoutResultList
 │   ├── SHOP_MAIN → ShopContent
 │   ├── SHOP_PICK_UPGRADE → UpgradeContent
+│   ├── DICE_EDITOR_DIE → DieEditorContent
+│   ├── DICE_EDITOR_FACE → FaceEditorContent
 │   └── WIN/LOSE_SCREEN → EndContent
 └── Footer (FooterControls)
 ```
 
+**Note:** During `DICE_EDITOR_FACE` phase, the TrayWindow shows a single large rotatable die (`SingleDiePreview`) instead of the normal `DiceTray` with 5 dice.
+
 **Phase → BottomPanel Content:**
 
-| Phase             | Content             | Footer CTA  |
-| ----------------- | ------------------- | ----------- |
-| LEVEL_PLAY        | ScoringGrid         | Roll/Accept |
-| LEVEL_RESULT      | CashoutRewardsPanel | SHOP        |
-| SHOP_MAIN         | ShopContent         | NEXT LEVEL  |
-| SHOP_PICK_UPGRADE | UpgradeContent      | (none)      |
-| WIN/LOSE_SCREEN   | EndContent          | NEUER RUN   |
+| Phase             | Content             | Footer CTA              |
+| ----------------- | ------------------- | ----------------------- |
+| LEVEL_PLAY        | ScoringGrid         | Roll/Accept             |
+| LEVEL_RESULT      | CashoutRewardsPanel | SHOP                    |
+| SHOP_MAIN         | ShopContent         | NEXT LEVEL              |
+| SHOP_PICK_UPGRADE | UpgradeContent      | ZURÜCK                  |
+| DICE_EDITOR_DIE   | DieEditorContent    | ZURÜCK + WEITER         |
+| DICE_EDITOR_FACE  | FaceEditorContent   | ZURÜCK + VERBESSERN     |
+| WIN/LOSE_SCREEN   | EndContent          | NEUER RUN               |
 
 **Content Components (in `components/ui/`):**
 
-- `BottomPanel.tsx` - Phase-based content switcher (spring-based slide transitions)
+- `BottomPanel.tsx` - Phase-based content switcher (easing-based slide transitions)
 - `CashoutRewardsPanel.tsx` - Celebratory reward breakdown with hero payout, staggered rows, sparkles
 - `ShopContent.tsx` - Shop with header, money capsule, 2x2 ShopItemCard grid
 - `ShopItemCard.tsx` - Shop item card with affordable/unaffordable/soon states, shimmer animation
 - `UpgradeContent.tsx` - Cascade-animated upgrade cards with selection feedback
+- `DieEditorContent.tsx` - Die selection row with 5 TileButtons (DICE_EDITOR_DIE phase)
+- `FaceEditorContent.tsx` - Face selection 2x3 grid with TileButtons (DICE_EDITOR_FACE phase)
 - `SparkleEffect.tsx` - Particle micro-animation for celebratory effects
 - `EndContent.tsx` - Compact win/lose display with stats
+
+**Special Components:**
+
+- `SingleDiePreview.tsx` (in `components/`) - Wrapper for `DiePreview3D` that connects to store; used during DICE_EDITOR_FACE phase to show single rotatable die in PlayConsole tray
 
 **Integration in App.tsx:**
 

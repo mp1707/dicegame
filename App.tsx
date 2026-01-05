@@ -9,8 +9,8 @@ import {
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { useFonts } from "expo-font";
 import { DiceTray } from "./components/DiceTray";
+import { SingleDiePreview } from "./components/SingleDiePreview";
 import { OverviewModal } from "./components/modals/OverviewModal";
-import { DiceEditorModal } from "./components/ui/DiceEditorModal";
 import { PhaseDeck } from "./components/ui-kit/flow";
 import { useGameStore } from "./store/gameStore";
 import { COLORS, SPACING } from "./constants/theme";
@@ -60,6 +60,11 @@ const AppContent: React.FC = () => {
   // Game states
   const overviewVisible = useGameStore((s) => s.overviewVisible);
   const toggleOverview = useGameStore((s) => s.toggleOverview);
+  const phase = useGameStore((s) => s.phase);
+  const selectedEditorDie = useGameStore((s) => s.selectedEditorDie);
+
+  // Check if we're in face editor mode (show single die)
+  const isInFaceEditor = phase === "DICE_EDITOR_FACE";
 
   const hideStatusBar = Platform.OS === "ios";
 
@@ -97,19 +102,25 @@ const AppContent: React.FC = () => {
           <View style={styles.mainContent}>
             <PhaseDeck
               diceTray={
-                <View style={styles.diceTrayInner}>
-                  <DiceTray
+                isInFaceEditor ? (
+                  <SingleDiePreview
                     containerHeight={layout.diceTrayHeight}
                     containerWidth={diceTrayWidth}
                   />
-                </View>
+                ) : (
+                  <View style={styles.diceTrayInner}>
+                    <DiceTray
+                      containerHeight={layout.diceTrayHeight}
+                      containerWidth={diceTrayWidth}
+                    />
+                  </View>
+                )
               }
             />
           </View>
 
           {/* Modals */}
           <OverviewModal visible={overviewVisible} onClose={toggleOverview} />
-          <DiceEditorModal />
         </SafeAreaView>
       </View>
 

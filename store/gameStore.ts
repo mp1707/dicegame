@@ -32,6 +32,8 @@ export type GamePhase =
   | "LEVEL_RESULT" // Result screen with rewards
   | "SHOP_MAIN" // Shop grid (3 placeholder + 1 upgrade)
   | "SHOP_PICK_UPGRADE" // Pick 1 of 3 hands to upgrade
+  | "DICE_EDITOR_DIE" // Select which die to enhance
+  | "DICE_EDITOR_FACE" // Select which face to enhance
   | "WIN_SCREEN" // Beat level 8
   | "LOSE_SCREEN"; // Ran out of hands with score < goal
 
@@ -85,8 +87,7 @@ interface GameState {
   upgradeOptions: HandId[];
   shopDiceUpgradeType: DiceUpgradeType | null; // Which dice upgrade is available in shop
 
-  // Dice editor state
-  diceEditorOpen: boolean;
+  // Dice editor state (controlled by phase, not modal)
   pendingUpgradeType: DiceUpgradeType | null;
   selectedEditorDie: number | null; // 0-4
   selectedEditorFace: number | null; // 1-6
@@ -120,6 +121,8 @@ interface GameState {
   // Dice editor actions
   openDiceEditor: (type: DiceUpgradeType) => void;
   closeDiceEditor: () => void;
+  advanceToFaceEditor: () => void;
+  backFromFaceEditor: () => void;
   selectEditorDie: (index: number) => void;
   selectEditorFace: (face: number) => void;
   applyDiceUpgrade: () => void;
@@ -172,7 +175,6 @@ const getInitialUIState = () => ({
   revealState: null as RevealState | null,
   upgradeOptions: [] as HandId[],
   shopDiceUpgradeType: null as DiceUpgradeType | null,
-  diceEditorOpen: false,
   pendingUpgradeType: null as DiceUpgradeType | null,
   selectedEditorDie: null as number | null,
   selectedEditorFace: null as number | null,
@@ -516,7 +518,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   openDiceEditor: (type: DiceUpgradeType) => {
     set({
-      diceEditorOpen: true,
+      phase: "DICE_EDITOR_DIE",
       pendingUpgradeType: type,
       selectedEditorDie: null,
       selectedEditorFace: null,
@@ -525,9 +527,23 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   closeDiceEditor: () => {
     set({
-      diceEditorOpen: false,
+      phase: "SHOP_MAIN",
       pendingUpgradeType: null,
       selectedEditorDie: null,
+      selectedEditorFace: null,
+    });
+  },
+
+  advanceToFaceEditor: () => {
+    const { selectedEditorDie } = get();
+    if (selectedEditorDie !== null) {
+      set({ phase: "DICE_EDITOR_FACE" });
+    }
+  },
+
+  backFromFaceEditor: () => {
+    set({
+      phase: "DICE_EDITOR_DIE",
       selectedEditorFace: null,
     });
   },
@@ -578,7 +594,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({
       money: money - cost,
       diceEnhancements: newEnhancements,
-      diceEditorOpen: false,
+      phase: "SHOP_MAIN",
       pendingUpgradeType: null,
       selectedEditorDie: null,
       selectedEditorFace: null,

@@ -8,6 +8,7 @@ import {
   triggerLightImpact,
   triggerSelectionHaptic,
 } from "../../utils/haptics";
+import { isFaceEnhanceable } from "../../utils/gameCore";
 import { useLayout } from "../../utils/LayoutContext";
 import Animated, {
   useSharedValue,
@@ -38,6 +39,16 @@ export const FooterControls = () => {
   const closeShopNextLevel = useGameStore((s) => s.closeShopNextLevel);
   const startNewRun = useGameStore((s) => s.startNewRun);
   const currentLevelIndex = useGameStore((s) => s.currentLevelIndex);
+
+  // Dice editor state
+  const selectedEditorDie = useGameStore((s) => s.selectedEditorDie);
+  const selectedEditorFace = useGameStore((s) => s.selectedEditorFace);
+  const pendingUpgradeType = useGameStore((s) => s.pendingUpgradeType);
+  const diceEnhancements = useGameStore((s) => s.diceEnhancements);
+  const closeDiceEditor = useGameStore((s) => s.closeDiceEditor);
+  const advanceToFaceEditor = useGameStore((s) => s.advanceToFaceEditor);
+  const backFromFaceEditor = useGameStore((s) => s.backFromFaceEditor);
+  const applyDiceUpgrade = useGameStore((s) => s.applyDiceUpgrade);
 
   const isLastLevel = currentLevelIndex >= 7;
 
@@ -78,7 +89,12 @@ export const FooterControls = () => {
       (prevPhase === "LEVEL_PLAY" && phase === "LEVEL_RESULT") ||
       (prevPhase === "LEVEL_RESULT" && phase === "SHOP_MAIN") ||
       (prevPhase === "SHOP_PICK_UPGRADE" && phase === "SHOP_MAIN") ||
-      (prevPhase === "SHOP_MAIN" && phase === "SHOP_PICK_UPGRADE");
+      (prevPhase === "SHOP_MAIN" && phase === "SHOP_PICK_UPGRADE") ||
+      (prevPhase === "SHOP_MAIN" && phase === "DICE_EDITOR_DIE") ||
+      (prevPhase === "DICE_EDITOR_DIE" && phase === "SHOP_MAIN") ||
+      (prevPhase === "DICE_EDITOR_DIE" && phase === "DICE_EDITOR_FACE") ||
+      (prevPhase === "DICE_EDITOR_FACE" && phase === "DICE_EDITOR_DIE") ||
+      (prevPhase === "DICE_EDITOR_FACE" && phase === "SHOP_MAIN");
 
     if (shouldGlow) {
       const glowDuration = ANIMATION.transition.ctaGlowPulseDuration;
@@ -132,6 +148,26 @@ export const FooterControls = () => {
     triggerSelectionHaptic();
   };
 
+  const handleCloseDiceEditor = () => {
+    closeDiceEditor();
+    triggerSelectionHaptic();
+  };
+
+  const handleAdvanceToFaceEditor = () => {
+    advanceToFaceEditor();
+    triggerSelectionHaptic();
+  };
+
+  const handleBackFromFaceEditor = () => {
+    backFromFaceEditor();
+    triggerSelectionHaptic();
+  };
+
+  const handleApplyDiceUpgrade = () => {
+    applyDiceUpgrade();
+    triggerSelectionHaptic();
+  };
+
   const onPressRoll = () => {
     if (!canRoll) return;
     triggerRoll();
@@ -153,6 +189,57 @@ export const FooterControls = () => {
           compact
           style={buttonStyle}
         />
+      );
+    }
+
+    // DICE_EDITOR_DIE phase - Dual buttons: ZURÜCK + WÜRFEL VERBESSERN
+    if (phase === "DICE_EDITOR_DIE") {
+      const canAdvance = selectedEditorDie !== null;
+      return (
+        <View style={styles.dualButtonRow}>
+          <PrimaryButton
+            onPress={handleCloseDiceEditor}
+            label="ZURÜCK"
+            variant="cyan"
+            compact
+            style={[buttonStyle, styles.halfButton]}
+          />
+          <PrimaryButton
+            onPress={handleAdvanceToFaceEditor}
+            label="WEITER"
+            variant={pendingUpgradeType === "points" ? "cyan" : "coral"}
+            disabled={!canAdvance}
+            compact
+            style={[buttonStyle, styles.halfButton]}
+          />
+        </View>
+      );
+    }
+
+    // DICE_EDITOR_FACE phase - Dual buttons: ZURÜCK + SEITE VERBESSERN
+    if (phase === "DICE_EDITOR_FACE") {
+      const canEnhance =
+        selectedEditorDie !== null &&
+        selectedEditorFace !== null &&
+        isFaceEnhanceable(selectedEditorDie, selectedEditorFace, diceEnhancements);
+      return (
+        <View style={styles.dualButtonRow}>
+          <PrimaryButton
+            onPress={handleBackFromFaceEditor}
+            label="ZURÜCK"
+            variant="cyan"
+            compact
+            style={[buttonStyle, styles.halfButton]}
+          />
+          <PrimaryButton
+            onPress={handleApplyDiceUpgrade}
+            label="VERBESSERN"
+            variant={pendingUpgradeType === "points" ? "cyan" : "coral"}
+            disabled={!canEnhance}
+            compact
+            style={[buttonStyle, styles.halfButton]}
+          />
+        </View>
       );
     }
 
@@ -319,5 +406,13 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
     // ensure full width/centered
     justifyContent: "center",
+  },
+  dualButtonRow: {
+    flex: 1,
+    flexDirection: "row",
+    gap: SPACING.sm,
+  },
+  halfButton: {
+    flex: 1,
   },
 });

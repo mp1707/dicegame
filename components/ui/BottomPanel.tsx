@@ -10,6 +10,8 @@ import { CashoutRewardsPanel } from "./CashoutRewardsPanel";
 import { ShopContent } from "./ShopContent";
 import { UpgradeContent } from "./UpgradeContent";
 import { EndContent } from "./EndContent";
+import { DieEditorContent } from "./DieEditorContent";
+import { FaceEditorContent } from "./FaceEditorContent";
 
 // Snappy easing animation config
 const SLIDE_DURATION = 180;
@@ -41,6 +43,10 @@ export const BottomPanel: React.FC = () => {
         return <ShopContent />;
       case "SHOP_PICK_UPGRADE":
         return <UpgradeContent />;
+      case "DICE_EDITOR_DIE":
+        return <DieEditorContent />;
+      case "DICE_EDITOR_FACE":
+        return <FaceEditorContent />;
       case "WIN_SCREEN":
       case "LOSE_SCREEN":
         return <EndContent />;
