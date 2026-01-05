@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, ScrollView } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { ArrowUp, Lock, ShoppingBag } from "lucide-react-native";
 import { Pressable3DBase } from "../ui/Pressable3DBase";
 import { GameText } from "../shared";
@@ -85,48 +85,58 @@ export const ShopContent: React.FC = () => {
         </GameText>
       </View>
 
-      {/* Shop grid - 2x2 */}
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.grid}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Upgrade Hand - Active */}
-        <ShopItem
-          icon={
-            <ArrowUp
-              size={DIMENSIONS.iconSize.md}
-              color={COLORS.mint}
-              strokeWidth={3}
-            />
-          }
-          label="UPGRADE"
-          sublabel="BOOST"
-          onPress={handleUpgrade}
-        />
+      {/* Shop grid - 2x2 filling remaining space */}
+      <View style={styles.gridContainer}>
+        {/* Row 1 */}
+        <View style={styles.row}>
+          {/* Upgrade Hand - Active */}
+          <ShopItem
+            icon={
+              <ArrowUp
+                size={DIMENSIONS.iconSize.md}
+                color={COLORS.mint}
+                strokeWidth={3}
+              />
+            }
+            label="UPGRADE"
+            sublabel="BOOST"
+            onPress={handleUpgrade}
+          />
 
-        {/* Placeholder items - Disabled */}
-        <ShopItem
-          icon={<Lock size={DIMENSIONS.iconSize.sm} color={COLORS.textMuted} />}
-          label="JOKERS"
-          sublabel="SOON"
-          disabled
-        />
+          {/* Placeholder 1 */}
+          <ShopItem
+            icon={
+              <Lock size={DIMENSIONS.iconSize.sm} color={COLORS.textMuted} />
+            }
+            label="JOKERS"
+            sublabel="SOON"
+            disabled
+          />
+        </View>
 
-        <ShopItem
-          icon={<Lock size={DIMENSIONS.iconSize.sm} color={COLORS.textMuted} />}
-          label="DICE"
-          sublabel="SOON"
-          disabled
-        />
+        {/* Row 2 */}
+        <View style={styles.row}>
+          {/* Placeholder 2 */}
+          <ShopItem
+            icon={
+              <Lock size={DIMENSIONS.iconSize.sm} color={COLORS.textMuted} />
+            }
+            label="DICE"
+            sublabel="SOON"
+            disabled
+          />
 
-        <ShopItem
-          icon={<Lock size={DIMENSIONS.iconSize.sm} color={COLORS.textMuted} />}
-          label="POWERS"
-          sublabel="SOON"
-          disabled
-        />
-      </ScrollView>
+          {/* Placeholder 3 */}
+          <ShopItem
+            icon={
+              <Lock size={DIMENSIONS.iconSize.sm} color={COLORS.textMuted} />
+            }
+            label="POWERS"
+            sublabel="SOON"
+            disabled
+          />
+        </View>
+      </View>
     </View>
   );
 };
@@ -141,20 +151,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: SPACING.sm,
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm, // Reduced margin for tighter fit
+    flexShrink: 0,
   },
-  scrollView: {
+  gridContainer: {
     flex: 1,
-  },
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
     gap: SPACING.sm,
-    justifyContent: "center",
+  },
+  row: {
+    flex: 1,
+    flexDirection: "row",
+    gap: SPACING.sm,
   },
   shopItem: {
-    width: "47%",
-    aspectRatio: 1.2,
+    flex: 1, // Take available width
     borderRadius: DIMENSIONS.borderRadiusSmall,
   },
   disabledItem: {
