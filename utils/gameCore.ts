@@ -423,23 +423,8 @@ export const REWARD_CONFIG = {
   baseWin: 10,
   perUnusedHand: 2,
   perUnusedRoll: 1,
-  tier1Multiplier: 1.25, // Score >= goal * 1.25
-  tier2Multiplier: 1.5, // Score >= goal * 1.50
-  tier1Bonus: 5,
-  tier2Bonus: 10,
   upgradeCostBase: 6, // cost = 6 + handLevel
 };
-
-export type TierLevel = 0 | 1 | 2;
-
-/**
- * Calculate which tier the player achieved based on score vs goal
- */
-export function calculateTier(score: number, goal: number): TierLevel {
-  if (score >= goal * REWARD_CONFIG.tier2Multiplier) return 2;
-  if (score >= goal * REWARD_CONFIG.tier1Multiplier) return 1;
-  return 0;
-}
 
 export interface RewardBreakdown {
   currentMoney: number;
@@ -448,8 +433,6 @@ export interface RewardBreakdown {
   unusedHandsBonus: number;
   unusedRollsCount: number;
   unusedRollsBonus: number;
-  tier: TierLevel;
-  tierBonus: number;
   totalPayout: number;
   newMoney: number;
 }
@@ -473,19 +456,11 @@ export function calculateRewards(params: RewardParams): RewardBreakdown {
   const totalPossibleRolls = MAX_HANDS_PER_LEVEL * MAX_ROLLS_PER_HAND;
   const unusedRolls = totalPossibleRolls - rollsUsedThisLevel;
 
-  const tier = calculateTier(score, goal);
-  const tierBonus =
-    tier === 2
-      ? REWARD_CONFIG.tier2Bonus
-      : tier === 1
-      ? REWARD_CONFIG.tier1Bonus
-      : 0;
-
   const unusedHandsBonus = handsRemaining * REWARD_CONFIG.perUnusedHand;
   const unusedRollsBonus = unusedRolls * REWARD_CONFIG.perUnusedRoll;
 
   const totalPayout =
-    REWARD_CONFIG.baseWin + unusedHandsBonus + unusedRollsBonus + tierBonus;
+    REWARD_CONFIG.baseWin + unusedHandsBonus + unusedRollsBonus;
 
   return {
     currentMoney,
@@ -494,8 +469,6 @@ export function calculateRewards(params: RewardParams): RewardBreakdown {
     unusedHandsBonus,
     unusedRollsCount: unusedRolls,
     unusedRollsBonus,
-    tier,
-    tierBonus,
     totalPayout,
     newMoney: currentMoney + totalPayout,
   };
@@ -530,17 +503,4 @@ export function getRandomUpgradeOptions(): HandId[] {
   const allHands = CATEGORIES.map((c) => c.id).filter((id) => id !== "chance");
   const shuffled = [...allHands].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, 3);
-}
-
-/**
- * Get tier threshold values for display
- */
-export function getTierThresholds(goal: number): {
-  tier1: number;
-  tier2: number;
-} {
-  return {
-    tier1: Math.ceil(goal * REWARD_CONFIG.tier1Multiplier),
-    tier2: Math.ceil(goal * REWARD_CONFIG.tier2Multiplier),
-  };
 }

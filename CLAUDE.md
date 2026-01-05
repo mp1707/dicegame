@@ -168,8 +168,6 @@ On level complete:
 - Base win: $10
 - Per unused hand: $2
 - Per unused roll: $1
-- Tier 1 bonus (≥125% goal): $5
-- Tier 2 bonus (≥150% goal): $10
 
 Hand upgrade cost: $6 + current hand level
 

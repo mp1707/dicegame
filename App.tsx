@@ -103,19 +103,31 @@ const AppContent: React.FC = () => {
           <View style={styles.mainContent}>
             <PhaseDeck
               diceTray={
-                isInDiceEditor ? (
-                  <SingleDiePreview
+                <View style={styles.diceTrayInner}>
+                  {/* Always show the background tray */}
+                  <DiceTray
                     containerHeight={layout.diceTrayHeight}
                     containerWidth={diceTrayWidth}
                   />
-                ) : (
-                  <View style={styles.diceTrayInner}>
-                    <DiceTray
-                      containerHeight={layout.diceTrayHeight}
-                      containerWidth={diceTrayWidth}
-                    />
-                  </View>
-                )
+
+                  {/* Overlay single die preview in editor mode */}
+                  {isInDiceEditor && (
+                    <View
+                      style={{
+                        position: "absolute",
+                        top: "33%",
+                        height: "67%",
+                        width: "100%",
+                      }}
+                      pointerEvents="box-none"
+                    >
+                      <SingleDiePreview
+                        containerHeight={layout.diceTrayHeight * 0.67}
+                        containerWidth={diceTrayWidth}
+                      />
+                    </View>
+                  )}
+                </View>
               }
             />
           </View>

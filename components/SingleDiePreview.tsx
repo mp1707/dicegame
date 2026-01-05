@@ -1,13 +1,8 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
 import { DiePreview3D } from "./ui/DiePreview3D";
-import { GameText } from "./shared";
 import { useGameStore } from "../store/gameStore";
-import {
-  getNextEnhanceablePipIndex,
-  isFaceEnhanceable,
-} from "../utils/gameCore";
-import { COLORS, SPACING } from "../constants/theme";
+import { getNextEnhanceablePipIndex } from "../utils/gameCore";
 
 interface SingleDiePreviewProps {
   containerHeight: number;
@@ -18,8 +13,9 @@ interface SingleDiePreviewProps {
  * SingleDiePreview - Wrapper for DiePreview3D that connects to the game store
  *
  * Used during DICE_EDITOR_DIE and DICE_EDITOR_FACE phases to show a single
- * large rotatable die in the PlayConsole tray area. Also displays the
- * phase-appropriate title overlay above the die.
+ * large rotatable die in the PlayConsole tray area.
+ *
+ * NOTE: Titles and subtitles are now handled by DiceEditorTrayOverlay.
  */
 export const SingleDiePreview: React.FC<SingleDiePreviewProps> = ({
   containerHeight,
@@ -58,24 +54,6 @@ export const SingleDiePreview: React.FC<SingleDiePreviewProps> = ({
     }
   }
 
-  // Determine title based on phase
-  const title =
-    phase === "DICE_EDITOR_DIE" ? "WÜRFEL AUSWÄHLEN" : "SEITE AUSWÄHLEN";
-
-  // Subtitle text for DICE_EDITOR_DIE phase (die number)
-  // OR for DICE_EDITOR_FACE phase when face is fully upgraded
-  let subtitle: string | null = null;
-  if (phase === "DICE_EDITOR_DIE" && selectedEditorDie !== null) {
-    subtitle = `Würfel ${selectedEditorDie + 1}`;
-  } else if (
-    phase === "DICE_EDITOR_FACE" &&
-    selectedEditorDie !== null &&
-    selectedEditorFace !== null &&
-    !isFaceEnhanceable(selectedEditorDie, selectedEditorFace, diceEnhancements)
-  ) {
-    subtitle = "Vollständig verbessert";
-  }
-
   // Shouldn't render if no die is selected, but handle gracefully
   if (selectedEditorDie === null) {
     return <View style={[styles.container, { height: containerHeight }]} />;
@@ -83,13 +61,6 @@ export const SingleDiePreview: React.FC<SingleDiePreviewProps> = ({
 
   return (
     <View style={[styles.container, { height: containerHeight }]}>
-      {/* Title overlay */}
-      <View style={styles.titleOverlay}>
-        <GameText variant="displaySmall" color={COLORS.text}>
-          {title}
-        </GameText>
-      </View>
-
       {/* 3D Die */}
       <DiePreview3D
         dieIndex={selectedEditorDie}
@@ -102,15 +73,6 @@ export const SingleDiePreview: React.FC<SingleDiePreviewProps> = ({
         previewFace={previewFace}
         previewPipIndex={previewPipIndex}
       />
-
-      {/* Bottom subtitle (die number in DICE_EDITOR_DIE) */}
-      {subtitle && (
-        <View style={styles.bottomOverlay}>
-          <GameText variant="bodyMedium" color={COLORS.textMuted}>
-            {subtitle}
-          </GameText>
-        </View>
-      )}
     </View>
   );
 };
@@ -119,21 +81,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "transparent",
-  },
-  titleOverlay: {
-    position: "absolute",
-    top: SPACING.md,
-    left: 0,
-    right: 0,
+    // Ensure the 3D die is clickable and interactive
     zIndex: 10,
-    alignItems: "center",
-  },
-  bottomOverlay: {
-    position: "absolute",
-    bottom: SPACING.md,
-    left: 0,
-    right: 0,
-    zIndex: 10,
-    alignItems: "center",
   },
 });

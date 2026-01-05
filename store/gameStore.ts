@@ -525,7 +525,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({
       phase: "DICE_EDITOR_DIE",
       pendingUpgradeType: type,
-      selectedEditorDie: null,
+      selectedEditorDie: 0, // Default to Die 1
       selectedEditorFace: null,
     });
   },
@@ -542,7 +542,10 @@ export const useGameStore = create<GameState>((set, get) => ({
   advanceToFaceEditor: () => {
     const { selectedEditorDie } = get();
     if (selectedEditorDie !== null) {
-      set({ phase: "DICE_EDITOR_FACE" });
+      set({
+        phase: "DICE_EDITOR_FACE",
+        selectedEditorFace: 1, // Default to Face 1
+      });
     }
   },
 

@@ -11,6 +11,7 @@ import { BottomPanel } from "../../ui/BottomPanel";
 import { FooterControls } from "../../ui/FooterControls";
 import { CashoutTrayOverlay } from "../../ui/CashoutTrayOverlay";
 import { ShopTrayOverlay } from "../../ui/ShopTrayOverlay";
+import { DiceEditorTrayOverlay } from "../../ui/DiceEditorTrayOverlay";
 
 interface PhaseDeckProps {
   /** The DiceTray component (3D scene) - rendered inside PlayConsole */
@@ -29,6 +30,7 @@ interface PhaseDeckProps {
  * Phase-specific tray overlays:
  * - LEVEL_RESULT: CashoutTrayOverlay (title + sum card)
  * - SHOP_MAIN: ShopTrayOverlay (title + subtitle)
+ * - DICE_EDITOR_*: DiceEditorTrayOverlay (title + subtitle + optional die info)
  * - Other phases: diceTray (3D scene)
  */
 export const PhaseDeck: React.FC<PhaseDeckProps> = ({ diceTray }) => {
@@ -46,6 +48,9 @@ export const PhaseDeck: React.FC<PhaseDeckProps> = ({ diceTray }) => {
         return <CashoutTrayOverlay />;
       case "SHOP_MAIN":
         return <ShopTrayOverlay />;
+      case "DICE_EDITOR_DIE":
+      case "DICE_EDITOR_FACE":
+        return <DiceEditorTrayOverlay />;
       default:
         return null;
     }
