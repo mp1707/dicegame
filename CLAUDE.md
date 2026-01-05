@@ -194,9 +194,9 @@ interface DieEnhancement {
 **Dice Editor Flow** (`DiceEditorModal.tsx` + `DiePreview3D.tsx`):
 
 1. **Screen A (Die Picker)**: 2+3 grid of dice, tap to select, "WÜRFEL VERBESSERN" CTA
-2. **Screen B (Face Picker)**: 3D die with drag-to-rotate, snap-to-face, "SEITE VERBESSERN" CTA
-   - Uses R3F pointer events on invisible hit sphere for React Native compatibility
-   - Intuitive gesture mapping: drag down rotates die down, drag right rotates right
+2. **Screen B (Face Picker)**: 3D die with drag-to-rotate, face strip, "SEITE VERBESSERN" CTA
+   - **3D Rotation**: Uses World Axis rotation (not local) for consistent "follow-finger" dragging behavior
+   - **Face Strip**: Direct 1-6 face selection via tap, synchronized with 3D view
    - Snaps to nearest face on release with haptic feedback
 
 **Colored Pip Rendering** (`Die.tsx`):

@@ -379,6 +379,63 @@ export const DiceEditorModal: React.FC = () => {
                 />
               </View>
 
+              {/* Face Selection Strip */}
+              <View style={styles.faceStripContainer}>
+                <GameText
+                  variant="label"
+                  color={COLORS.textMuted}
+                  style={{ marginBottom: SPACING.xs }}
+                >
+                  SEITE WÄHLEN
+                </GameText>
+                <View style={styles.faceStrip}>
+                  {[1, 2, 3, 4, 5, 6].map((face) => {
+                    const isSelected = selectedEditorFace === face;
+                    // Check if face is fully maxed
+                    const isMaxed = !isFaceEnhanceable(
+                      selectedEditorDie!,
+                      face,
+                      diceEnhancements
+                    );
+
+                    return (
+                      <Pressable
+                        key={face}
+                        onPress={() => {
+                          triggerSelectionHaptic();
+                          handleFaceSelect(face);
+                        }}
+                        style={[
+                          styles.faceStripItem,
+                          isSelected && styles.faceStripItemSelected,
+                          isMaxed && !isSelected && { opacity: 0.5 },
+                        ]}
+                      >
+                        <GameText
+                          variant={isSelected ? "bodyLarge" : "bodyMedium"}
+                          color={isSelected ? COLORS.textDark : COLORS.text}
+                          style={{ fontWeight: isSelected ? "700" : "400" }}
+                        >
+                          {face}
+                        </GameText>
+                        {isMaxed && (
+                          <View
+                            style={[
+                              styles.faceStripDot,
+                              {
+                                backgroundColor: isSelected
+                                  ? COLORS.textDark
+                                  : COLORS.textMuted,
+                              },
+                            ]}
+                          />
+                        )}
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+
               {/* Face indicator */}
               <View style={styles.selectionIndicator}>
                 {successState ? (
@@ -387,14 +444,9 @@ export const DiceEditorModal: React.FC = () => {
                   </GameText>
                 ) : (
                   <>
-                    <GameText variant="bodySmall" color={COLORS.textMuted}>
-                      {selectedEditorFace !== null
-                        ? `Seite: ${selectedEditorFace}`
-                        : " "}
-                    </GameText>
                     {selectedEditorFace !== null && !canEnhanceFace && (
                       <GameText variant="caption" color={COLORS.coral}>
-                        Diese Seite ist bereits voll verbessert.
+                        Max. Level erreicht
                       </GameText>
                     )}
                   </>
@@ -538,5 +590,33 @@ const styles = StyleSheet.create({
   dieViewerContainer: {
     flex: 1,
     minHeight: 200,
+  },
+  faceStripContainer: {
+    alignItems: "center",
+    marginBottom: SPACING.md,
+  },
+  faceStrip: {
+    flexDirection: "row",
+    backgroundColor: COLORS.surface2,
+    borderRadius: DIMENSIONS.borderRadius,
+    padding: SPACING.xs,
+    gap: SPACING.xs,
+  },
+  faceStripItem: {
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: DIMENSIONS.borderRadiusSmall,
+  },
+  faceStripItemSelected: {
+    backgroundColor: COLORS.cyan,
+  },
+  faceStripDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    position: "absolute",
+    bottom: 4,
   },
 });

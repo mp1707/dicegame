@@ -231,6 +231,20 @@ const InteractiveDie: React.FC<InteractiveDieProps> = ({
   // Target rotation for snapping
   const targetQuaternion = useRef(new THREE.Quaternion());
   const isSnapping = useRef(false);
+  const isAutoRotating = useRef(false);
+
+  // Effect to handle programmatic face selection
+  React.useEffect(() => {
+    if (selectedFace !== null && !isDragging.current) {
+      // Find the target rotation for this face
+      const target = FACE_ROTATIONS[selectedFace];
+      if (target) {
+        targetQuaternion.current.copy(target);
+        isAutoRotating.current = true;
+        isSnapping.current = false;
+      }
+    }
+  }, [selectedFace]);
 
   // Detect which face is closest to camera
   const detectFrontFace = (quaternion: THREE.Quaternion): number => {
@@ -255,6 +269,7 @@ const InteractiveDie: React.FC<InteractiveDieProps> = ({
     e.stopPropagation();
     isDragging.current = true;
     isSnapping.current = false;
+    isAutoRotating.current = false;
     // Use uv or point coordinates for consistent tracking
     previousPointer.current = { x: e.point.x, y: e.point.y };
   };
@@ -267,11 +282,19 @@ const InteractiveDie: React.FC<InteractiveDieProps> = ({
     const deltaX = (e.point.x - previousPointer.current.x) * 3;
     const deltaY = (e.point.y - previousPointer.current.y) * 3;
 
-    // Rotate based on drag - intuitive mapping:
-    // Drag right → rotate around Y axis (positive)
-    // Drag down → rotate around X axis (negative for intuitive feel)
-    groupRef.current.rotation.y += deltaX;
-    groupRef.current.rotation.x -= deltaY; // Inverted for intuitive gesture
+    // Rotate around WORLD axes to prevent "gimbal lock" feel and confusing local rotation
+    const rotateY = new THREE.Quaternion().setFromAxisAngle(
+      new THREE.Vector3(0, 1, 0),
+      deltaX
+    );
+    const rotateX = new THREE.Quaternion().setFromAxisAngle(
+      new THREE.Vector3(1, 0, 0),
+      -deltaY
+    );
+
+    // Apply world rotations: pre-multiply to apply in world space
+    groupRef.current.quaternion.premultiply(rotateY);
+    groupRef.current.quaternion.premultiply(rotateX);
 
     previousPointer.current = { x: e.point.x, y: e.point.y };
   };
@@ -290,9 +313,10 @@ const InteractiveDie: React.FC<InteractiveDieProps> = ({
   useFrame((_, delta) => {
     if (!groupRef.current) return;
 
-    if (isSnapping.current) {
+    if (isSnapping.current || isAutoRotating.current) {
       // Slerp toward target
-      groupRef.current.quaternion.slerp(targetQuaternion.current, 0.15);
+      const speed = isAutoRotating.current ? 0.1 : 0.15;
+      groupRef.current.quaternion.slerp(targetQuaternion.current, speed);
 
       // Check if close enough
       if (
@@ -300,15 +324,37 @@ const InteractiveDie: React.FC<InteractiveDieProps> = ({
       ) {
         groupRef.current.quaternion.copy(targetQuaternion.current);
         isSnapping.current = false;
+        isAutoRotating.current = false;
       }
     }
 
-    // Detect current front face
-    const newFace = detectFrontFace(groupRef.current.quaternion);
-    if (newFace !== currentFaceRef.current) {
-      currentFaceRef.current = newFace;
-      triggerSelectionHaptic();
-      onFaceChange(newFace);
+    // Detect current front face only if dragging or snapping (not auto-rotating to avoid updates during animation)
+    if (!isAutoRotating.current) {
+      const newFace = detectFrontFace(groupRef.current.quaternion);
+      if (newFace !== currentFaceRef.current) {
+        currentFaceRef.current = newFace;
+        // Only trigger haptic/callback if actual change and not just initial setup
+        if (selectedFace !== null || currentFaceRef.current !== 1) {
+          // We don't want to spam callbacks during drag, but we want haptics
+          // triggerSelectionHaptic(); // Optional: might be too much during drag
+        }
+
+        // Update parent only when snapping is done or during drag if desired
+        // For smoother UI, maybe only update on snap completion?
+        // But user wants to see "Current Face" update?
+        // Let's stick to update on snap completion or debounce
+      }
+
+      // We must update the parent when the face changes so the UI reflects it
+      // But avoid circular updates if this was triggered BY the parent
+      if (
+        newFace !== selectedFace &&
+        !isAutoRotating.current &&
+        isSnapping.current &&
+        groupRef.current.quaternion.angleTo(targetQuaternion.current) < 0.05
+      ) {
+        onFaceChange(newFace);
+      }
     }
   });
 
