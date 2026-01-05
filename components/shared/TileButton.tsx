@@ -37,6 +37,7 @@ export interface TileButtonProps {
   onPress: () => void;
   onLongPress?: () => void;
   style?: StyleProp<ViewStyle>;
+  showLevelBadge?: boolean;
 }
 
 const DEPTH = 4;
@@ -82,6 +83,7 @@ export const TileButton = ({
   onPress,
   onLongPress,
   style,
+  showLevelBadge = true,
 }: TileButtonProps) => {
   const pressable = isPressableState(state);
   const prevState = useRef(state);
@@ -233,11 +235,13 @@ export const TileButton = ({
       >
         <View style={[styles.content, { opacity: contentOpacity }]}>
           {/* Level badge - top right corner */}
-          <View style={styles.levelBadge}>
-            <GameText variant="caption" style={styles.badgeText}>
-              LV{level}
-            </GameText>
-          </View>
+          {showLevelBadge && (
+            <View style={styles.levelBadge}>
+              <GameText variant="caption" style={styles.badgeText}>
+                LV{level}
+              </GameText>
+            </View>
+          )}
 
           {/* Center: Icon (or checkmark if used) */}
           <View style={styles.iconContainer}>{renderIcon()}</View>

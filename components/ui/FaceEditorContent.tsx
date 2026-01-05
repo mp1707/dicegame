@@ -139,6 +139,7 @@ const AnimatedFaceTile: React.FC<AnimatedFaceTileProps> = ({
         state={state}
         onPress={onPress}
         style={styles.tile}
+        showLevelBadge={false}
       />
     </Animated.View>
   );
