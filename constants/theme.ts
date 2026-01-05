@@ -27,6 +27,10 @@ export const COLORS = {
   coral: "#FF5A7A", // Strike / Cancel / Danger / Locked
   mint: "#6CFFB8", // Confirm / Success / Buy
 
+  // Dice Enhancement Colors (Pip upgrades)
+  upgradePoints: "#3B9EFF", // Bright blue for +10 points pips
+  upgradeMult: "#FF4D6D", // Clean red for +1 mult pips
+
   // Specific usages
   feltGreen: "#2FB67A", // The "Table" felt color (if used)
   shadow: "#1A1528", // Deep purple shadow
@@ -75,6 +79,9 @@ export const COLORS = {
     mintGlow: "rgba(108, 255, 184, 0.35)",
     // Glow overlays (for celebratory effects)
     goldGlow: "rgba(255, 200, 87, 0.4)",
+    // Dice enhancement overlays
+    upgradePointsGlow: "rgba(59, 158, 255, 0.4)",
+    upgradeMultGlow: "rgba(255, 77, 109, 0.4)",
     // Tile-specific overlays
     cyanGlowStrong: "rgba(77, 238, 234, 0.22)", // Active halo effect
     goldStamp: "rgba(255, 200, 87, 0.20)", // Used tile stamp overlay
@@ -88,6 +95,9 @@ export const COLORS = {
     mint: "rgba(108, 255, 184, 0.4)",
     mintStrong: "rgba(108, 255, 184, 0.6)",
     black: "rgba(0, 0, 0, 0.6)",
+    // Dice enhancement shadows
+    upgradePoints: "rgba(59, 158, 255, 0.5)",
+    upgradeMult: "rgba(255, 77, 109, 0.5)",
   },
 
   // Lock outline (screen-space stroke on locked dice)
@@ -580,6 +590,19 @@ export const ANIMATION = {
     // Multi-dice dampening
     maxAlpha: 0.9,
     multiDiceAmplitudeReduction: 0.3, // 30% reduction for 3+ dice
+  },
+
+  // Dice editor (enhancement selection modal)
+  diceEditor: {
+    panelSlideIn: { damping: 22, stiffness: 280 }, // Modal entrance spring
+    dieStagger: 70, // Between dice tile entrances
+    dieEntrance: 180, // Individual die entrance duration
+    selectionPulse: 200, // Die selection pulse duration
+    screenTransition: 250, // A→B screen transition
+    faceSnapHaptic: true, // Enable haptic on face snap
+    pipPopScale: 1.15, // Pip upgrade pop scale
+    pipGlowDuration: 280, // Pip glow pulse duration
+    successDelay: 550, // Hold after successful upgrade before close
   },
 } as const;
 

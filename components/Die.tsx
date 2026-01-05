@@ -5,6 +5,7 @@ import { ThreeEvent, useFrame } from "@react-three/fiber";
 import { RoundedBox } from "@react-three/drei";
 import { COLORS, ANIMATION } from "../constants/theme";
 import { DieOutline } from "./DieOutline";
+import { PipState, DieEnhancement } from "../utils/gameCore";
 
 // Standard D6 Face Normals
 const FACE_NORMALS = [
@@ -66,25 +67,43 @@ const DieFace = ({
   rotation,
   position,
   opacity,
+  pipStates = [],
 }: {
   faceValue: number;
   rotation: [number, number, number];
   position: [number, number, number];
   opacity: number;
+  pipStates?: PipState[];
 }) => {
   const pips = PIP_POSITIONS[faceValue] || [];
 
   return (
     <group rotation={rotation} position={position}>
-      {pips.map((pipPos, i) => (
-        <mesh
-          key={i}
-          position={[pipPos[0], pipPos[1], 0.01]}
-          geometry={SHARED_PIP_GEOMETRY}
-        >
-          <meshBasicMaterial color="black" transparent opacity={opacity} />
-        </mesh>
-      ))}
+      {pips.map((pipPos, i) => {
+        const state = pipStates[i] || "none";
+        const isEnhanced = state !== "none";
+        const color = isEnhanced
+          ? state === "points"
+            ? COLORS.upgradePoints
+            : COLORS.upgradeMult
+          : "black";
+
+        return (
+          <mesh
+            key={i}
+            position={[pipPos[0], pipPos[1], 0.01]}
+            geometry={SHARED_PIP_GEOMETRY}
+          >
+            <meshStandardMaterial
+              color={color}
+              transparent
+              opacity={opacity}
+              emissive={isEnhanced ? color : undefined}
+              emissiveIntensity={isEnhanced ? 0.5 : 0}
+            />
+          </mesh>
+        );
+      })}
     </group>
   );
 };
@@ -105,6 +124,8 @@ interface DieProps {
   isRevealActive: boolean;
   isWinAnimating?: boolean; // Optional to avoid breaking other usages if any
   lockedDiceCount: number;
+  // Dice enhancement state (optional for backwards compatibility)
+  dieEnhancement?: DieEnhancement;
 }
 
 export const Die = ({
@@ -123,6 +144,7 @@ export const Die = ({
   isRevealActive,
   isWinAnimating,
   lockedDiceCount,
+  dieEnhancement,
 }: DieProps & { onWake: (index: number) => void }) => {
   const rigidBody = useRef<RapierRigidBody>(null);
   const prevRollTrigger = useRef(rollTrigger);
@@ -672,6 +694,7 @@ export const Die = ({
           rotation={[0, Math.PI / 2, 0]}
           position={[FACE_OFFSET, 0, 0]}
           opacity={pipOpacity}
+          pipStates={dieEnhancement?.faces[0]}
         />
 
         {/* Face 6 - Left (-X) */}
@@ -680,6 +703,7 @@ export const Die = ({
           rotation={[0, -Math.PI / 2, 0]}
           position={[-FACE_OFFSET, 0, 0]}
           opacity={pipOpacity}
+          pipStates={dieEnhancement?.faces[5]}
         />
 
         {/* Face 3 - Top (+Y) */}
@@ -688,6 +712,7 @@ export const Die = ({
           rotation={[-Math.PI / 2, 0, 0]}
           position={[0, FACE_OFFSET, 0]}
           opacity={pipOpacity}
+          pipStates={dieEnhancement?.faces[2]}
         />
 
         {/* Face 4 - Bottom (-Y) */}
@@ -696,6 +721,7 @@ export const Die = ({
           rotation={[Math.PI / 2, 0, 0]}
           position={[0, -FACE_OFFSET, 0]}
           opacity={pipOpacity}
+          pipStates={dieEnhancement?.faces[3]}
         />
 
         {/* Face 2 - Front (+Z) */}
@@ -704,6 +730,7 @@ export const Die = ({
           rotation={[0, 0, 0]}
           position={[0, 0, FACE_OFFSET]}
           opacity={pipOpacity}
+          pipStates={dieEnhancement?.faces[1]}
         />
 
         {/* Face 5 - Back (-Z) */}
@@ -712,6 +739,7 @@ export const Die = ({
           rotation={[0, Math.PI, 0]}
           position={[0, 0, -FACE_OFFSET]}
           opacity={pipOpacity}
+          pipStates={dieEnhancement?.faces[4]}
         />
 
         {/* Lock outline (purple stroke) */}

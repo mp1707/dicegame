@@ -12,6 +12,14 @@ import {
   getRandomUpgradeOptions,
   getUpgradeCost,
   ScoringBreakdown,
+  // Dice enhancement imports
+  DieEnhancement,
+  DiceUpgradeType,
+  getInitialDiceEnhancements,
+  getDiceUpgradeCost,
+  applyDiceEnhancement,
+  hasAnyEnhanceableDie,
+  DICE_UPGRADE_CONFIG,
 } from "../utils/gameCore";
 import { CATEGORIES } from "../utils/yahtzeeScoring";
 
@@ -42,6 +50,7 @@ interface GameState {
   currentLevelIndex: number; // 0-7
   money: number;
   handLevels: Record<HandId, number>;
+  diceEnhancements: DieEnhancement[]; // 5 dice with pip upgrades
 
   // Level state (resets each level)
   levelScore: number;
@@ -74,6 +83,13 @@ interface GameState {
 
   // Shop state
   upgradeOptions: HandId[];
+  shopDiceUpgradeType: DiceUpgradeType | null; // Which dice upgrade is available in shop
+
+  // Dice editor state
+  diceEditorOpen: boolean;
+  pendingUpgradeType: DiceUpgradeType | null;
+  selectedEditorDie: number | null; // 0-4
+  selectedEditorFace: number | null; // 1-6
 
   // Actions
   startNewRun: () => void;
@@ -101,6 +117,13 @@ interface GameState {
   pickUpgradeHand: (handId: HandId) => void;
   closeShopNextLevel: () => void;
 
+  // Dice editor actions
+  openDiceEditor: (type: DiceUpgradeType) => void;
+  closeDiceEditor: () => void;
+  selectEditorDie: (index: number) => void;
+  selectEditorFace: (face: number) => void;
+  applyDiceUpgrade: () => void;
+
   // Utility
   toggleOverview: () => void;
   forceWin: () => void;
@@ -115,6 +138,7 @@ const getInitialRunState = () => ({
   currentLevelIndex: 0,
   money: 0,
   handLevels: getInitialHandLevels(),
+  diceEnhancements: getInitialDiceEnhancements(),
 });
 
 const getInitialLevelState = (levelIndex: number) => ({
@@ -147,6 +171,11 @@ const getInitialUIState = () => ({
   overviewVisible: false,
   revealState: null as RevealState | null,
   upgradeOptions: [] as HandId[],
+  shopDiceUpgradeType: null as DiceUpgradeType | null,
+  diceEditorOpen: false,
+  pendingUpgradeType: null as DiceUpgradeType | null,
+  selectedEditorDie: null as number | null,
+  selectedEditorFace: null as number | null,
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -403,8 +432,14 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   openShop: () => {
     // Calculate and apply rewards before entering shop
-    const { money, levelScore, levelGoal, handsRemaining, rollsUsedThisLevel } =
-      get();
+    const {
+      money,
+      levelScore,
+      levelGoal,
+      handsRemaining,
+      rollsUsedThisLevel,
+      diceEnhancements,
+    } = get();
 
     const rewards = calculateRewards({
       currentMoney: money,
@@ -414,9 +449,18 @@ export const useGameStore = create<GameState>((set, get) => ({
       rollsUsedThisLevel,
     });
 
+    // Determine dice upgrade type for shop (80/20 rarity)
+    // Only spawn if player has at least one enhanceable face
+    let shopDiceUpgrade: DiceUpgradeType | null = null;
+    if (hasAnyEnhanceableDie(diceEnhancements)) {
+      shopDiceUpgrade =
+        Math.random() < DICE_UPGRADE_CONFIG.rarityPoints ? "points" : "mult";
+    }
+
     set({
       money: rewards.newMoney,
       phase: "SHOP_MAIN",
+      shopDiceUpgradeType: shopDiceUpgrade,
     });
   },
 
@@ -458,6 +502,83 @@ export const useGameStore = create<GameState>((set, get) => ({
       // Start next level
       get().startLevel(nextLevelIndex);
     }
+  },
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Dice Editor Actions
+  // ───────────────────────────────────────────────────────────────────────────
+
+  openDiceEditor: (type: DiceUpgradeType) => {
+    set({
+      diceEditorOpen: true,
+      pendingUpgradeType: type,
+      selectedEditorDie: null,
+      selectedEditorFace: null,
+    });
+  },
+
+  closeDiceEditor: () => {
+    set({
+      diceEditorOpen: false,
+      pendingUpgradeType: null,
+      selectedEditorDie: null,
+      selectedEditorFace: null,
+    });
+  },
+
+  selectEditorDie: (index: number) => {
+    set({
+      selectedEditorDie: index,
+      selectedEditorFace: null, // Reset face when selecting new die
+    });
+  },
+
+  selectEditorFace: (face: number) => {
+    set({ selectedEditorFace: face });
+  },
+
+  applyDiceUpgrade: () => {
+    const {
+      money,
+      pendingUpgradeType,
+      selectedEditorDie,
+      selectedEditorFace,
+      diceEnhancements,
+    } = get();
+
+    // Validate state
+    if (
+      pendingUpgradeType === null ||
+      selectedEditorDie === null ||
+      selectedEditorFace === null
+    ) {
+      return;
+    }
+
+    // Check affordability
+    const cost = getDiceUpgradeCost(pendingUpgradeType);
+    if (money < cost) {
+      return;
+    }
+
+    // Apply the enhancement
+    const newEnhancements = applyDiceEnhancement(
+      selectedEditorDie,
+      selectedEditorFace,
+      pendingUpgradeType,
+      diceEnhancements
+    );
+
+    set({
+      money: money - cost,
+      diceEnhancements: newEnhancements,
+      diceEditorOpen: false,
+      pendingUpgradeType: null,
+      selectedEditorDie: null,
+      selectedEditorFace: null,
+      // Mark the shop item as purchased
+      shopDiceUpgradeType: null,
+    });
   },
 
   // ───────────────────────────────────────────────────────────────────────────
@@ -512,4 +633,4 @@ export const useRewardBreakdown = () => {
 };
 
 // Re-export types for convenience
-export type { HandId };
+export type { HandId, DiceUpgradeType };

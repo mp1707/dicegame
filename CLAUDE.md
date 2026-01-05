@@ -85,16 +85,19 @@ dice-game/
 ├── constants/theme.ts       # Colors, typography, spacing, animation
 ├── utils/
 │   ├── yahtzeeScoring.ts    # Hand validation logic
-│   └── gameCore.ts          # Scoring, levels, rewards (pure TS)
-├── store/gameStore.ts       # Zustand state (run/level/hand model)
+│   └── gameCore.ts          # Scoring, levels, rewards, dice enhancements (pure TS)
+├── store/gameStore.ts       # Zustand state (run/level/hand/dice model)
 ├── components/
-│   ├── Die.tsx              # 3D die with tap-to-lock
+│   ├── Die.tsx              # 3D die with tap-to-lock + colored pips
 │   ├── DiceTray.tsx         # 3D scene with physics
 │   ├── ui/
 │   │   ├── PlayConsole.tsx  # Unified container: HUDHeader + TrayWindow + ScoreLip
 │   │   ├── ScoreLip.tsx     # Integrated score readout strip (inside PlayConsole)
 │   │   ├── FooterControls.tsx
-│   │   └── CashoutResultList.tsx # Inline reward breakdown (replaces ScoringGrid at LEVEL_RESULT)
+│   │   ├── CashoutResultList.tsx # Inline reward breakdown
+│   │   ├── ShopContent.tsx  # Shop grid with upgrade items
+│   │   ├── DiceEditorModal.tsx # Fullscreen dice enhancement flow
+│   │   └── DiePreview3D.tsx # 3D die viewer for face selection
 │   ├── ui-kit/              # Material layer system
 │   │   ├── Surface.tsx      # Base container (panel, inset, chip, overlay)
 │   │   ├── HUDCard.tsx      # Panel wrapper with optional header
@@ -126,6 +129,7 @@ Key state properties:
 
 - **Run state** (persists across levels):
   - `currentLevelIndex` (0-7), `money`, `handLevels` (Record<HandId, number>)
+  - `diceEnhancements` (DieEnhancement[5]) - pip upgrade states for all 5 dice
 - **Level state** (resets each level):
   - `levelScore`, `levelGoal`, `handsRemaining` (4→0), `usedHandsThisLevel`
 - **Hand attempt state** (resets each hand):
@@ -165,6 +169,44 @@ On level complete:
 - Tier 2 bonus (≥150% goal): $10
 
 Hand upgrade cost: $6 + current hand level
+
+### Dice Enhancement System
+
+Players can purchase pip upgrades from the shop to add permanent scoring bonuses to specific die faces.
+
+**Data Model** (`utils/gameCore.ts`):
+
+```typescript
+type PipState = "none" | "points" | "mult";
+type DiceUpgradeType = "points" | "mult";
+
+interface DieEnhancement {
+  faces: PipState[][]; // 6 faces, each with variable pip count (1-6)
+}
+```
+
+**Shop Integration**:
+
+- Item spawns in SHOP_MAIN with 80% chance for Points (+10 pts/pip), 20% for Mult (+1 mult/pip)
+- Only spawns if at least one pip across all dice is enhanceable
+- Costs: Points = $8, Mult = $14
+
+**Dice Editor Flow** (`DiceEditorModal.tsx`):
+
+1. **Screen A (Die Picker)**: 2+3 grid of dice, tap to select, "WÜRFEL VERBESSERN" CTA
+2. **Screen B (Face Picker)**: 3D die with drag-to-rotate, snap-to-face, "SEITE VERBESSERN" CTA
+
+**Colored Pip Rendering** (`Die.tsx`):
+
+- Enhanced pips render in blue (`COLORS.upgradePoints`) or red (`COLORS.upgradeMult`)
+- Emissive material with 0.5 intensity for glow effect
+
+**Scoring Helpers**:
+
+```typescript
+bonusPointsForDieFace(dieIndex, faceValue, enhancements); // count × 10
+bonusMultForDieFace(dieIndex, faceValue, enhancements); // count × 1
+```
 
 ### Dice Locking Pattern
 
@@ -537,6 +579,10 @@ COLORS.cyan; // #4DEEEA - Selection, info, neutral
 COLORS.gold; // #FFC857 - Goals, progress, money
 COLORS.coral; // #FF5A7A - Danger, cancel, locked
 COLORS.mint; // #6CFFB8 - Success, confirm, buy
+
+// Dice enhancement colors
+COLORS.upgradePoints; // #3B9EFF - Blue pip (+10 points)
+COLORS.upgradeMult; // #FF4D6D - Red pip (+1 mult)
 ```
 
 ### Overlay Colors
@@ -668,6 +714,15 @@ ANIMATION.shop.gridStagger; // 60ms - Between grid items
 ANIMATION.shop.itemAnimDuration; // 210ms - Per-item animation
 ANIMATION.shop.purchaseFlashDuration; // 180ms - Mint outline flash
 ANIMATION.shop.shimmerInterval; // 4000ms - "SOON" shimmer interval
+
+// Dice editor (enhancement selection modal)
+ANIMATION.diceEditor.panelSlideIn; // { damping: 22, stiffness: 280 } - Modal entrance
+ANIMATION.diceEditor.dieStagger; // 70ms - Between dice tile entrances
+ANIMATION.diceEditor.dieEntrance; // 180ms - Individual die entrance
+ANIMATION.diceEditor.selectionPulse; // 200ms - Die selection pulse
+ANIMATION.diceEditor.screenTransition; // 250ms - A→B screen transition
+ANIMATION.diceEditor.pipPopScale; // 1.15 - Pip upgrade pop scale
+ANIMATION.diceEditor.successDelay; // 550ms - Hold after upgrade before close
 
 // Transition timing
 ANIMATION.transition.incomingDelay; // 40ms - Delay before incoming panel

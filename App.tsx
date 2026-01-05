@@ -10,6 +10,7 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { useFonts } from "expo-font";
 import { DiceTray } from "./components/DiceTray";
 import { OverviewModal } from "./components/modals/OverviewModal";
+import { DiceEditorModal } from "./components/ui/DiceEditorModal";
 import { PhaseDeck } from "./components/ui-kit/flow";
 import { useGameStore } from "./store/gameStore";
 import { COLORS, SPACING } from "./constants/theme";
@@ -108,6 +109,7 @@ const AppContent: React.FC = () => {
 
           {/* Modals */}
           <OverviewModal visible={overviewVisible} onClose={toggleOverview} />
+          <DiceEditorModal />
         </SafeAreaView>
       </View>
 

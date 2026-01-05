@@ -210,6 +210,7 @@ export const DiceTray = ({
   const selectedHandId = useGameStore((state) => state.selectedHandId);
   const revealState = useGameStore((state) => state.revealState);
   const isWinAnimating = useGameStore((state) => state.isWinAnimating);
+  const diceEnhancements = useGameStore((state) => state.diceEnhancements);
 
   // Determine contributing indices
   const contributingIndices =
@@ -441,6 +442,7 @@ export const DiceTray = ({
                 isRevealActive={!!revealState?.active}
                 isWinAnimating={isWinAnimating}
                 lockedDiceCount={lockedDiceCount}
+                dieEnhancement={diceEnhancements[i]}
               />
             ))}
           </Physics>
