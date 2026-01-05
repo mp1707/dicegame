@@ -145,9 +145,7 @@ export function getContributingDiceIndices(
 ): number[] {
   if (isUpperHand(handId)) {
     const target = UPPER_HAND_TARGET[handId];
-    return dice
-      .map((d, i) => (d === target ? i : -1))
-      .filter((i) => i !== -1);
+    return dice.map((d, i) => (d === target ? i : -1)).filter((i) => i !== -1);
   }
   // Lower section: all dice contribute
   return [0, 1, 2, 3, 4];
@@ -319,7 +317,7 @@ export function getInitialHandLevels(): Record<HandId, number> {
  * Get 3 random unique hands for upgrade selection
  */
 export function getRandomUpgradeOptions(): HandId[] {
-  const allHands = CATEGORIES.map((c) => c.id);
+  const allHands = CATEGORIES.map((c) => c.id).filter((id) => id !== "chance");
   const shuffled = [...allHands].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, 3);
 }

@@ -77,7 +77,8 @@ export const FooterControls = () => {
     const shouldGlow =
       (prevPhase === "LEVEL_PLAY" && phase === "LEVEL_RESULT") ||
       (prevPhase === "LEVEL_RESULT" && phase === "SHOP_MAIN") ||
-      (prevPhase === "SHOP_PICK_UPGRADE" && phase === "SHOP_MAIN");
+      (prevPhase === "SHOP_PICK_UPGRADE" && phase === "SHOP_MAIN") ||
+      (prevPhase === "SHOP_MAIN" && phase === "SHOP_PICK_UPGRADE");
 
     if (shouldGlow) {
       const glowDuration = ANIMATION.transition.ctaGlowPulseDuration;
@@ -168,9 +169,20 @@ export const FooterControls = () => {
       );
     }
 
-    // SHOP_PICK_UPGRADE phase - no footer CTA (selection in content)
+    // SHOP_PICK_UPGRADE phase - show BACK button
     if (phase === "SHOP_PICK_UPGRADE") {
-      return null;
+      return (
+        <PrimaryButton
+          onPress={() => {
+            useGameStore.setState({ phase: "SHOP_MAIN" });
+            triggerSelectionHaptic();
+          }}
+          label="ZURÜCK"
+          variant="cyan"
+          compact
+          style={buttonStyle}
+        />
+      );
     }
 
     // LEVEL_RESULT phase - show SHOP button

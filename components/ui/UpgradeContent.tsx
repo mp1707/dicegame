@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { View, StyleSheet, ScrollView, Pressable, Image } from "react-native";
+import { View, StyleSheet, Image } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -7,15 +7,12 @@ import Animated, {
   withDelay,
   withSpring,
   withSequence,
-  Easing,
 } from "react-native-reanimated";
-import { CategoryIcon } from "../ui/CategoryIcon";
-import { GameText, PrimaryButton } from "../shared";
-import { Chip } from "../ui-kit";
+import { GameText, TileButton, TileButtonState } from "../shared";
 import { COLORS, SPACING, DIMENSIONS, ANIMATION } from "../../constants/theme";
 import { useGameStore, HandId } from "../../store/gameStore";
-import { CATEGORIES } from "../../utils/yahtzeeScoring";
 import { getUpgradeCost } from "../../utils/gameCore";
+import { CATEGORIES } from "../../utils/yahtzeeScoring";
 import {
   triggerSelectionHaptic,
   triggerImpactMedium,
@@ -24,7 +21,7 @@ import {
 // Stagger delay between cards
 const CARD_STAGGER = 90;
 
-interface UpgradeCardProps {
+interface UpgradeTileProps {
   handId: HandId;
   level: number;
   cost: number;
@@ -35,7 +32,23 @@ interface UpgradeCardProps {
   isOtherSelected: boolean;
 }
 
-const UpgradeCard: React.FC<UpgradeCardProps> = ({
+// Icon mapping matching ScoringGrid
+const HAND_ICONS: Partial<Record<HandId, any>> = {
+  ones: require("../../assets/icons/1die.png"),
+  twos: require("../../assets/icons/2die.png"),
+  threes: require("../../assets/icons/3die.png"),
+  fours: require("../../assets/icons/4die.png"),
+  fives: require("../../assets/icons/5die.png"),
+  sixes: require("../../assets/icons/6die.png"),
+  threeOfKind: require("../../assets/icons/3x.png"),
+  fourOfKind: require("../../assets/icons/4x.png"),
+  fullHouse: require("../../assets/icons/fullHouse.png"),
+  smallStraight: require("../../assets/icons/smStraight.png"),
+  largeStraight: require("../../assets/icons/lgStraight.png"),
+  yahtzee: require("../../assets/icons/5x.png"),
+};
+
+const UpgradeTile: React.FC<UpgradeTileProps> = ({
   handId,
   level,
   cost,
@@ -47,127 +60,87 @@ const UpgradeCard: React.FC<UpgradeCardProps> = ({
 }) => {
   const categoryDef = CATEGORIES.find((c) => c.id === handId);
   const label = categoryDef?.labelDe || handId;
+  const iconSource = HAND_ICONS[handId];
 
-  // Entrance animation
-  const translateX = useSharedValue(-20);
+  // Animation values
+  const scale = useSharedValue(0.9);
   const opacity = useSharedValue(0);
-  const scale = useSharedValue(1);
-
-  // Selection state
-  const [isPressed, setIsPressed] = useState(false);
 
   useEffect(() => {
-    // Cascade entrance
-    translateX.value = withDelay(
+    // Entrance
+    scale.value = withDelay(
       animationDelay,
-      withTiming(0, { duration: 200, easing: Easing.out(Easing.quad) })
+      withSpring(1, { damping: 12, stiffness: 100 })
     );
     opacity.value = withDelay(animationDelay, withTiming(1, { duration: 200 }));
   }, [animationDelay]);
 
   useEffect(() => {
-    // Selection animation
-    if (isSelected) {
-      // Chosen card: scale tick
-      scale.value = withSequence(
-        withTiming(1.02, { duration: 80 }),
-        withSpring(1, ANIMATION.springs.rowLand)
-      );
-    } else if (isOtherSelected) {
-      // Other cards: fade to 35%
-      opacity.value = withTiming(0.35, { duration: 140 });
+    // Selection effects on the container
+    if (isOtherSelected) {
+      opacity.value = withTiming(0.4, { duration: 200 });
+      scale.value = withTiming(0.95, { duration: 200 });
+    } else {
+      // Reset if deselecting (optional, but good for safety)
+      if (!isOtherSelected && opacity.value < 1) {
+        opacity.value = withTiming(1, { duration: 200 });
+        scale.value = withTiming(1, { duration: 200 });
+      }
     }
-  }, [isSelected, isOtherSelected]);
+  }, [isOtherSelected]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ scale: scale.value }],
+    flex: 1,
+  }));
 
   const handlePress = () => {
     if (!canAfford) {
       triggerSelectionHaptic();
       return;
     }
-
-    // Visual feedback before action
-    scale.value = withSequence(
-      withTiming(1.02, { duration: 60 }),
-      withSpring(1, ANIMATION.springs.celebration)
-    );
-
     triggerImpactMedium();
     onPress();
   };
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [
-      { translateX: translateX.value },
-      { scale: scale.value },
-    ],
-  }));
+  // Map internal state to TileButtonState
+  let tileState: TileButtonState = "default";
+  if (isSelected) tileState = "selected";
+  else if (canAfford) tileState = "active";
+  else tileState = "invalid";
 
   return (
     <Animated.View style={animatedStyle}>
-      <Pressable
-        onPressIn={() => setIsPressed(true)}
-        onPressOut={() => setIsPressed(false)}
-        onPress={handlePress}
-        style={[
-          styles.card,
-          !canAfford && styles.cardDisabled,
-          isPressed && canAfford && styles.cardPressed,
-        ]}
-      >
-        <View style={styles.cardContent}>
-          {/* Icon - matches ScoringGrid style */}
-          <View style={styles.iconContainer}>
-            <CategoryIcon
-              categoryId={handId}
-              size={DIMENSIONS.iconSize.md}
-              color={canAfford ? COLORS.cyan : COLORS.textMuted}
-            />
-          </View>
+      <View style={{ flex: 1, alignItems: "center" }}>
+        {/* Reused TileButton */}
+        <TileButton
+          iconSource={iconSource}
+          labelLine1={label}
+          level={level + 1}
+          state={tileState}
+          onPress={handlePress}
+          style={styles.tileButton}
+        />
 
-          {/* Hand name + target level */}
-          <View style={styles.cardInfo}>
-            <GameText
-              variant="bodySmall"
-              color={canAfford ? COLORS.text : COLORS.textMuted}
-              numberOfLines={1}
-            >
-              {label}
-            </GameText>
-            <Chip
-              label={`LV ${level + 1}`}
-              color={canAfford ? "cyan" : "muted"}
-              size="sm"
-            />
-          </View>
-
-          {/* Cost badge with coin icon */}
-          <View style={[styles.costBadge, !canAfford && styles.costBadgeMuted]}>
-            <Image
-              source={require("../../assets/icons/coin.png")}
-              style={[styles.coinIcon, !canAfford && styles.coinIconMuted]}
-            />
-            <GameText
-              variant="bodySmall"
-              color={canAfford ? COLORS.gold : COLORS.textMuted}
-            >
-              {cost}
-            </GameText>
-          </View>
+        {/* Cost Pill - Outside/Below Tile */}
+        <View style={[styles.costPill, !canAfford && styles.costPillMuted]}>
+          <Image
+            source={require("../../assets/icons/coin.png")}
+            style={[styles.coinIcon, !canAfford && { opacity: 0.5 }]}
+          />
+          <GameText
+            variant="bodySmall"
+            color={canAfford ? COLORS.gold : COLORS.textMuted}
+          >
+            {cost}
+          </GameText>
         </View>
-      </Pressable>
+      </View>
     </Animated.View>
   );
 };
 
-/**
- * UpgradeContent - Enhanced upgrade picker with cascade animations
- *
- * Features:
- * - Cascade entrance animation (90ms stagger)
- * - Pressed state with cyan glow
- * - Selection feedback: chosen scales, others fade
- */
 export const UpgradeContent: React.FC = () => {
   const money = useGameStore((s) => s.money);
   const handLevels = useGameStore((s) => s.handLevels);
@@ -191,19 +164,16 @@ export const UpgradeContent: React.FC = () => {
     transform: [{ translateY: headerTranslateY.value }],
   }));
 
-  const handleBack = () => {
-    useGameStore.setState({ phase: "SHOP_MAIN" });
-    triggerSelectionHaptic();
-  };
-
-  const handleSelectHand = useCallback((handId: HandId) => {
-    setSelectedHandId(handId);
-
-    // Delay the actual action to show animation
-    setTimeout(() => {
-      pickUpgradeHand(handId);
-    }, 200);
-  }, [pickUpgradeHand]);
+  const handleSelectHand = useCallback(
+    (handId: HandId) => {
+      setSelectedHandId(handId);
+      // Delay the actual action to show animation
+      setTimeout(() => {
+        pickUpgradeHand(handId);
+      }, 400); // 400ms to allow shine animation
+    },
+    [pickUpgradeHand]
+  );
 
   return (
     <View style={styles.container}>
@@ -214,19 +184,15 @@ export const UpgradeContent: React.FC = () => {
         </GameText>
       </Animated.View>
 
-      {/* Upgrade options */}
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.optionsContainer}
-        showsVerticalScrollIndicator={false}
-      >
+      {/* Horizontal Upgrade Tiles */}
+      <View style={styles.optionsContainer}>
         {upgradeOptions.map((handId, index) => {
           const currentLevel = handLevels[handId];
           const cost = getUpgradeCost(currentLevel);
           const canAfford = money >= cost;
 
           return (
-            <UpgradeCard
+            <UpgradeTile
               key={handId}
               handId={handId}
               level={currentLevel}
@@ -235,19 +201,12 @@ export const UpgradeContent: React.FC = () => {
               onPress={() => handleSelectHand(handId)}
               animationDelay={100 + index * CARD_STAGGER}
               isSelected={selectedHandId === handId}
-              isOtherSelected={selectedHandId !== null && selectedHandId !== handId}
+              isOtherSelected={
+                selectedHandId !== null && selectedHandId !== handId
+              }
             />
           );
         })}
-      </ScrollView>
-
-      {/* Back CTA */}
-      <View style={styles.backButtonContainer}>
-        <PrimaryButton
-          label="ZURÜCK"
-          variant="coral"
-          onPress={handleBack}
-        />
       </View>
     </View>
   );
@@ -257,74 +216,44 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: SPACING.screenPadding,
+    justifyContent: "center", // Vertically center the whole content
+    paddingBottom: SPACING.xl, // Push up slightly
   },
   header: {
     alignItems: "center",
     justifyContent: "center",
     marginBottom: SPACING.md,
-  },
-  scrollView: {
-    flex: 1,
+    height: 30,
   },
   optionsContainer: {
-    gap: SPACING.sm,
+    flexDirection: "row",
+    gap: SPACING.xs, // Reduced gap
+    height: 120,
+    alignItems: "flex-start",
   },
-  backButtonContainer: {
-    marginTop: SPACING.md,
+
+  // UpgradeTile Styles
+  tileButton: {
+    width: "100%",
+    aspectRatio: 1,
+    maxHeight: 90,
   },
-  card: {
-    height: 70,
-    borderRadius: DIMENSIONS.borderRadiusSmall,
-    backgroundColor: COLORS.surface,
-    borderWidth: DIMENSIONS.borderWidthThin,
-    borderColor: COLORS.cyan,
-    borderTopColor: COLORS.overlays.whiteStrong,
-    borderBottomWidth: DIMENSIONS.borderWidthThick,
-    borderBottomColor: COLORS.overlays.blackMedium,
-  },
-  cardDisabled: {
-    opacity: 0.6,
-    borderColor: COLORS.textMuted,
-    backgroundColor: COLORS.bg,
-  },
-  cardPressed: {
-    borderColor: COLORS.cyan,
-    shadowColor: COLORS.cyan,
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-  },
-  cardContent: {
-    flex: 1,
+  costPill: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: SPACING.md,
-    gap: SPACING.sm,
+    gap: 3,
+    marginTop: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    backgroundColor: COLORS.overlays.blackSubtle,
   },
-  iconContainer: {
-    width: 36,
-    height: 36,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  cardInfo: {
-    flex: 1,
-    gap: SPACING.xxs,
-  },
-  costBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.xxs,
-  },
-  costBadgeMuted: {
+  costPillMuted: {
     opacity: 0.6,
   },
   coinIcon: {
-    width: 14,
-    height: 14,
+    width: 12,
+    height: 12,
     resizeMode: "contain",
-  },
-  coinIconMuted: {
-    opacity: 0.5,
   },
 });
