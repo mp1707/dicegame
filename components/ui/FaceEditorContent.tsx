@@ -38,27 +38,8 @@ const FACE_ICONS: Record<number, ImageSourcePropType> = {
 export const FaceEditorContent: React.FC = () => {
   const selectedEditorDie = useGameStore((s) => s.selectedEditorDie);
   const selectedEditorFace = useGameStore((s) => s.selectedEditorFace);
-  const diceEnhancements = useGameStore((s) => s.diceEnhancements);
-  const pendingUpgradeType = useGameStore((s) => s.pendingUpgradeType);
   const selectEditorFace = useGameStore((s) => s.selectEditorFace);
-
-  // Header animations
-  const headerOpacity = useSharedValue(0);
-  const headerTranslateY = useSharedValue(6);
-
-  useEffect(() => {
-    headerOpacity.value = withTiming(1, { duration: 200 });
-    headerTranslateY.value = withTiming(0, {
-      duration: 200,
-      easing: Easing.out(Easing.quad),
-    });
-  }, []);
-
-  const headerAnimStyle = useAnimatedStyle(() => ({
-    opacity: headerOpacity.value,
-    transform: [{ translateY: headerTranslateY.value }],
-  }));
-
+  const diceEnhancements = useGameStore((s) => s.diceEnhancements);
   // Get state for a face tile
   const getFaceState = (face: number): TileButtonState => {
     if (selectedEditorFace === face) return "selected";
@@ -71,12 +52,6 @@ export const FaceEditorContent: React.FC = () => {
     return "active";
   };
 
-  // Upgrade type display
-  const upgradeLabel =
-    pendingUpgradeType === "points" ? "+10 Punkte/Pip" : "+1 Mult/Pip";
-  const upgradeColor =
-    pendingUpgradeType === "points" ? COLORS.upgradePoints : COLORS.upgradeMult;
-
   // Calculate delays for grid items (2 rows x 3 cols)
   const getItemDelay = (row: number, col: number) => {
     const baseDelay = ANIMATION.shop.headerDelay + 60;
@@ -86,18 +61,6 @@ export const FaceEditorContent: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Subtitle showing selected die + chip */}
-      <Animated.View style={[styles.subtitleContainer, headerAnimStyle]}>
-        <GameText variant="bodySmall" color={COLORS.textMuted}>
-          Würfel {selectedEditorDie !== null ? selectedEditorDie + 1 : "?"}
-        </GameText>
-        <Chip
-          label={upgradeLabel}
-          color={pendingUpgradeType === "points" ? "cyan" : "coral"}
-          size="sm"
-        />
-      </Animated.View>
-
       {/* Face grid - 2 rows x 3 cols */}
       <View style={styles.gridContainer}>
         {/* Row 1: Faces 1-3 */}
@@ -185,20 +148,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: SPACING.screenPadding,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: SPACING.sm,
-    marginBottom: SPACING.xs,
-  },
-  subtitleContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: SPACING.sm,
-    marginBottom: SPACING.md,
   },
   gridContainer: {
     flex: 1,

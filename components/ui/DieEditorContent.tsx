@@ -27,25 +27,7 @@ import { hasDieAnyEnhanceableFace } from "../../utils/gameCore";
 export const DieEditorContent: React.FC = () => {
   const selectedEditorDie = useGameStore((s) => s.selectedEditorDie);
   const diceEnhancements = useGameStore((s) => s.diceEnhancements);
-  const pendingUpgradeType = useGameStore((s) => s.pendingUpgradeType);
   const selectEditorDie = useGameStore((s) => s.selectEditorDie);
-
-  // Header animations
-  const headerOpacity = useSharedValue(0);
-  const headerTranslateY = useSharedValue(6);
-
-  useEffect(() => {
-    headerOpacity.value = withTiming(1, { duration: 200 });
-    headerTranslateY.value = withTiming(0, {
-      duration: 200,
-      easing: Easing.out(Easing.quad),
-    });
-  }, []);
-
-  const headerAnimStyle = useAnimatedStyle(() => ({
-    opacity: headerOpacity.value,
-    transform: [{ translateY: headerTranslateY.value }],
-  }));
 
   // Get state for a die tile
   const getDieState = (index: number): TileButtonState => {
@@ -54,36 +36,38 @@ export const DieEditorContent: React.FC = () => {
     return "active";
   };
 
-  // Upgrade type display
-  const upgradeLabel =
-    pendingUpgradeType === "points" ? "+10 Punkte/Pip" : "+1 Mult/Pip";
-  const upgradeColor =
-    pendingUpgradeType === "points" ? COLORS.upgradePoints : COLORS.upgradeMult;
-
   return (
     <View style={styles.container}>
-      {/* Upgrade type chip */}
-      <Animated.View style={[styles.chipContainer, headerAnimStyle]}>
-        <Chip
-          label={upgradeLabel}
-          color={pendingUpgradeType === "points" ? "cyan" : "coral"}
-          size="sm"
-        />
-      </Animated.View>
+      <View style={styles.rowsContainer}>
+        {/* Row 1: Dice 1-3 */}
+        <View style={styles.diceRow}>
+          {[0, 1, 2].map((index) => (
+            <AnimatedDieTile
+              key={index}
+              index={index}
+              state={getDieState(index)}
+              onPress={() => selectEditorDie(index)}
+              delay={
+                ANIMATION.shop.headerDelay + index * ANIMATION.shop.gridStagger
+              }
+            />
+          ))}
+        </View>
 
-      {/* Single row of 5 dice */}
-      <View style={styles.diceRow}>
-        {[0, 1, 2, 3, 4].map((index) => (
-          <AnimatedDieTile
-            key={index}
-            index={index}
-            state={getDieState(index)}
-            onPress={() => selectEditorDie(index)}
-            delay={
-              ANIMATION.shop.headerDelay + index * ANIMATION.shop.gridStagger
-            }
-          />
-        ))}
+        {/* Row 2: Dice 4-5 */}
+        <View style={styles.diceRow}>
+          {[3, 4].map((index) => (
+            <AnimatedDieTile
+              key={index}
+              index={index}
+              state={getDieState(index)}
+              onPress={() => selectEditorDie(index)}
+              delay={
+                ANIMATION.shop.headerDelay + index * ANIMATION.shop.gridStagger
+              }
+            />
+          ))}
+        </View>
       </View>
     </View>
   );
@@ -156,12 +140,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: SPACING.md,
   },
-  diceRow: {
+  rowsContainer: {
     flex: 1,
+    justifyContent: "center",
+    gap: SPACING.lg, // Gap between rows
+    paddingTop: SPACING.md, // Nudge down slightly
+  },
+  diceRow: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    gap: SPACING.sm,
+    gap: SPACING.md, // Wider gap between dice
     paddingHorizontal: SPACING.xs,
   },
   tileWrapper: {

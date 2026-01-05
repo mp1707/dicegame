@@ -422,7 +422,7 @@ export function getValidHands(
 export const REWARD_CONFIG = {
   baseWin: 10,
   perUnusedHand: 2,
-  perUnusedRoll: 1,
+  // Roll reward removed per user request
   upgradeCostBase: 6, // cost = 6 + handLevel
 };
 
@@ -431,8 +431,6 @@ export interface RewardBreakdown {
   baseReward: number;
   unusedHandsCount: number;
   unusedHandsBonus: number;
-  unusedRollsCount: number;
-  unusedRollsBonus: number;
   totalPayout: number;
   newMoney: number;
 }
@@ -449,26 +447,17 @@ export interface RewardParams {
  * Calculate all rewards for completing a level
  */
 export function calculateRewards(params: RewardParams): RewardBreakdown {
-  const { currentMoney, score, goal, handsRemaining, rollsUsedThisLevel } =
-    params;
-
-  // Total possible rolls = MAX_HANDS_PER_LEVEL * MAX_ROLLS_PER_HAND = 12
-  const totalPossibleRolls = MAX_HANDS_PER_LEVEL * MAX_ROLLS_PER_HAND;
-  const unusedRolls = totalPossibleRolls - rollsUsedThisLevel;
+  const { currentMoney, handsRemaining } = params;
 
   const unusedHandsBonus = handsRemaining * REWARD_CONFIG.perUnusedHand;
-  const unusedRollsBonus = unusedRolls * REWARD_CONFIG.perUnusedRoll;
 
-  const totalPayout =
-    REWARD_CONFIG.baseWin + unusedHandsBonus + unusedRollsBonus;
+  const totalPayout = REWARD_CONFIG.baseWin + unusedHandsBonus;
 
   return {
     currentMoney,
     baseReward: REWARD_CONFIG.baseWin,
     unusedHandsCount: handsRemaining,
     unusedHandsBonus,
-    unusedRollsCount: unusedRolls,
-    unusedRollsBonus,
     totalPayout,
     newMoney: currentMoney + totalPayout,
   };

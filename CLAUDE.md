@@ -167,7 +167,6 @@ On level complete:
 
 - Base win: $10
 - Per unused hand: $2
-- Per unused roll: $1
 
 Hand upgrade cost: $6 + current hand level
 

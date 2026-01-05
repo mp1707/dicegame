@@ -5,7 +5,7 @@ import { COLORS, SPACING } from "../../constants/theme";
 
 interface TrayOverlayTitleProps {
   title: string;
-  subtitle?: string;
+  subtitle?: React.ReactNode;
 }
 
 /**
@@ -24,7 +24,7 @@ export const TrayOverlayTitle: React.FC<TrayOverlayTitleProps> = ({
       <GameText variant="displayLarge" color={COLORS.text} style={styles.title}>
         {title}
       </GameText>
-      {subtitle && (
+      {typeof subtitle === "string" ? (
         <GameText
           variant="bodyMedium"
           color={COLORS.text}
@@ -32,6 +32,8 @@ export const TrayOverlayTitle: React.FC<TrayOverlayTitleProps> = ({
         >
           {subtitle}
         </GameText>
+      ) : (
+        <View style={styles.subtitleContainer}>{subtitle}</View>
       )}
     </View>
   );
@@ -55,5 +57,9 @@ const styles = StyleSheet.create({
     textShadowColor: COLORS.shadows.black,
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
+  },
+  subtitleContainer: {
+    marginTop: SPACING.xs,
+    alignItems: "center",
   },
 });

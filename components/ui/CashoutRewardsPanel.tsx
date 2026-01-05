@@ -31,37 +31,13 @@ export const CashoutRewardsPanel: React.FC<CashoutRewardsPanelProps> = ({
 }) => {
   const rewards = useRewardBreakdown();
 
-  // Entrance animation for the whole panel
-  const translateY = useSharedValue(20);
-  const opacity = useSharedValue(0);
-
   useEffect(() => {
-    const { heroPayoutDelay } = ANIMATION.cashout;
-    // Delay to play nicely with tray title animation
-    const delay = heroPayoutDelay + 100;
-
-    translateY.value = withDelay(
-      delay,
-      withTiming(0, {
-        duration: 300,
-        easing: Easing.out(Easing.quad),
-      })
-    );
-    opacity.value = withDelay(delay, withTiming(1, { duration: 300 }));
-
-    // Haptic feedback when list appears
-    setTimeout(() => {
-      triggerLightImpact();
-    }, delay + 50);
+    // Haptic feedback when appearing
+    triggerLightImpact();
   }, []);
 
-  const containerAnimStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    transform: [{ translateY: translateY.value }],
-  }));
-
   return (
-    <Animated.View style={[styles.container, style, containerAnimStyle]}>
+    <View style={[styles.container, style]}>
       <Surface variant="panel" style={styles.panelContent}>
         <View style={styles.listContainer}>
           {/* Base Win */}
@@ -73,19 +49,13 @@ export const CashoutRewardsPanel: React.FC<CashoutRewardsPanelProps> = ({
             value={rewards.unusedHandsBonus}
           />
 
-          {/* Unused Rolls */}
-          <RewardRow
-            label={`Würfe übrig (${rewards.unusedRollsCount})`}
-            value={rewards.unusedRollsBonus}
-          />
-
           <Divider />
 
           {/* Total */}
           <RewardRow label="GESAMT" value={rewards.totalPayout} isTotal />
         </View>
       </Surface>
-    </Animated.View>
+    </View>
   );
 };
 
