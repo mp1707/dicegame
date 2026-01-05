@@ -7,10 +7,9 @@ import Animated, {
   withDelay,
   Easing,
 } from "react-native-reanimated";
-import { Sparkles } from "lucide-react-native";
 import { GameText, TileButton, TileButtonState } from "../shared";
 import { Chip } from "../ui-kit";
-import { COLORS, SPACING, DIMENSIONS, ANIMATION } from "../../constants/theme";
+import { COLORS, SPACING, ANIMATION } from "../../constants/theme";
 import { useGameStore } from "../../store/gameStore";
 import { isFaceEnhanceable } from "../../utils/gameCore";
 
@@ -87,15 +86,7 @@ export const FaceEditorContent: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <Animated.View style={[styles.header, headerAnimStyle]}>
-        <Sparkles size={DIMENSIONS.iconSize.md} color={upgradeColor} />
-        <GameText variant="displaySmall" color={COLORS.text}>
-          SEITE AUSWÄHLEN
-        </GameText>
-      </Animated.View>
-
-      {/* Subtitle showing selected die */}
+      {/* Subtitle showing selected die + chip */}
       <Animated.View style={[styles.subtitleContainer, headerAnimStyle]}>
         <GameText variant="bodySmall" color={COLORS.textMuted}>
           Würfel {selectedEditorDie !== null ? selectedEditorDie + 1 : "?"}
@@ -157,7 +148,10 @@ const AnimatedFaceTile: React.FC<AnimatedFaceTileProps> = ({
   const translateY = useSharedValue(10);
 
   useEffect(() => {
-    opacity.value = withDelay(delay, withTiming(1, { duration: ANIMATION.shop.itemAnimDuration }));
+    opacity.value = withDelay(
+      delay,
+      withTiming(1, { duration: ANIMATION.shop.itemAnimDuration })
+    );
     translateY.value = withDelay(
       delay,
       withTiming(0, {

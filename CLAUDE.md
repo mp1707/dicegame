@@ -198,8 +198,10 @@ interface DieEnhancement {
 
 1. **DICE_EDITOR_DIE phase** (`DieEditorContent.tsx`): Single row of 5 TileButtons for die selection. Icons use `die.png`. Labels: "Würfel 1" through "Würfel 5". CTAs: ZURÜCK (back to shop) + WEITER (advance to face selection).
 
+   - **3D Die Preview**: PlayConsole tray shows the selected die as a rotatable 3D preview (via `SingleDiePreview.tsx`), allowing players to inspect existing enhancements before choosing which die to upgrade.
+
 2. **DICE_EDITOR_FACE phase** (`FaceEditorContent.tsx`): 2x3 grid of TileButtons for face selection. Icons use `1die.png` through `6die.png`. Labels: "Seite 1" through "Seite 6". CTAs: ZURÜCK (back to die selection) + VERBESSERN (apply upgrade).
-   - **3D Die in Tray**: During this phase, PlayConsole shows a single large rotatable die (`SingleDiePreview.tsx`)
+   - **3D Die in Tray**: Same rotatable 3D preview as DICE_EDITOR_DIE phase
    - **3D Rotation**: Uses World Axis rotation for consistent "follow-finger" dragging behavior
    - **Face Sync**: Tapping a face button rotates the 3D die to that face; manually rotating the die updates the selected face button
    - Snaps to nearest face on release with haptic feedback
@@ -536,19 +538,19 @@ PhaseDeck
 └── Footer (FooterControls)
 ```
 
-**Note:** During `DICE_EDITOR_FACE` phase, the TrayWindow shows a single large rotatable die (`SingleDiePreview`) instead of the normal `DiceTray` with 5 dice.
+**Note:** During `DICE_EDITOR_DIE` and `DICE_EDITOR_FACE` phases, the TrayWindow shows a single large rotatable die (`SingleDiePreview`) instead of the normal `DiceTray` with 5 dice.
 
 **Phase → BottomPanel Content:**
 
-| Phase             | Content             | Footer CTA              |
-| ----------------- | ------------------- | ----------------------- |
-| LEVEL_PLAY        | ScoringGrid         | Roll/Accept             |
-| LEVEL_RESULT      | CashoutRewardsPanel | SHOP                    |
-| SHOP_MAIN         | ShopContent         | NEXT LEVEL              |
-| SHOP_PICK_UPGRADE | UpgradeContent      | ZURÜCK                  |
-| DICE_EDITOR_DIE   | DieEditorContent    | ZURÜCK + WEITER         |
-| DICE_EDITOR_FACE  | FaceEditorContent   | ZURÜCK + VERBESSERN     |
-| WIN/LOSE_SCREEN   | EndContent          | NEUER RUN               |
+| Phase             | Content             | Footer CTA          |
+| ----------------- | ------------------- | ------------------- |
+| LEVEL_PLAY        | ScoringGrid         | Roll/Accept         |
+| LEVEL_RESULT      | CashoutRewardsPanel | SHOP                |
+| SHOP_MAIN         | ShopContent         | NEXT LEVEL          |
+| SHOP_PICK_UPGRADE | UpgradeContent      | ZURÜCK              |
+| DICE_EDITOR_DIE   | DieEditorContent    | ZURÜCK + WEITER     |
+| DICE_EDITOR_FACE  | FaceEditorContent   | ZURÜCK + VERBESSERN |
+| WIN/LOSE_SCREEN   | EndContent          | NEUER RUN           |
 
 **Content Components (in `components/ui/`):**
 

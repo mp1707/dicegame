@@ -15,7 +15,7 @@ import { triggerSelectionHaptic } from "../../utils/haptics";
 // Constants
 // ─────────────────────────────────────────────────────────────────────────────
 
-const DIE_SIZE = 1.2;
+const DIE_SIZE = 1.0;
 const DIE_HALF = DIE_SIZE / 2;
 const FACE_OFFSET = DIE_HALF + 0.01;
 const PIP_OFFSET = 0.25 * DIE_SIZE;
@@ -84,12 +84,16 @@ interface PipProps {
   position: [number, number, number];
   state: PipState;
   isNewlyEnhanced?: boolean;
+  isPreview?: boolean;
+  previewColor?: string;
 }
 
 const Pip: React.FC<PipProps> = ({
   position,
   state,
   isNewlyEnhanced = false,
+  isPreview = false,
+  previewColor,
 }) => {
   const meshRef = useRef<THREE.Mesh>(null);
   const materialRef = useRef<THREE.MeshStandardMaterial>(null);
@@ -101,6 +105,27 @@ const Pip: React.FC<PipProps> = ({
       timeRef.current = 0;
     }
   }, [isNewlyEnhanced]);
+
+  // Reset material color when preview ends
+  React.useEffect(() => {
+    if (!isPreview && materialRef.current) {
+      // Reset to base color based on state
+      const baseColor =
+        state === "points"
+          ? COLORS.upgradePoints
+          : state === "mult"
+          ? COLORS.upgradeMult
+          : "black";
+      materialRef.current.color.set(baseColor);
+      if (state !== "none") {
+        materialRef.current.emissive.set(baseColor);
+        materialRef.current.emissiveIntensity = 0.4;
+      } else {
+        materialRef.current.emissive.set("black");
+        materialRef.current.emissiveIntensity = 0;
+      }
+    }
+  }, [isPreview, state]);
 
   const color =
     state === "points"
@@ -116,12 +141,27 @@ const Pip: React.FC<PipProps> = ({
       ? COLORS.upgradeMult
       : undefined;
 
-  // Light Up and Settle Animation
-  // Phase 1 (0-100ms): Ignition - Rapid expansion and bright flash
-  // Phase 2 (100-500ms): Settle - Elastic bounce back to normal size
-  // Phase 3 (500ms+): Steady - Gentle glow
+  // Light Up and Settle Animation (for newly enhanced pips)
+  // OR Continuous Pulse Animation (for preview pips)
   useFrame((_, delta) => {
-    if (!isNewlyEnhanced || !meshRef.current || !materialRef.current) return;
+    if (!meshRef.current || !materialRef.current) return;
+
+    // Preview pip: continuous color pulse (color -> black -> color)
+    if (isPreview && previewColor) {
+      timeRef.current += delta;
+      // Pulse cycle: 0.8s period
+      const pulse = (Math.sin(timeRef.current * 8) + 1) / 2; // 0 to 1
+      const r = parseInt(previewColor.slice(1, 3), 16) / 255;
+      const g = parseInt(previewColor.slice(3, 5), 16) / 255;
+      const b = parseInt(previewColor.slice(5, 7), 16) / 255;
+      materialRef.current.color.setRGB(r * pulse, g * pulse, b * pulse);
+      materialRef.current.emissive.setRGB(r * pulse, g * pulse, b * pulse);
+      materialRef.current.emissiveIntensity = 0.6 * pulse;
+      return;
+    }
+
+    // Newly enhanced pip animation
+    if (!isNewlyEnhanced) return;
 
     timeRef.current += delta;
     const t = timeRef.current;
@@ -137,13 +177,7 @@ const Pip: React.FC<PipProps> = ({
     } else {
       // Phase 2 & 3: Decay and Settle (100ms+)
       const settleT = t - 0.1;
-
-      // Elastic scale settle: damp oscillation
-      // decaying cos wave: amp * exp(-dec*t) * cos(freq*t)
       scale = 1 + 0.4 * Math.exp(-settleT * 6) * Math.cos(settleT * 20);
-
-      // Emissive intensity decay: exponential
-      // Decays from 2.5 back to 0.4
       emissiveIntensity = 0.4 + 2.1 * Math.exp(-settleT * 3);
     }
 
@@ -177,6 +211,8 @@ interface DieFaceProps {
   position: [number, number, number];
   pipStates: PipState[];
   enhancedPipIndex?: number; // Index of pip currently being enhanced (pulsing)
+  previewPipIndex?: number; // Index of pip to preview (continuous pulse)
+  previewColor?: string;
 }
 
 const DieFace: React.FC<DieFaceProps> = ({
@@ -185,6 +221,8 @@ const DieFace: React.FC<DieFaceProps> = ({
   position,
   pipStates,
   enhancedPipIndex,
+  previewPipIndex,
+  previewColor,
 }) => {
   const pips = PIP_POSITIONS[faceValue] || [];
 
@@ -196,6 +234,8 @@ const DieFace: React.FC<DieFaceProps> = ({
           position={[pipPos[0], pipPos[1], 0.01]}
           state={pipStates[i] || "none"}
           isNewlyEnhanced={enhancedPipIndex === i}
+          isPreview={previewPipIndex === i}
+          previewColor={previewColor}
         />
       ))}
     </group>
@@ -213,6 +253,9 @@ interface InteractiveDieProps {
   upgradeType: DiceUpgradeType | null;
   enhancedFace?: number; // Face with the enhanced pip (1-6)
   enhancedPipIndex?: number; // Index of enhanced pip on that face
+  previewFace?: number; // Face to show preview pulse (1-6)
+  previewPipIndex?: number; // Index of pip to preview
+  previewColor?: string; // Color for preview pulse
 }
 
 const InteractiveDie: React.FC<InteractiveDieProps> = ({
@@ -222,6 +265,9 @@ const InteractiveDie: React.FC<InteractiveDieProps> = ({
   upgradeType,
   enhancedFace,
   enhancedPipIndex,
+  previewFace,
+  previewPipIndex,
+  previewColor,
 }) => {
   const groupRef = useRef<THREE.Group>(null);
   const isDragging = useRef(false);
@@ -391,6 +437,8 @@ const InteractiveDie: React.FC<InteractiveDieProps> = ({
         position={[FACE_OFFSET, 0, 0]}
         pipStates={getPipStates(1)}
         enhancedPipIndex={enhancedFace === 1 ? enhancedPipIndex : undefined}
+        previewPipIndex={previewFace === 1 ? previewPipIndex : undefined}
+        previewColor={previewColor}
       />
       {/* Face 6 - Left (-X) */}
       <DieFace
@@ -399,6 +447,8 @@ const InteractiveDie: React.FC<InteractiveDieProps> = ({
         position={[-FACE_OFFSET, 0, 0]}
         pipStates={getPipStates(6)}
         enhancedPipIndex={enhancedFace === 6 ? enhancedPipIndex : undefined}
+        previewPipIndex={previewFace === 6 ? previewPipIndex : undefined}
+        previewColor={previewColor}
       />
       {/* Face 3 - Top (+Y) */}
       <DieFace
@@ -407,6 +457,8 @@ const InteractiveDie: React.FC<InteractiveDieProps> = ({
         position={[0, FACE_OFFSET, 0]}
         pipStates={getPipStates(3)}
         enhancedPipIndex={enhancedFace === 3 ? enhancedPipIndex : undefined}
+        previewPipIndex={previewFace === 3 ? previewPipIndex : undefined}
+        previewColor={previewColor}
       />
       {/* Face 4 - Bottom (-Y) */}
       <DieFace
@@ -415,6 +467,8 @@ const InteractiveDie: React.FC<InteractiveDieProps> = ({
         position={[0, -FACE_OFFSET, 0]}
         pipStates={getPipStates(4)}
         enhancedPipIndex={enhancedFace === 4 ? enhancedPipIndex : undefined}
+        previewPipIndex={previewFace === 4 ? previewPipIndex : undefined}
+        previewColor={previewColor}
       />
       {/* Face 2 - Front (+Z) */}
       <DieFace
@@ -423,6 +477,8 @@ const InteractiveDie: React.FC<InteractiveDieProps> = ({
         position={[0, 0, FACE_OFFSET]}
         pipStates={getPipStates(2)}
         enhancedPipIndex={enhancedFace === 2 ? enhancedPipIndex : undefined}
+        previewPipIndex={previewFace === 2 ? previewPipIndex : undefined}
+        previewColor={previewColor}
       />
       {/* Face 5 - Back (-Z) */}
       <DieFace
@@ -431,6 +487,8 @@ const InteractiveDie: React.FC<InteractiveDieProps> = ({
         position={[0, 0, -FACE_OFFSET]}
         pipStates={getPipStates(5)}
         enhancedPipIndex={enhancedFace === 5 ? enhancedPipIndex : undefined}
+        previewPipIndex={previewFace === 5 ? previewPipIndex : undefined}
+        previewColor={previewColor}
       />
     </group>
   );
@@ -448,6 +506,8 @@ interface DiePreview3DProps {
   upgradeType: DiceUpgradeType | null;
   enhancedFace?: number; // Face with newly enhanced pip (1-6)
   enhancedPipIndex?: number; // Index of newly enhanced pip
+  previewFace?: number; // Face to show preview pulse (1-6)
+  previewPipIndex?: number; // Index of pip to preview
 }
 
 export const DiePreview3D: React.FC<DiePreview3DProps> = ({
@@ -458,12 +518,22 @@ export const DiePreview3D: React.FC<DiePreview3DProps> = ({
   upgradeType,
   enhancedFace,
   enhancedPipIndex,
+  previewFace,
+  previewPipIndex,
 }) => {
   const dieEnhancement = enhancements[dieIndex] || { faces: Array(6).fill([]) };
 
+  // Compute preview color from upgrade type
+  const previewColor =
+    upgradeType === "points"
+      ? COLORS.upgradePoints
+      : upgradeType === "mult"
+      ? COLORS.upgradeMult
+      : undefined;
+
   return (
     <View style={styles.container}>
-      <Canvas camera={{ position: [0, 0, 3], fov: 50 }}>
+      <Canvas camera={{ position: [0, -0.3, 2.8], fov: 50 }}>
         <ambientLight intensity={0.6} />
         <directionalLight position={[5, 5, 5]} intensity={0.8} />
         <InteractiveDie
@@ -473,6 +543,9 @@ export const DiePreview3D: React.FC<DiePreview3DProps> = ({
           upgradeType={upgradeType}
           enhancedFace={enhancedFace}
           enhancedPipIndex={enhancedPipIndex}
+          previewFace={previewFace}
+          previewPipIndex={previewPipIndex}
+          previewColor={previewColor}
         />
       </Canvas>
     </View>

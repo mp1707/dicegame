@@ -162,6 +162,22 @@ export function hasAnyEnhanceableDie(enhancements: DieEnhancement[]): boolean {
 }
 
 /**
+ * Get the index of the next pip that will be enhanced on a face.
+ * Returns -1 if no pip is available to enhance.
+ */
+export function getNextEnhanceablePipIndex(
+  dieIndex: number,
+  faceValue: number,
+  enhancements: DieEnhancement[]
+): number {
+  const die = enhancements[dieIndex];
+  if (!die) return -1;
+  const face = die.faces[faceValue - 1];
+  if (!face) return -1;
+  return face.findIndex((s) => s === "none");
+}
+
+/**
  * Apply an enhancement to the next available pip on a face.
  * Returns a new enhancements array (immutable).
  */

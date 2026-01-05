@@ -19,6 +19,7 @@ import {
   getDiceUpgradeCost,
   applyDiceEnhancement,
   hasAnyEnhanceableDie,
+  getNextEnhanceablePipIndex,
   DICE_UPGRADE_CONFIG,
 } from "../utils/gameCore";
 import { CATEGORIES } from "../utils/yahtzeeScoring";
@@ -91,6 +92,8 @@ interface GameState {
   pendingUpgradeType: DiceUpgradeType | null;
   selectedEditorDie: number | null; // 0-4
   selectedEditorFace: number | null; // 1-6
+  enhancedFace: number | null; // Face that was just enhanced (for animation)
+  enhancedPipIndex: number | null; // Pip index that was just enhanced (for animation)
 
   // Actions
   startNewRun: () => void;
@@ -178,6 +181,8 @@ const getInitialUIState = () => ({
   pendingUpgradeType: null as DiceUpgradeType | null,
   selectedEditorDie: null as number | null,
   selectedEditorFace: null as number | null,
+  enhancedFace: null as number | null,
+  enhancedPipIndex: null as number | null,
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -583,6 +588,13 @@ export const useGameStore = create<GameState>((set, get) => ({
       return;
     }
 
+    // Get the pip index that will be enhanced (for animation)
+    const pipIndex = getNextEnhanceablePipIndex(
+      selectedEditorDie,
+      selectedEditorFace,
+      diceEnhancements
+    );
+
     // Apply the enhancement
     const newEnhancements = applyDiceEnhancement(
       selectedEditorDie,
@@ -591,16 +603,27 @@ export const useGameStore = create<GameState>((set, get) => ({
       diceEnhancements
     );
 
+    // Set state to show animation (keep phase, set enhanced info)
     set({
       money: money - cost,
       diceEnhancements: newEnhancements,
-      phase: "SHOP_MAIN",
-      pendingUpgradeType: null,
-      selectedEditorDie: null,
-      selectedEditorFace: null,
+      enhancedFace: selectedEditorFace,
+      enhancedPipIndex: pipIndex,
       // Mark the shop item as purchased
       shopDiceUpgradeType: null,
     });
+
+    // Delay transition to allow animation to play (600ms)
+    setTimeout(() => {
+      set({
+        phase: "SHOP_MAIN",
+        pendingUpgradeType: null,
+        selectedEditorDie: null,
+        selectedEditorFace: null,
+        enhancedFace: null,
+        enhancedPipIndex: null,
+      });
+    }, 600);
   },
 
   // ───────────────────────────────────────────────────────────────────────────

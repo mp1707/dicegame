@@ -63,8 +63,9 @@ const AppContent: React.FC = () => {
   const phase = useGameStore((s) => s.phase);
   const selectedEditorDie = useGameStore((s) => s.selectedEditorDie);
 
-  // Check if we're in face editor mode (show single die)
-  const isInFaceEditor = phase === "DICE_EDITOR_FACE";
+  // Check if we're in dice editor mode (show single die preview)
+  const isInDiceEditor =
+    phase === "DICE_EDITOR_DIE" || phase === "DICE_EDITOR_FACE";
 
   const hideStatusBar = Platform.OS === "ios";
 
@@ -102,7 +103,7 @@ const AppContent: React.FC = () => {
           <View style={styles.mainContent}>
             <PhaseDeck
               diceTray={
-                isInFaceEditor ? (
+                isInDiceEditor ? (
                   <SingleDiePreview
                     containerHeight={layout.diceTrayHeight}
                     containerWidth={diceTrayWidth}
