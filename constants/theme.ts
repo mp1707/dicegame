@@ -520,7 +520,7 @@ export const ANIMATION = {
   // Phase transitions (PhaseDeck sliding panels)
   phase: {
     // Spring config for slide animations (uses springs.slideIn by default)
-    springConfig: { damping: 22, stiffness: 180 },
+    springConfig: { damping: 28, stiffness: 380 },
     // Parallax ratios for HUD elements (how far they move relative to screen width)
     parallax: {
       trayModule: 0.5, // Moves 50% of screen width (furthest back)

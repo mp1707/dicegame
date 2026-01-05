@@ -1,6 +1,6 @@
 import React from "react";
 import { StyleSheet } from "react-native";
-import Animated, { SlideInLeft, SlideOutRight } from "react-native-reanimated";
+import Animated, { SlideInLeft, SlideOutRight, Easing } from "react-native-reanimated";
 import { useGameStore } from "../../store/gameStore";
 import { ANIMATION } from "../../constants/theme";
 
@@ -11,8 +11,8 @@ import { ShopContent } from "./ShopContent";
 import { UpgradeContent } from "./UpgradeContent";
 import { EndContent } from "./EndContent";
 
-// Spring-based animation config
-const { springConfig } = ANIMATION.phase;
+// Snappy easing animation config
+const SLIDE_DURATION = 180;
 const { incomingDelay } = ANIMATION.transition;
 
 /**
@@ -25,8 +25,8 @@ const { incomingDelay } = ANIMATION.transition;
  * - SHOP_PICK_UPGRADE: UpgradeContent (upgrade picker)
  * - WIN_SCREEN/LOSE_SCREEN: EndContent (game end)
  *
- * Animation: Spring-based transitions with staggered timing.
- * Outgoing panel exits immediately, incoming panel has slight delay for follow-through.
+ * Animation: Snappy easing-based transitions.
+ * Outgoing panel exits immediately, incoming panel has slight delay.
  */
 export const BottomPanel: React.FC = () => {
   const phase = useGameStore((s) => s.phase);
@@ -49,18 +49,16 @@ export const BottomPanel: React.FC = () => {
     }
   };
 
-  // Spring-based entering animation with delay
+  // Snappy easing-based entering animation with delay
   const enteringAnimation = SlideInLeft
-    .springify()
-    .damping(springConfig.damping)
-    .stiffness(springConfig.stiffness)
+    .duration(SLIDE_DURATION)
+    .easing(Easing.out(Easing.quad))
     .delay(incomingDelay);
 
-  // Spring-based exiting animation (immediate, no delay)
+  // Snappy easing-based exiting animation (immediate, no delay)
   const exitingAnimation = SlideOutRight
-    .springify()
-    .damping(springConfig.damping)
-    .stiffness(springConfig.stiffness);
+    .duration(SLIDE_DURATION)
+    .easing(Easing.in(Easing.quad));
 
   return (
     <Animated.View

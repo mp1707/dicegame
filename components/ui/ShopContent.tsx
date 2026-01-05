@@ -4,56 +4,39 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
-  withDelay,
   Easing,
 } from "react-native-reanimated";
 import { ArrowUp, ShoppingBag } from "lucide-react-native";
 import { GameText } from "../shared";
-import { InsetSlot } from "../ui-kit";
 import { ShopItemCard } from "./ShopItemCard";
 import { COLORS, SPACING, DIMENSIONS, ANIMATION } from "../../constants/theme";
 import { useGameStore } from "../../store/gameStore";
-import { formatNumber } from "../../utils/yahtzeeScoring";
 
 /**
  * ShopContent - Redesigned shop for bottom panel slot
  *
  * Features:
- * - Header with title and money capsule
+ * - Header with title (money shown permanently in game header)
  * - Subtitle instruction
  * - 2x2 grid with ShopItemCard components
  * - Staggered entrance animations
  */
 export const ShopContent: React.FC = () => {
   const selectUpgradeItem = useGameStore((s) => s.selectUpgradeItem);
-  const money = useGameStore((s) => s.money);
 
   // Header animations
   const headerOpacity = useSharedValue(0);
   const headerTranslateY = useSharedValue(6);
-  const moneySlideX = useSharedValue(10);
-  const moneyOpacity = useSharedValue(0);
 
   useEffect(() => {
-    const headerDelay = ANIMATION.shop.headerDelay;
-
     // Title fade + drop
     headerOpacity.value = withTiming(1, { duration: 200 });
     headerTranslateY.value = withTiming(0, { duration: 200, easing: Easing.out(Easing.quad) });
-
-    // Money capsule slides in from right
-    moneyOpacity.value = withDelay(headerDelay, withTiming(1, { duration: 180 }));
-    moneySlideX.value = withDelay(headerDelay, withTiming(0, { duration: 180 }));
   }, []);
 
   const headerAnimStyle = useAnimatedStyle(() => ({
     opacity: headerOpacity.value,
     transform: [{ translateY: headerTranslateY.value }],
-  }));
-
-  const moneyAnimStyle = useAnimatedStyle(() => ({
-    opacity: moneyOpacity.value,
-    transform: [{ translateX: moneySlideX.value }],
   }));
 
   const handleUpgrade = () => {
@@ -69,23 +52,13 @@ export const ShopContent: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header with Title and Money */}
-      <View style={styles.header}>
-        <Animated.View style={[styles.headerLeft, headerAnimStyle]}>
-          <ShoppingBag size={DIMENSIONS.iconSize.md} color={COLORS.cyan} />
-          <GameText variant="displaySmall" color={COLORS.text}>
-            SHOP
-          </GameText>
-        </Animated.View>
-
-        <Animated.View style={moneyAnimStyle}>
-          <InsetSlot padding="xs" style={styles.moneyCapsule}>
-            <GameText variant="bodyMedium" color={COLORS.gold}>
-              Guthaben ${formatNumber(money)}
-            </GameText>
-          </InsetSlot>
-        </Animated.View>
-      </View>
+      {/* Header with Title */}
+      <Animated.View style={[styles.header, headerAnimStyle]}>
+        <ShoppingBag size={DIMENSIONS.iconSize.md} color={COLORS.cyan} />
+        <GameText variant="displaySmall" color={COLORS.text}>
+          SHOP
+        </GameText>
+      </Animated.View>
 
       {/* Subtitle */}
       <Animated.View style={headerAnimStyle}>
@@ -156,16 +129,9 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: SPACING.xs,
-  },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
+    justifyContent: "center",
     gap: SPACING.sm,
-  },
-  moneyCapsule: {
-    paddingHorizontal: SPACING.sm,
+    marginBottom: SPACING.xs,
   },
   subtitle: {
     textAlign: "center",

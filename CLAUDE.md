@@ -374,6 +374,27 @@ import { Surface, HUDCard, InsetSlot, Chip, SectionHeader, Divider } from "../ui
 - ProgressBar: Inset track, animated gradient fill, leading shine
 - Only `PrimaryButton` and `TileButton` should have 3D bevels and glows
 
+### Money/Cost Display Convention
+
+All money and cost displays follow a consistent pattern:
+
+**Visual Standard:**
+
+- Icon: coin.png (18px default, 14px in compact contexts like shop cards)
+- Color: COLORS.gold (always gold for currency)
+- Gap: SPACING.xs (4px) or SPACING.xxs (2px) for compact
+- No "$" prefix - the coin icon is the currency indicator
+
+**States:**
+
+- Affordable: Standard gold color + coin icon
+- Unaffordable: Muted opacity (0.5-0.6) + textMuted color
+
+**Reference Implementations:**
+
+- Header: `PlayConsole.tsx` (18px coin, scoreboardSmall, gold)
+- Shop prices: `ShopItemCard.tsx` (14px coin, bodySmall, gold/muted)
+
 ### PhaseDeck Layout (`components/ui-kit/flow/PhaseDeck.tsx`)
 
 PhaseDeck is the main game layout orchestrator. PlayConsole is **always visible** - only the bottom panel content switches based on phase.

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { View, StyleSheet, ScrollView, Pressable } from "react-native";
+import { View, StyleSheet, ScrollView, Pressable, Image } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -8,18 +8,14 @@ import Animated, {
   withSpring,
   withSequence,
   Easing,
-  runOnJS,
 } from "react-native-reanimated";
-import { ArrowLeft } from "lucide-react-native";
-import { Pressable3DBase } from "../ui/Pressable3DBase";
 import { CategoryIcon } from "../ui/CategoryIcon";
-import { GameText } from "../shared";
-import { Chip, InsetSlot } from "../ui-kit";
+import { GameText, PrimaryButton } from "../shared";
+import { Chip } from "../ui-kit";
 import { COLORS, SPACING, DIMENSIONS, ANIMATION } from "../../constants/theme";
 import { useGameStore, HandId } from "../../store/gameStore";
 import { CATEGORIES } from "../../utils/yahtzeeScoring";
 import { getUpgradeCost } from "../../utils/gameCore";
-import { formatNumber } from "../../utils/yahtzeeScoring";
 import {
   triggerSelectionHaptic,
   triggerImpactMedium,
@@ -120,16 +116,16 @@ const UpgradeCard: React.FC<UpgradeCardProps> = ({
         ]}
       >
         <View style={styles.cardContent}>
-          {/* Icon */}
-          <InsetSlot padding="sm" style={styles.iconContainer}>
+          {/* Icon - matches ScoringGrid style */}
+          <View style={styles.iconContainer}>
             <CategoryIcon
               categoryId={handId}
               size={DIMENSIONS.iconSize.md}
               color={canAfford ? COLORS.cyan : COLORS.textMuted}
             />
-          </InsetSlot>
+          </View>
 
-          {/* Hand name + level */}
+          {/* Hand name + target level */}
           <View style={styles.cardInfo}>
             <GameText
               variant="bodySmall"
@@ -139,21 +135,23 @@ const UpgradeCard: React.FC<UpgradeCardProps> = ({
               {label}
             </GameText>
             <Chip
-              label={`LV ${level}→${level + 1}`}
-              color={canAfford ? "mint" : "muted"}
+              label={`LV ${level + 1}`}
+              color={canAfford ? "cyan" : "muted"}
               size="sm"
             />
           </View>
 
-          {/* Cost badge */}
-          <View
-            style={[styles.costBadge, !canAfford && styles.costBadgeDisabled]}
-          >
+          {/* Cost badge with coin icon */}
+          <View style={[styles.costBadge, !canAfford && styles.costBadgeMuted]}>
+            <Image
+              source={require("../../assets/icons/coin.png")}
+              style={[styles.coinIcon, !canAfford && styles.coinIconMuted]}
+            />
             <GameText
               variant="bodySmall"
-              color={canAfford ? COLORS.textDark : COLORS.text}
+              color={canAfford ? COLORS.gold : COLORS.textMuted}
             >
-              ${cost}
+              {cost}
             </GameText>
           </View>
         </View>
@@ -209,28 +207,11 @@ export const UpgradeContent: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header with back button */}
+      {/* Header - centered title only */}
       <Animated.View style={[styles.header, headerAnimStyle]}>
-        <Pressable3DBase
-          onPress={handleBack}
-          depth={2}
-          borderRadius={DIMENSIONS.borderRadiusSmall}
-          showLighting={false}
-          style={styles.backButton}
-          face={<View style={styles.backButtonFace} />}
-        >
-          <ArrowLeft size={DIMENSIONS.iconSize.sm} color={COLORS.text} />
-        </Pressable3DBase>
-
         <GameText variant="bodyMedium" color={COLORS.textMuted}>
           SELECT UPGRADE (+5 BASE)
         </GameText>
-
-        <View style={styles.moneyBadge}>
-          <GameText variant="bodySmall" color={COLORS.gold}>
-            ${formatNumber(money)}
-          </GameText>
-        </View>
       </Animated.View>
 
       {/* Upgrade options */}
@@ -259,6 +240,15 @@ export const UpgradeContent: React.FC = () => {
           );
         })}
       </ScrollView>
+
+      {/* Back CTA */}
+      <View style={styles.backButtonContainer}>
+        <PrimaryButton
+          label="ZURÜCK"
+          variant="coral"
+          onPress={handleBack}
+        />
+      </View>
     </View>
   );
 };
@@ -269,36 +259,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.screenPadding,
   },
   header: {
-    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "center",
     marginBottom: SPACING.md,
-  },
-  backButton: {
-    width: 32,
-    height: 32,
-    borderRadius: DIMENSIONS.borderRadiusSmall,
-  },
-  backButtonFace: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: COLORS.surface2,
-    borderRadius: DIMENSIONS.borderRadiusSmall,
-    borderWidth: DIMENSIONS.borderWidthThin,
-    borderColor: COLORS.overlays.whiteMild,
-  },
-  moneyBadge: {
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    backgroundColor: COLORS.overlays.goldSubtle,
-    borderRadius: DIMENSIONS.borderRadiusSmall,
-    borderWidth: DIMENSIONS.borderWidthThin,
-    borderColor: COLORS.gold,
   },
   scrollView: {
     flex: 1,
   },
   optionsContainer: {
     gap: SPACING.sm,
+  },
+  backButtonContainer: {
+    marginTop: SPACING.md,
   },
   card: {
     height: 70,
@@ -340,13 +312,19 @@ const styles = StyleSheet.create({
     gap: SPACING.xxs,
   },
   costBadge: {
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    backgroundColor: COLORS.mint,
-    borderRadius: SPACING.xs,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACING.xxs,
   },
-  costBadgeDisabled: {
-    backgroundColor: COLORS.coral,
-    opacity: 0.8,
+  costBadgeMuted: {
+    opacity: 0.6,
+  },
+  coinIcon: {
+    width: 14,
+    height: 14,
+    resizeMode: "contain",
+  },
+  coinIconMuted: {
+    opacity: 0.5,
   },
 });

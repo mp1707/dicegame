@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { View, StyleSheet, Pressable } from "react-native";
+import { View, StyleSheet, Pressable, Image } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -231,23 +231,18 @@ export const ShopItemCard: React.FC<ShopItemCardProps> = ({
               )}
             </View>
 
-            {/* Price capsule */}
+            {/* Price capsule with coin icon */}
             {!isSoon && !isPurchased && price !== undefined && (
-              <View
-                style={[
-                  styles.priceCapsule,
-                  isAffordable && styles.priceCapsuleAffordable,
-                  isUnaffordable && styles.priceCapsuleUnaffordable,
-                ]}
-              >
-                {isUnaffordable && (
-                  <Lock size={10} color={COLORS.textMuted} style={styles.lockIcon} />
-                )}
+              <View style={[styles.priceCapsule, isUnaffordable && styles.priceCapsuleMuted]}>
+                <Image
+                  source={require("../../assets/icons/coin.png")}
+                  style={[styles.coinIcon, isUnaffordable && styles.coinIconMuted]}
+                />
                 <GameText
                   variant="bodySmall"
-                  color={isAffordable ? COLORS.textDark : COLORS.textMuted}
+                  color={isAffordable ? COLORS.gold : COLORS.textMuted}
                 >
-                  ${price}
+                  {price}
                 </GameText>
               </View>
             )}
@@ -357,19 +352,18 @@ const styles = StyleSheet.create({
   priceCapsule: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xxs,
-    borderRadius: DIMENSIONS.borderRadiusSmall,
     gap: SPACING.xxs,
   },
-  priceCapsuleAffordable: {
-    backgroundColor: COLORS.mint,
+  priceCapsuleMuted: {
+    opacity: 0.6,
   },
-  priceCapsuleUnaffordable: {
-    backgroundColor: COLORS.overlays.blackMild,
+  coinIcon: {
+    width: 14,
+    height: 14,
+    resizeMode: "contain",
   },
-  lockIcon: {
-    marginRight: 2,
+  coinIconMuted: {
+    opacity: 0.5,
   },
   notEnough: {
     marginTop: SPACING.xxs,
