@@ -136,6 +136,13 @@ export const DiceEditorModal: React.FC = () => {
   const [currentScreen, setCurrentScreen] =
     useState<EditorScreen>("die-picker");
 
+  // Success animation state
+  const [successState, setSuccessState] = useState<{
+    face: number;
+    pipIndex: number;
+    enhancements: typeof diceEnhancements;
+  } | null>(null);
+
   // Animation values
   const backdropOpacity = useSharedValue(0);
   const panelY = useSharedValue(50);
@@ -144,6 +151,7 @@ export const DiceEditorModal: React.FC = () => {
   useEffect(() => {
     if (diceEditorOpen) {
       setCurrentScreen("die-picker");
+      setSuccessState(null);
       backdropOpacity.value = withTiming(1, { duration: 200 });
       panelY.value = withSpring(0, ANIMATION.diceEditor.panelSlideIn);
     } else {
@@ -151,6 +159,17 @@ export const DiceEditorModal: React.FC = () => {
       panelY.value = withTiming(50, { duration: 150 });
     }
   }, [diceEditorOpen]);
+
+  // Auto-close after success animation
+  useEffect(() => {
+    if (successState) {
+      const timer = setTimeout(() => {
+        // Now apply the upgrade and close modal
+        applyDiceUpgrade();
+      }, 1500); // 1.5s animation duration
+      return () => clearTimeout(timer);
+    }
+  }, [successState, applyDiceUpgrade]);
 
   const backdropStyle = useAnimatedStyle(() => ({
     opacity: backdropOpacity.value,
@@ -186,8 +205,40 @@ export const DiceEditorModal: React.FC = () => {
   };
 
   const handleApplyUpgrade = () => {
+    if (
+      selectedEditorDie === null ||
+      selectedEditorFace === null ||
+      !pendingUpgradeType
+    )
+      return;
+
+    // Find which pip index will be enhanced (first "none" pip)
+    const faceEnhancements =
+      diceEnhancements[selectedEditorDie]?.faces[selectedEditorFace - 1] || [];
+    const enhancedPipIndex = faceEnhancements.findIndex((s) => s === "none");
+
+    if (enhancedPipIndex === -1) return; // No enhanceable pip found
+
     triggerImpactMedium();
-    applyDiceUpgrade();
+
+    // DON'T apply upgrade yet - create the NEW enhancement state for animation
+    const newEnhancements = diceEnhancements.map((die, dieIdx) => {
+      if (dieIdx !== selectedEditorDie) return die;
+      return {
+        faces: die.faces.map((face, faceIdx) => {
+          if (faceIdx !== selectedEditorFace - 1) return face;
+          const newFace = [...face];
+          newFace[enhancedPipIndex] = pendingUpgradeType;
+          return newFace;
+        }),
+      };
+    });
+
+    setSuccessState({
+      face: selectedEditorFace,
+      pipIndex: enhancedPipIndex,
+      enhancements: newEnhancements,
+    });
   };
 
   // Calculate cost
@@ -319,48 +370,62 @@ export const DiceEditorModal: React.FC = () => {
               <View style={styles.dieViewerContainer}>
                 <DiePreview3D
                   dieIndex={selectedEditorDie!}
-                  enhancements={diceEnhancements}
+                  enhancements={successState?.enhancements || diceEnhancements}
                   selectedFace={selectedEditorFace}
-                  onFaceSelect={handleFaceSelect}
+                  onFaceSelect={successState ? () => {} : handleFaceSelect}
                   upgradeType={pendingUpgradeType}
+                  enhancedFace={successState?.face}
+                  enhancedPipIndex={successState?.pipIndex}
                 />
               </View>
 
               {/* Face indicator */}
               <View style={styles.selectionIndicator}>
-                <GameText variant="bodySmall" color={COLORS.textMuted}>
-                  {selectedEditorFace !== null
-                    ? `Seite: ${selectedEditorFace}`
-                    : " "}
-                </GameText>
-                {selectedEditorFace !== null && !canEnhanceFace && (
-                  <GameText variant="caption" color={COLORS.coral}>
-                    Diese Seite ist bereits voll verbessert.
+                {successState ? (
+                  <GameText variant="bodySmall" color={upgradeColor}>
+                    ✨ Verbessert!
                   </GameText>
+                ) : (
+                  <>
+                    <GameText variant="bodySmall" color={COLORS.textMuted}>
+                      {selectedEditorFace !== null
+                        ? `Seite: ${selectedEditorFace}`
+                        : " "}
+                    </GameText>
+                    {selectedEditorFace !== null && !canEnhanceFace && (
+                      <GameText variant="caption" color={COLORS.coral}>
+                        Diese Seite ist bereits voll verbessert.
+                      </GameText>
+                    )}
+                  </>
                 )}
               </View>
 
-              {/* CTA */}
-              <Pressable
-                onPress={handleApplyUpgrade}
-                disabled={!canEnhanceFace || !canAfford}
-                style={[
-                  styles.ctaButton,
-                  { backgroundColor: upgradeColor },
-                  (!canEnhanceFace || !canAfford) && styles.ctaButtonDisabled,
-                ]}
-              >
-                <GameText
-                  variant="buttonMedium"
-                  color={
-                    !canEnhanceFace || !canAfford
-                      ? COLORS.textMuted
-                      : COLORS.textDark
-                  }
+              {
+                /* CTA - invisible but present during success animation to maintain layout */
+                <Pressable
+                  onPress={successState ? undefined : handleApplyUpgrade}
+                  disabled={!!successState || !canEnhanceFace || !canAfford}
+                  style={[
+                    styles.ctaButton,
+                    { backgroundColor: upgradeColor },
+                    (!!successState || !canEnhanceFace || !canAfford) &&
+                      styles.ctaButtonDisabled,
+                    successState && { opacity: 0 }, // Hide visually but keep layout
+                  ]}
                 >
-                  SEITE VERBESSERN
-                </GameText>
-              </Pressable>
+                  <GameText
+                    variant="buttonMedium"
+                    color={
+                      !canEnhanceFace || !canAfford
+                        ? COLORS.textMuted
+                        : COLORS.textDark
+                    }
+                  >
+                    SEITE VERBESSERN
+                  </GameText>
+                </Pressable>
+              }
             </View>
           )}
         </Surface>

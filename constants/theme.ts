@@ -28,8 +28,8 @@ export const COLORS = {
   mint: "#6CFFB8", // Confirm / Success / Buy
 
   // Dice Enhancement Colors (Pip upgrades)
-  upgradePoints: "#3B9EFF", // Bright blue for +10 points pips
-  upgradeMult: "#FF4D6D", // Clean red for +1 mult pips
+  upgradePoints: "#0062FF", // Deep vivid blue for +10 points pips (high contrast on white)
+  upgradeMult: "#E02E4C", // Deep crisp red for +1 mult pips (high contrast on white)
 
   // Specific usages
   feltGreen: "#2FB67A", // The "Table" felt color (if used)
