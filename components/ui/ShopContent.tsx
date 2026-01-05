@@ -1,96 +1,105 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { View, StyleSheet } from "react-native";
-import { ArrowUp, Lock, ShoppingBag } from "lucide-react-native";
-import { Pressable3DBase } from "../ui/Pressable3DBase";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withDelay,
+  Easing,
+} from "react-native-reanimated";
+import { ArrowUp, ShoppingBag } from "lucide-react-native";
 import { GameText } from "../shared";
-import { Chip } from "../ui-kit";
-import { COLORS, SPACING, DIMENSIONS } from "../../constants/theme";
+import { InsetSlot } from "../ui-kit";
+import { ShopItemCard } from "./ShopItemCard";
+import { COLORS, SPACING, DIMENSIONS, ANIMATION } from "../../constants/theme";
 import { useGameStore } from "../../store/gameStore";
-import { triggerSelectionHaptic } from "../../utils/haptics";
-
-interface ShopItemProps {
-  icon: React.ReactNode;
-  label: string;
-  sublabel?: string;
-  disabled?: boolean;
-  onPress?: () => void;
-}
-
-const ShopItem = ({
-  icon,
-  label,
-  sublabel,
-  disabled = false,
-  onPress,
-}: ShopItemProps) => (
-  <Pressable3DBase
-    onPress={
-      disabled
-        ? () => {}
-        : () => {
-            triggerSelectionHaptic();
-            onPress?.();
-          }
-    }
-    disabled={disabled}
-    depth={4}
-    borderRadius={DIMENSIONS.borderRadiusSmall}
-    showLighting={false}
-    style={[styles.shopItem, disabled && styles.disabledItem]}
-    face={
-      <View
-        style={[styles.shopItemFace, disabled && styles.disabledItemFace]}
-      />
-    }
-  >
-    <View style={styles.shopItemContent}>
-      {icon}
-      <GameText
-        variant="bodySmall"
-        color={disabled ? COLORS.textMuted : COLORS.text}
-        numberOfLines={1}
-        style={[styles.shopItemLabel, disabled && styles.disabledText]}
-      >
-        {label}
-      </GameText>
-      {sublabel && (
-        <Chip label={sublabel} color={disabled ? "muted" : "cyan"} size="sm" />
-      )}
-    </View>
-  </Pressable3DBase>
-);
+import { formatNumber } from "../../utils/yahtzeeScoring";
 
 /**
- * ShopContent - Compact shop for bottom panel slot
+ * ShopContent - Redesigned shop for bottom panel slot
  *
- * Simplified from full-screen ShopPanel:
- * - No header (money already in PlayConsole)
- * - Smaller item grid
- * - CTA handled by FooterControls
+ * Features:
+ * - Header with title and money capsule
+ * - Subtitle instruction
+ * - 2x2 grid with ShopItemCard components
+ * - Staggered entrance animations
  */
 export const ShopContent: React.FC = () => {
   const selectUpgradeItem = useGameStore((s) => s.selectUpgradeItem);
+  const money = useGameStore((s) => s.money);
+
+  // Header animations
+  const headerOpacity = useSharedValue(0);
+  const headerTranslateY = useSharedValue(6);
+  const moneySlideX = useSharedValue(10);
+  const moneyOpacity = useSharedValue(0);
+
+  useEffect(() => {
+    const headerDelay = ANIMATION.shop.headerDelay;
+
+    // Title fade + drop
+    headerOpacity.value = withTiming(1, { duration: 200 });
+    headerTranslateY.value = withTiming(0, { duration: 200, easing: Easing.out(Easing.quad) });
+
+    // Money capsule slides in from right
+    moneyOpacity.value = withDelay(headerDelay, withTiming(1, { duration: 180 }));
+    moneySlideX.value = withDelay(headerDelay, withTiming(0, { duration: 180 }));
+  }, []);
+
+  const headerAnimStyle = useAnimatedStyle(() => ({
+    opacity: headerOpacity.value,
+    transform: [{ translateY: headerTranslateY.value }],
+  }));
+
+  const moneyAnimStyle = useAnimatedStyle(() => ({
+    opacity: moneyOpacity.value,
+    transform: [{ translateX: moneySlideX.value }],
+  }));
 
   const handleUpgrade = () => {
     selectUpgradeItem();
   };
 
+  // Calculate stagger delays for grid items
+  const getItemDelay = (row: number, col: number) => {
+    const baseDelay = ANIMATION.shop.headerDelay + 60;
+    const index = row * 2 + col;
+    return baseDelay + index * ANIMATION.shop.gridStagger;
+  };
+
   return (
     <View style={styles.container}>
-      {/* Compact Header */}
+      {/* Header with Title and Money */}
       <View style={styles.header}>
-        <ShoppingBag size={DIMENSIONS.iconSize.md} color={COLORS.cyan} />
-        <GameText variant="displaySmall" color={COLORS.text}>
-          SHOP
-        </GameText>
+        <Animated.View style={[styles.headerLeft, headerAnimStyle]}>
+          <ShoppingBag size={DIMENSIONS.iconSize.md} color={COLORS.cyan} />
+          <GameText variant="displaySmall" color={COLORS.text}>
+            SHOP
+          </GameText>
+        </Animated.View>
+
+        <Animated.View style={moneyAnimStyle}>
+          <InsetSlot padding="xs" style={styles.moneyCapsule}>
+            <GameText variant="bodyMedium" color={COLORS.gold}>
+              Guthaben ${formatNumber(money)}
+            </GameText>
+          </InsetSlot>
+        </Animated.View>
       </View>
 
-      {/* Shop grid - 2x2 filling remaining space */}
+      {/* Subtitle */}
+      <Animated.View style={headerAnimStyle}>
+        <GameText variant="bodySmall" color={COLORS.textMuted} style={styles.subtitle}>
+          Wähle ein Upgrade
+        </GameText>
+      </Animated.View>
+
+      {/* Shop Grid - 2x2 */}
       <View style={styles.gridContainer}>
         {/* Row 1 */}
         <View style={styles.row}>
           {/* Upgrade Hand - Active */}
-          <ShopItem
+          <ShopItemCard
             icon={
               <ArrowUp
                 size={DIMENSIONS.iconSize.md}
@@ -98,42 +107,40 @@ export const ShopContent: React.FC = () => {
                 strokeWidth={3}
               />
             }
-            label="UPGRADE"
-            sublabel="BOOST"
+            name="UPGRADE"
+            effect="+5 Base"
+            tags={["BOOST"]}
+            price={7}
+            state="affordable"
             onPress={handleUpgrade}
+            animationDelay={getItemDelay(0, 0)}
           />
 
-          {/* Placeholder 1 */}
-          <ShopItem
-            icon={
-              <Lock size={DIMENSIONS.iconSize.sm} color={COLORS.textMuted} />
-            }
-            label="JOKERS"
-            sublabel="SOON"
-            disabled
+          {/* Jokers - Soon */}
+          <ShopItemCard
+            icon={null}
+            name="JOKERS"
+            state="soon"
+            animationDelay={getItemDelay(0, 1)}
           />
         </View>
 
         {/* Row 2 */}
         <View style={styles.row}>
-          {/* Placeholder 2 */}
-          <ShopItem
-            icon={
-              <Lock size={DIMENSIONS.iconSize.sm} color={COLORS.textMuted} />
-            }
-            label="DICE"
-            sublabel="SOON"
-            disabled
+          {/* Dice - Soon */}
+          <ShopItemCard
+            icon={null}
+            name="DICE"
+            state="soon"
+            animationDelay={getItemDelay(1, 0)}
           />
 
-          {/* Placeholder 3 */}
-          <ShopItem
-            icon={
-              <Lock size={DIMENSIONS.iconSize.sm} color={COLORS.textMuted} />
-            }
-            label="POWERS"
-            sublabel="SOON"
-            disabled
+          {/* Powers - Soon */}
+          <ShopItemCard
+            icon={null}
+            name="POWERS"
+            state="soon"
+            animationDelay={getItemDelay(1, 1)}
           />
         </View>
       </View>
@@ -149,10 +156,20 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "space-between",
+    marginBottom: SPACING.xs,
+  },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
     gap: SPACING.sm,
-    marginBottom: SPACING.sm, // Reduced margin for tighter fit
-    flexShrink: 0,
+  },
+  moneyCapsule: {
+    paddingHorizontal: SPACING.sm,
+  },
+  subtitle: {
+    textAlign: "center",
+    marginBottom: SPACING.sm,
   },
   gridContainer: {
     flex: 1,
@@ -162,41 +179,5 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     gap: SPACING.sm,
-  },
-  shopItem: {
-    flex: 1, // Take available width
-    borderRadius: DIMENSIONS.borderRadiusSmall,
-  },
-  disabledItem: {
-    opacity: 0.5,
-  },
-  shopItemFace: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: COLORS.surface,
-    borderRadius: DIMENSIONS.borderRadiusSmall,
-    borderWidth: DIMENSIONS.borderWidthThin,
-    borderColor: COLORS.border,
-    borderTopColor: COLORS.overlays.whiteMild,
-    borderBottomWidth: DIMENSIONS.borderWidthThick,
-    borderBottomColor: COLORS.overlays.blackMedium,
-  },
-  disabledItemFace: {
-    backgroundColor: COLORS.bg,
-    borderColor: COLORS.overlays.whiteSubtle,
-  },
-  shopItemContent: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: SPACING.sm,
-    gap: SPACING.xs,
-  },
-  shopItemLabel: {
-    textAlign: "center",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  disabledText: {
-    opacity: 0.6,
   },
 });

@@ -2,29 +2,31 @@ import React from "react";
 import { StyleSheet } from "react-native";
 import Animated, { SlideInLeft, SlideOutRight } from "react-native-reanimated";
 import { useGameStore } from "../../store/gameStore";
+import { ANIMATION } from "../../constants/theme";
 
 // Import content components
 import { ScoringGrid } from "../scoring/ScoringGrid";
-import { CashoutResultList } from "./CashoutResultList";
+import { CashoutRewardsPanel } from "./CashoutRewardsPanel";
 import { ShopContent } from "./ShopContent";
 import { UpgradeContent } from "./UpgradeContent";
 import { EndContent } from "./EndContent";
 
-// Animation timing
-const SLIDE_DURATION = 250;
+// Spring-based animation config
+const { springConfig } = ANIMATION.phase;
+const { incomingDelay } = ANIMATION.transition;
 
 /**
  * BottomPanel - Switches content based on game phase
  *
  * Renders the appropriate component for the bottom area of the game screen:
  * - LEVEL_PLAY: ScoringGrid (hand selection)
- * - LEVEL_RESULT: CashoutResultList (reward breakdown)
+ * - LEVEL_RESULT: CashoutRewardsPanel (reward breakdown with animations)
  * - SHOP_MAIN: ShopContent (compact shop)
  * - SHOP_PICK_UPGRADE: UpgradeContent (upgrade picker)
  * - WIN_SCREEN/LOSE_SCREEN: EndContent (game end)
  *
- * Animation: Content slides out to the right, new content slides in from left.
- * This creates a consistent "forward" flow through game phases.
+ * Animation: Spring-based transitions with staggered timing.
+ * Outgoing panel exits immediately, incoming panel has slight delay for follow-through.
  */
 export const BottomPanel: React.FC = () => {
   const phase = useGameStore((s) => s.phase);
@@ -34,7 +36,7 @@ export const BottomPanel: React.FC = () => {
       case "LEVEL_PLAY":
         return <ScoringGrid />;
       case "LEVEL_RESULT":
-        return <CashoutResultList />;
+        return <CashoutRewardsPanel />;
       case "SHOP_MAIN":
         return <ShopContent />;
       case "SHOP_PICK_UPGRADE":
@@ -47,11 +49,24 @@ export const BottomPanel: React.FC = () => {
     }
   };
 
+  // Spring-based entering animation with delay
+  const enteringAnimation = SlideInLeft
+    .springify()
+    .damping(springConfig.damping)
+    .stiffness(springConfig.stiffness)
+    .delay(incomingDelay);
+
+  // Spring-based exiting animation (immediate, no delay)
+  const exitingAnimation = SlideOutRight
+    .springify()
+    .damping(springConfig.damping)
+    .stiffness(springConfig.stiffness);
+
   return (
     <Animated.View
       key={phase}
-      entering={SlideInLeft.duration(SLIDE_DURATION)}
-      exiting={SlideOutRight.duration(SLIDE_DURATION)}
+      entering={enteringAnimation}
+      exiting={exitingAnimation}
       style={styles.container}
     >
       {renderContent()}

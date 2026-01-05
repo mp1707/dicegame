@@ -403,19 +403,22 @@ PhaseDeck
 
 **Phase → BottomPanel Content:**
 
-| Phase             | Content           | Footer CTA  |
-| ----------------- | ----------------- | ----------- |
-| LEVEL_PLAY        | ScoringGrid       | Roll/Accept |
-| LEVEL_RESULT      | CashoutResultList | SHOP        |
-| SHOP_MAIN         | ShopContent       | NEXT LEVEL  |
-| SHOP_PICK_UPGRADE | UpgradeContent    | (none)      |
-| WIN/LOSE_SCREEN   | EndContent        | NEUER RUN   |
+| Phase             | Content             | Footer CTA  |
+| ----------------- | ------------------- | ----------- |
+| LEVEL_PLAY        | ScoringGrid         | Roll/Accept |
+| LEVEL_RESULT      | CashoutRewardsPanel | SHOP        |
+| SHOP_MAIN         | ShopContent         | NEXT LEVEL  |
+| SHOP_PICK_UPGRADE | UpgradeContent      | (none)      |
+| WIN/LOSE_SCREEN   | EndContent          | NEUER RUN   |
 
 **Content Components (in `components/ui/`):**
 
-- `BottomPanel.tsx` - Phase-based content switcher (slides left-in, right-out)
-- `ShopContent.tsx` - Compact shop grid (no header, CTA in footer)
-- `UpgradeContent.tsx` - Horizontal upgrade cards with back button
+- `BottomPanel.tsx` - Phase-based content switcher (spring-based slide transitions)
+- `CashoutRewardsPanel.tsx` - Celebratory reward breakdown with hero payout, staggered rows, sparkles
+- `ShopContent.tsx` - Shop with header, money capsule, 2x2 ShopItemCard grid
+- `ShopItemCard.tsx` - Shop item card with affordable/unaffordable/soon states, shimmer animation
+- `UpgradeContent.tsx` - Cascade-animated upgrade cards with selection feedback
+- `SparkleEffect.tsx` - Particle micro-animation for celebratory effects
 - `EndContent.tsx` - Compact win/lose display with stats
 
 **Integration in App.tsx:**
@@ -537,6 +540,14 @@ COLORS.overlays.cyanSubtle; // rgba(77,238,234,0.1)
 COLORS.overlays.cyanMild; // rgba(77,238,234,0.15)
 COLORS.overlays.goldSubtle; // rgba(255,200,87,0.15)
 COLORS.overlays.coralSubtle; // rgba(255,90,122,0.15)
+
+// Mint overlays (for success/purchase states)
+COLORS.overlays.mintSubtle; // rgba(108,255,184,0.15)
+COLORS.overlays.mintMild; // rgba(108,255,184,0.25)
+COLORS.overlays.mintGlow; // rgba(108,255,184,0.35)
+
+// Glow overlays (for celebratory effects)
+COLORS.overlays.goldGlow; // rgba(255,200,87,0.4)
 ```
 
 ### Shadow Colors (for text glow effects)
@@ -545,6 +556,8 @@ COLORS.overlays.coralSubtle; // rgba(255,90,122,0.15)
 COLORS.shadows.gold; // rgba(255,200,87,0.3)
 COLORS.shadows.goldStrong; // rgba(255,200,87,0.5)
 COLORS.shadows.cyan; // rgba(77,238,234,0.4)
+COLORS.shadows.mint; // rgba(108,255,184,0.4)
+COLORS.shadows.mintStrong; // rgba(108,255,184,0.6)
 COLORS.shadows.black; // rgba(0,0,0,0.6)
 ```
 
@@ -610,12 +623,35 @@ ANIMATION.counting.totalScoreDisplay; // 1600ms
 // Spring configs (for reanimated)
 ANIMATION.springs.button; // { damping: 20, stiffness: 400 }
 ANIMATION.springs.modal; // { damping: 25, stiffness: 400, mass: 0.8 }
+ANIMATION.springs.trophyPop; // { damping: 12, stiffness: 400 } - Bouncy trophy entrance
+ANIMATION.springs.rowLand; // { damping: 18, stiffness: 350 } - Row landing tick
+ANIMATION.springs.celebration; // { damping: 15, stiffness: 450 } - Celebratory bounce
 
 // Phase transitions (PhaseDeck sliding panels)
 ANIMATION.phase.springConfig; // { damping: 22, stiffness: 180 }
 ANIMATION.phase.parallax.scoreRow; // 0.6 (60% of screen width)
 ANIMATION.phase.parallax.scoringGrid; // 0.75
 ANIMATION.phase.parallax.footer; // 0.9
+
+// Cashout rewards panel
+ANIMATION.cashout.heroPayoutDelay; // 120ms - After panel settles
+ANIMATION.cashout.countUpDuration; // 750ms - Payout count-up
+ANIMATION.cashout.rowStartDelay; // 120ms - After payout begins
+ANIMATION.cashout.rowStagger; // 90ms - Between rows
+ANIMATION.cashout.rowAnimDuration; // 200ms - Per-row animation
+ANIMATION.cashout.sparkleCount; // 4 - Number of sparkle particles
+
+// Shop panel
+ANIMATION.shop.headerDelay; // 120ms
+ANIMATION.shop.gridStagger; // 60ms - Between grid items
+ANIMATION.shop.itemAnimDuration; // 210ms - Per-item animation
+ANIMATION.shop.purchaseFlashDuration; // 180ms - Mint outline flash
+ANIMATION.shop.shimmerInterval; // 4000ms - "SOON" shimmer interval
+
+// Transition timing
+ANIMATION.transition.incomingDelay; // 40ms - Delay before incoming panel
+ANIMATION.transition.ctaSwapProgress; // 0.6 - When to swap CTA (60% progress)
+ANIMATION.transition.ctaGlowPulseDuration; // 400ms - Glow pulse behind new CTA
 ```
 
 ### Physics Constants

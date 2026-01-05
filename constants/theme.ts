@@ -69,6 +69,12 @@ export const COLORS = {
     goldMild: "rgba(255, 200, 87, 0.3)",
     coralSubtle: "rgba(255, 90, 122, 0.15)",
     coralMild: "rgba(255, 90, 122, 0.3)",
+    // Mint overlays (for success/purchase states)
+    mintSubtle: "rgba(108, 255, 184, 0.15)",
+    mintMild: "rgba(108, 255, 184, 0.25)",
+    mintGlow: "rgba(108, 255, 184, 0.35)",
+    // Glow overlays (for celebratory effects)
+    goldGlow: "rgba(255, 200, 87, 0.4)",
     // Tile-specific overlays
     cyanGlowStrong: "rgba(77, 238, 234, 0.22)", // Active halo effect
     goldStamp: "rgba(255, 200, 87, 0.20)", // Used tile stamp overlay
@@ -79,6 +85,8 @@ export const COLORS = {
     gold: "rgba(255, 200, 87, 0.3)",
     goldStrong: "rgba(255, 200, 87, 0.5)",
     cyan: "rgba(77, 238, 234, 0.4)",
+    mint: "rgba(108, 255, 184, 0.4)",
+    mintStrong: "rgba(108, 255, 184, 0.6)",
     black: "rgba(0, 0, 0, 0.6)",
   },
 
@@ -451,6 +459,10 @@ export const ANIMATION = {
     lamp: { damping: 24, stiffness: 160 },
     slideIn: { damping: 20, stiffness: 200 },
     lampOut: { damping: 26, stiffness: 180 },
+    // Cashout/shop animations
+    trophyPop: { damping: 12, stiffness: 400 }, // Bouncy trophy entrance
+    rowLand: { damping: 18, stiffness: 350 }, // Row landing tick
+    celebration: { damping: 15, stiffness: 450 }, // Celebratory bounce
   },
 
   // Highlight/Pulse (Die)
@@ -516,6 +528,38 @@ export const ANIMATION = {
       scoringGrid: 0.75, // Moves 75% of screen width
       footer: 0.9, // Moves 90% of screen width (closest to viewer)
     },
+  },
+
+  // Cashout rewards panel animations
+  cashout: {
+    heroPayoutDelay: 120, // After panel settles
+    countUpDuration: 750, // Payout count-up (650-900ms range)
+    rowStartDelay: 120, // After payout begins
+    rowStagger: 90, // Between rows
+    rowAnimDuration: 200, // Per-row animation
+    rowTickScale: 1.02, // Landing scale tick
+    sparkleCount: 4, // Number of sparkle particles
+    sparkleDrift: 12, // Upward drift in px
+    sparkleDuration: 400, // Particle lifespan
+    valueFlickerDuration: 120, // +$X opacity pulse
+  },
+
+  // Shop panel animations
+  shop: {
+    headerDelay: 120, // Header entrance delay
+    gridStagger: 60, // Between grid items
+    itemAnimDuration: 210, // Per-item animation
+    purchaseFlashDuration: 180, // Mint outline flash
+    moneyCountDuration: 350, // Money count-down
+    shimmerInterval: 4000, // "SOON" placeholder shimmer interval
+    shimmerDuration: 800, // Shimmer sweep duration
+  },
+
+  // Transition timing
+  transition: {
+    incomingDelay: 40, // Delay before incoming panel
+    ctaSwapProgress: 0.6, // When to swap CTA (60% progress)
+    ctaGlowPulseDuration: 400, // Glow pulse behind new CTA
   },
 
   // Lock outline (die lock visual feedback)

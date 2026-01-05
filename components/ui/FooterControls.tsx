@@ -1,9 +1,9 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { View, StyleSheet, Image } from "react-native";
 import { PrimaryButton, GameText } from "../shared";
 // InsetSlot and Surface removed
-import { COLORS, SPACING, DIMENSIONS } from "../../constants/theme";
-import { useGameStore } from "../../store/gameStore";
+import { COLORS, SPACING, DIMENSIONS, ANIMATION } from "../../constants/theme";
+import { useGameStore, GamePhase } from "../../store/gameStore";
 import {
   triggerLightImpact,
   triggerSelectionHaptic,
@@ -14,6 +14,7 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   withDelay,
+  withSequence,
   Easing,
 } from "react-native-reanimated";
 
@@ -40,10 +41,15 @@ export const FooterControls = () => {
 
   const isLastLevel = currentLevelIndex >= 7;
 
-  // Animation shared val
+  // Animation shared values
   const ctaTranslateY = useSharedValue(0);
+  const glowOpacity = useSharedValue(0);
 
-  React.useEffect(() => {
+  // Track previous phase to detect transitions
+  const prevPhaseRef = useRef<GamePhase>(phase);
+
+  // CTA slide animation for win state
+  useEffect(() => {
     if (isWinAnimating) {
       // Slide out (down)
       ctaTranslateY.value = withTiming(100, {
@@ -52,7 +58,6 @@ export const FooterControls = () => {
       });
     } else if (levelWon) {
       // Slide in (up) - show Cash Out
-      // Small delay to ensure text update happened (though React render is fast)
       ctaTranslateY.value = withDelay(
         100,
         withTiming(0, { duration: 240, easing: Easing.out(Easing.back(1.5)) })
@@ -62,6 +67,29 @@ export const FooterControls = () => {
       ctaTranslateY.value = 0;
     }
   }, [isWinAnimating, levelWon]);
+
+  // Glow pulse on phase transitions
+  useEffect(() => {
+    const prevPhase = prevPhaseRef.current;
+    prevPhaseRef.current = phase;
+
+    // Trigger glow pulse when transitioning to phases with new CTAs
+    const shouldGlow =
+      (prevPhase === "LEVEL_PLAY" && phase === "LEVEL_RESULT") ||
+      (prevPhase === "LEVEL_RESULT" && phase === "SHOP_MAIN") ||
+      (prevPhase === "SHOP_PICK_UPGRADE" && phase === "SHOP_MAIN");
+
+    if (shouldGlow) {
+      const glowDuration = ANIMATION.transition.ctaGlowPulseDuration;
+      glowOpacity.value = withSequence(
+        withDelay(
+          ANIMATION.transition.incomingDelay + 60,
+          withTiming(0.6, { duration: glowDuration * 0.3 })
+        ),
+        withTiming(0, { duration: glowDuration * 0.7 })
+      );
+    }
+  }, [phase]);
 
   // Button height is ~55% of footer height (proportional to layout)
   const buttonHeight = Math.max(44, layout.footerHeight * 0.55);
@@ -220,11 +248,34 @@ export const FooterControls = () => {
     opacity: 1 - Math.min(Math.max(ctaTranslateY.value / 50, 0), 1),
   }));
 
+  // Glow pulse style
+  const glowAnimStyle = useAnimatedStyle(() => ({
+    opacity: glowOpacity.value,
+  }));
+
+  // Determine glow color based on phase
+  const getGlowColor = () => {
+    if (phase === "LEVEL_RESULT") return COLORS.overlays.mintGlow;
+    if (phase === "SHOP_MAIN") return COLORS.overlays.cyanMild;
+    return COLORS.overlays.mintGlow;
+  };
+
   const renderCTAArea = () => {
     return (
-      <Animated.View style={[styles.ctaArea, animatedStyle]}>
-        {renderCTA()}
-      </Animated.View>
+      <View style={styles.ctaWrapper}>
+        {/* Glow pulse behind CTA */}
+        <Animated.View
+          style={[
+            styles.glowPulse,
+            glowAnimStyle,
+            { backgroundColor: getGlowColor() },
+          ]}
+          pointerEvents="none"
+        />
+        <Animated.View style={[styles.ctaArea, animatedStyle]}>
+          {renderCTA()}
+        </Animated.View>
+      </View>
     );
   };
 
@@ -236,6 +287,15 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: SPACING.lg,
     justifyContent: "center",
+  },
+  ctaWrapper: {
+    flex: 1,
+    position: "relative",
+  },
+  glowPulse: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: DIMENSIONS.borderRadiusLarge,
+    transform: [{ scaleX: 1.1 }, { scaleY: 1.3 }],
   },
   ctaButton: {
     flex: 1,

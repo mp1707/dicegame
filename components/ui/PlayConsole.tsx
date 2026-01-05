@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { View, StyleSheet, Image, ViewStyle } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Animated, {
@@ -24,7 +24,7 @@ import { Sparks } from "../ui-kit/Sparks";
 import { useGameStore } from "../../store/gameStore";
 import { formatNumber } from "../../utils/yahtzeeScoring";
 import { formatCompactNumber } from "../../utils/formatting";
-import { triggerNotificationSuccess } from "../../utils/haptics";
+import { triggerNotificationSuccess, triggerLightImpact } from "../../utils/haptics";
 
 // Animated components - Use Animated.View/Text directly from reanimated
 
@@ -65,6 +65,62 @@ export const PlayConsole: React.FC<PlayConsoleProps> = ({
   const levelNumber = currentLevelIndex + 1;
   const rollsRemaining = useGameStore((s) => s.rollsRemaining);
   const handsRemaining = useGameStore((s) => s.handsRemaining);
+  const phase = useGameStore((s) => s.phase);
+
+  // Money count-up animation state
+  const [displayedMoney, setDisplayedMoney] = useState(money);
+  const prevMoneyRef = useRef(money);
+  const countUpIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Money count-up animation
+  const animateMoneyCountUp = useCallback((from: number, to: number) => {
+    if (countUpIntervalRef.current) {
+      clearInterval(countUpIntervalRef.current);
+    }
+
+    const duration = ANIMATION.cashout.countUpDuration;
+    const steps = 20;
+    const stepDuration = duration / steps;
+    const diff = to - from;
+
+    triggerLightImpact(); // Start haptic
+
+    let currentStep = 0;
+    countUpIntervalRef.current = setInterval(() => {
+      currentStep++;
+      const progress = currentStep / steps;
+      const easedProgress = 1 - Math.pow(1 - progress, 3); // Ease out cubic
+      setDisplayedMoney(Math.round(from + diff * easedProgress));
+
+      if (currentStep >= steps) {
+        if (countUpIntervalRef.current) {
+          clearInterval(countUpIntervalRef.current);
+          countUpIntervalRef.current = null;
+        }
+        setDisplayedMoney(to);
+      }
+    }, stepDuration);
+  }, []);
+
+  // Detect money changes and trigger count-up
+  useEffect(() => {
+    const prevMoney = prevMoneyRef.current;
+    prevMoneyRef.current = money;
+
+    // Only animate if money increased (rewards being applied)
+    if (money > prevMoney && phase === "SHOP_MAIN") {
+      animateMoneyCountUp(prevMoney, money);
+    } else if (money !== displayedMoney && phase !== "SHOP_MAIN") {
+      // Instant update for other cases (new run, etc.)
+      setDisplayedMoney(money);
+    }
+
+    return () => {
+      if (countUpIntervalRef.current) {
+        clearInterval(countUpIntervalRef.current);
+      }
+    };
+  }, [money, phase, animateMoneyCountUp]);
 
   // Animation values
   const progress = useSharedValue(0);
@@ -168,14 +224,14 @@ export const PlayConsole: React.FC<PlayConsoleProps> = ({
               </GameText>
             </InsetSlot>
 
-            {/* Money */}
+            {/* Money - with count-up animation */}
             <InsetSlot style={styles.statSlot}>
               <Image
                 source={require("../../assets/icons/coin.png")}
                 style={styles.iconSm}
               />
               <GameText variant="scoreboardSmall" color={COLORS.gold}>
-                {formatNumber(money)}
+                {formatNumber(displayedMoney)}
               </GameText>
             </InsetSlot>
           </View>
