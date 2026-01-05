@@ -1,6 +1,6 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef } from "react";
 import { View, StyleSheet } from "react-native";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { RoundedBox } from "@react-three/drei";
 import * as THREE from "three";
 import {
@@ -8,7 +8,7 @@ import {
   DiceUpgradeType,
   PipState,
 } from "../../utils/gameCore";
-import { COLORS, ANIMATION } from "../../constants/theme";
+import { COLORS } from "../../constants/theme";
 import { triggerSelectionHaptic } from "../../utils/haptics";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -163,10 +163,7 @@ const InteractiveDie: React.FC<InteractiveDieProps> = ({
   const groupRef = useRef<THREE.Group>(null);
   const isDragging = useRef(false);
   const previousPointer = useRef({ x: 0, y: 0 });
-  const velocity = useRef({ x: 0, y: 0 });
   const currentFaceRef = useRef<number | null>(null);
-
-  const { size, gl } = useThree();
 
   // Target rotation for snapping
   const targetQuaternion = useRef(new THREE.Quaternion());
@@ -190,55 +187,42 @@ const InteractiveDie: React.FC<InteractiveDieProps> = ({
     return bestFace;
   };
 
-  // Handle pointer events
-  useEffect(() => {
-    const canvas = gl.domElement;
+  // R3F pointer event handlers (work in React Native)
+  const handlePointerDown = (e: any) => {
+    e.stopPropagation();
+    isDragging.current = true;
+    isSnapping.current = false;
+    // Use uv or point coordinates for consistent tracking
+    previousPointer.current = { x: e.point.x, y: e.point.y };
+  };
 
-    const onPointerDown = (e: PointerEvent) => {
-      isDragging.current = true;
-      isSnapping.current = false;
-      previousPointer.current = { x: e.clientX, y: e.clientY };
-      velocity.current = { x: 0, y: 0 };
-    };
+  const handlePointerMove = (e: any) => {
+    if (!isDragging.current || !groupRef.current) return;
+    e.stopPropagation();
 
-    const onPointerMove = (e: PointerEvent) => {
-      if (!isDragging.current || !groupRef.current) return;
+    // Calculate rotation based on pointer movement in 3D space
+    const deltaX = (e.point.x - previousPointer.current.x) * 3;
+    const deltaY = (e.point.y - previousPointer.current.y) * 3;
 
-      const deltaX = e.clientX - previousPointer.current.x;
-      const deltaY = e.clientY - previousPointer.current.y;
+    // Rotate based on drag - intuitive mapping:
+    // Drag right → rotate around Y axis (positive)
+    // Drag down → rotate around X axis (negative for intuitive feel)
+    groupRef.current.rotation.y += deltaX;
+    groupRef.current.rotation.x -= deltaY; // Inverted for intuitive gesture
 
-      // Rotate based on drag
-      const rotationSpeed = 0.01;
-      groupRef.current.rotation.y += deltaX * rotationSpeed;
-      groupRef.current.rotation.x += deltaY * rotationSpeed;
+    previousPointer.current = { x: e.point.x, y: e.point.y };
+  };
 
-      velocity.current = { x: deltaX, y: deltaY };
-      previousPointer.current = { x: e.clientX, y: e.clientY };
-    };
-
-    const onPointerUp = () => {
-      if (isDragging.current && groupRef.current) {
-        // Start snapping to nearest face
-        const quaternion = groupRef.current.quaternion.clone();
-        const frontFace = detectFrontFace(quaternion);
-        targetQuaternion.current.copy(FACE_ROTATIONS[frontFace]);
-        isSnapping.current = true;
-      }
-      isDragging.current = false;
-    };
-
-    canvas.addEventListener("pointerdown", onPointerDown);
-    canvas.addEventListener("pointermove", onPointerMove);
-    canvas.addEventListener("pointerup", onPointerUp);
-    canvas.addEventListener("pointerleave", onPointerUp);
-
-    return () => {
-      canvas.removeEventListener("pointerdown", onPointerDown);
-      canvas.removeEventListener("pointermove", onPointerMove);
-      canvas.removeEventListener("pointerup", onPointerUp);
-      canvas.removeEventListener("pointerleave", onPointerUp);
-    };
-  }, [gl]);
+  const handlePointerUp = (e: any) => {
+    if (isDragging.current && groupRef.current) {
+      // Start snapping to nearest face
+      const quaternion = groupRef.current.quaternion.clone();
+      const frontFace = detectFrontFace(quaternion);
+      targetQuaternion.current.copy(FACE_ROTATIONS[frontFace]);
+      isSnapping.current = true;
+    }
+    isDragging.current = false;
+  };
 
   useFrame((_, delta) => {
     if (!groupRef.current) return;
@@ -260,9 +244,7 @@ const InteractiveDie: React.FC<InteractiveDieProps> = ({
     const newFace = detectFrontFace(groupRef.current.quaternion);
     if (newFace !== currentFaceRef.current) {
       currentFaceRef.current = newFace;
-      if (ANIMATION.diceEditor.faceSnapHaptic) {
-        triggerSelectionHaptic();
-      }
+      triggerSelectionHaptic();
       onFaceChange(newFace);
     }
   });
@@ -274,6 +256,17 @@ const InteractiveDie: React.FC<InteractiveDieProps> = ({
 
   return (
     <group ref={groupRef}>
+      {/* Invisible sphere for touch interaction - larger than die for easier grabbing */}
+      <mesh
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerUp}
+      >
+        <sphereGeometry args={[DIE_SIZE * 1.2, 16, 16]} />
+        <meshBasicMaterial transparent opacity={0} />
+      </mesh>
+
       <RoundedBox
         args={[DIE_SIZE, DIE_SIZE, DIE_SIZE]}
         radius={0.1}

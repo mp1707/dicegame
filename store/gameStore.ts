@@ -311,15 +311,21 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   acceptHand: () => {
-    const { selectedHandId, handLevels, diceValues, phase } = get();
+    const { selectedHandId, handLevels, diceValues, phase, diceEnhancements } =
+      get();
 
     if (phase !== "LEVEL_PLAY" || !selectedHandId) {
       return;
     }
 
-    // Get scoring breakdown for animation
+    // Get scoring breakdown for animation (including enhancement bonuses)
     const level = handLevels[selectedHandId];
-    const breakdown = getScoringBreakdown(selectedHandId, level, diceValues);
+    const breakdown = getScoringBreakdown(
+      selectedHandId,
+      level,
+      diceValues,
+      diceEnhancements
+    );
 
     // Start reveal animation and unlock all dice (locks no longer needed during scoring)
     set({

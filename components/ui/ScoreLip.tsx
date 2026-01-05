@@ -25,6 +25,7 @@ import {
  *
  * Used inside PlayConsole as the bottom section.
  * Shows: hand name + level, and score/formula in fixed-width display.
+ * Now includes enhancement bonuses in the formula display.
  *
  * No outer panel wrapper - that's provided by PlayConsole.
  */
@@ -38,6 +39,7 @@ export const ScoreLip = () => {
 
   // Animation values
   const pointsScale = useSharedValue(1);
+  const multScale = useSharedValue(1);
   const finalScoreScale = useSharedValue(1);
   const totalScoreScale = useSharedValue(1);
   const totalColorProgress = useSharedValue(0);
@@ -56,7 +58,11 @@ export const ScoreLip = () => {
   const basePoints = selectedHandId
     ? getBasePoints(selectedHandId, handLevel)
     : 0;
-  const mult = selectedHandId ? HAND_BASE_CONFIG[selectedHandId].mult : 1;
+  const baseMult = selectedHandId ? HAND_BASE_CONFIG[selectedHandId].mult : 1;
+
+  // Get enhancement bonuses from breakdown
+  const bonusPoints = revealState?.breakdown?.bonusPoints ?? 0;
+  const bonusMult = revealState?.breakdown?.bonusMult ?? 0;
 
   // Snappy timing config
   const snapTiming = { duration: 100, easing: Easing.out(Easing.cubic) };
@@ -73,7 +79,11 @@ export const ScoreLip = () => {
     }
 
     animationInProgress.current = true;
-    const { contributingIndices, finalScore } = revealState.breakdown;
+    const {
+      contributingIndices,
+      finalScore,
+      bonusMult: totalBonusMult,
+    } = revealState.breakdown;
     const currentDiceValues = useGameStore.getState().diceValues;
     const currentLevelScore = useGameStore.getState().levelScore;
 
@@ -82,43 +92,68 @@ export const ScoreLip = () => {
 
     const animateNextDie = () => {
       if (dieIdx >= contributingIndices.length) {
-        updateRevealAnimation({ animationPhase: "final", currentDieIndex: -1 });
-        triggerSelectionHaptic();
-
-        finalScoreScale.value = withSequence(
-          withTiming(1.08, {
-            duration: 80,
-            easing: Easing.out(Easing.back(1.5)),
-          }),
-          withTiming(1, { duration: 64, easing: Easing.out(Easing.quad) })
-        );
-
-        setTimeout(() => {
-          updateRevealAnimation({
-            animationPhase: "total",
-            displayTotal: currentLevelScore + finalScore,
-          });
-          triggerLightImpact();
-          totalColorProgress.value = 0;
-
-          totalScoreScale.value = withSequence(
-            withTiming(1.08, {
-              duration: 80,
-              easing: Easing.out(Easing.back(1.5)),
+        // Points counting phase complete - now show mult bonus if any
+        if (totalBonusMult > 0) {
+          // Animate mult bonus addition with red pulse
+          multScale.value = withSequence(
+            withTiming(1.15, {
+              duration: 100,
+              easing: Easing.out(Easing.back(2)),
             }),
-            withTiming(1, { duration: 64, easing: Easing.out(Easing.quad) })
+            withTiming(1, { duration: 80, easing: Easing.out(Easing.quad) })
           );
+          triggerSelectionHaptic();
+        }
 
-          totalColorProgress.value = withDelay(
-            200,
-            withTiming(1, { duration: 800, easing: Easing.out(Easing.quad) })
-          );
+        // Short delay then show final score
+        setTimeout(
+          () => {
+            updateRevealAnimation({
+              animationPhase: "final",
+              currentDieIndex: -1,
+            });
+            triggerSelectionHaptic();
 
-          setTimeout(() => {
-            animationInProgress.current = false;
-            finalizeHand();
-          }, 1600);
-        }, 560);
+            finalScoreScale.value = withSequence(
+              withTiming(1.08, {
+                duration: 80,
+                easing: Easing.out(Easing.back(1.5)),
+              }),
+              withTiming(1, { duration: 64, easing: Easing.out(Easing.quad) })
+            );
+
+            setTimeout(() => {
+              updateRevealAnimation({
+                animationPhase: "total",
+                displayTotal: currentLevelScore + finalScore,
+              });
+              triggerLightImpact();
+              totalColorProgress.value = 0;
+
+              totalScoreScale.value = withSequence(
+                withTiming(1.08, {
+                  duration: 80,
+                  easing: Easing.out(Easing.back(1.5)),
+                }),
+                withTiming(1, { duration: 64, easing: Easing.out(Easing.quad) })
+              );
+
+              totalColorProgress.value = withDelay(
+                200,
+                withTiming(1, {
+                  duration: 800,
+                  easing: Easing.out(Easing.quad),
+                })
+              );
+
+              setTimeout(() => {
+                animationInProgress.current = false;
+                finalizeHand();
+              }, 1600);
+            }, 560);
+          },
+          totalBonusMult > 0 ? 350 : 0
+        ); // Extra delay if showing mult bonus
         return;
       }
 
@@ -150,6 +185,7 @@ export const ScoreLip = () => {
   useEffect(() => {
     if (!revealState?.active) {
       pointsScale.value = 1;
+      multScale.value = 1;
       finalScoreScale.value = 1;
       totalScoreScale.value = 1;
       totalColorProgress.value = 0;
@@ -160,6 +196,10 @@ export const ScoreLip = () => {
   // Animated styles
   const pointsAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pointsScale.value }],
+  }));
+
+  const multAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: multScale.value }],
   }));
 
   const finalScoreAnimatedStyle = useAnimatedStyle(() => ({
@@ -178,11 +218,16 @@ export const ScoreLip = () => {
   // Get level score for display
   const levelScore = useGameStore((s) => s.levelScore);
 
-  // Calculate delta formula for display during scoring
+  // Calculate display values during scoring animation
   const currentPoints =
     revealState?.active && revealState.breakdown
-      ? revealState.breakdown.basePoints + revealState.accumulatedPips
+      ? revealState.breakdown.basePoints +
+        revealState.accumulatedPips +
+        bonusPoints
       : basePoints;
+
+  // Total mult includes bonus mult
+  const displayMult = baseMult + bonusMult;
 
   // Get display total
   const displayTotal =
@@ -232,15 +277,36 @@ export const ScoreLip = () => {
           </Animated.View>
         ) : (
           <View style={styles.scoreFormula}>
-            <Animated.Text style={[styles.pointsText, pointsAnimatedStyle]}>
-              {currentPoints}
-            </Animated.Text>
+            <Animated.View style={pointsAnimatedStyle}>
+              <View style={styles.pointsContainer}>
+                <GameText variant="scoreboardMedium" color={COLORS.text}>
+                  {currentPoints}
+                </GameText>
+                {bonusPoints > 0 && revealState?.active && (
+                  <GameText variant="bodySmall" color={COLORS.upgradePoints}>
+                    (+{bonusPoints})
+                  </GameText>
+                )}
+              </View>
+            </Animated.View>
             <GameText variant="bodyLarge" color={COLORS.textMuted}>
               {" × "}
             </GameText>
-            <GameText variant="scoreboardMedium" color={COLORS.cyan}>
-              {mult}
-            </GameText>
+            <Animated.View style={multAnimatedStyle}>
+              <View style={styles.multContainer}>
+                <GameText
+                  variant="scoreboardMedium"
+                  color={bonusMult > 0 ? COLORS.upgradeMult : COLORS.cyan}
+                >
+                  {displayMult}
+                </GameText>
+                {bonusMult > 0 && revealState?.active && (
+                  <GameText variant="bodySmall" color={COLORS.upgradeMult}>
+                    (+{bonusMult})
+                  </GameText>
+                )}
+              </View>
+            </Animated.View>
           </View>
         )}
       </InsetSlot>
@@ -272,10 +338,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
-  pointsText: {
-    color: COLORS.text,
-    fontSize: 22,
-    fontFamily: FONT_FAMILY,
-    fontVariant: ["tabular-nums"],
+  pointsContainer: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 2,
+  },
+  multContainer: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 2,
   },
 });

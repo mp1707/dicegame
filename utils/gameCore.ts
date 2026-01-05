@@ -327,6 +327,8 @@ export interface ScoringBreakdown {
   basePoints: number;
   pips: number;
   mult: number;
+  bonusPoints: number; // From blue (points) pip enhancements
+  bonusMult: number; // From red (mult) pip enhancements
   finalScore: number;
   contributingIndices: number[];
 }
@@ -334,17 +336,42 @@ export interface ScoringBreakdown {
 export function getScoringBreakdown(
   handId: HandId,
   level: number,
-  dice: number[]
+  dice: number[],
+  enhancements?: DieEnhancement[]
 ): ScoringBreakdown {
   const category = CATEGORIES.find((c) => c.id === handId);
+  const basePoints = getBasePoints(handId, level);
+  const pips = calculatePips(handId, dice);
+  const mult = getMultiplier(handId);
+  const contributingIndices = getContributingDiceIndices(handId, dice);
+
+  // Calculate enhancement bonuses from contributing dice only
+  let bonusPoints = 0;
+  let bonusMult = 0;
+
+  if (enhancements) {
+    for (const dieIndex of contributingIndices) {
+      const faceValue = dice[dieIndex];
+      bonusPoints += bonusPointsForDieFace(dieIndex, faceValue, enhancements);
+      bonusMult += bonusMultForDieFace(dieIndex, faceValue, enhancements);
+    }
+  }
+
+  // Enhanced scoring formula: (base + pips + bonusPoints) × (mult + bonusMult)
+  const totalPoints = basePoints + pips + bonusPoints;
+  const totalMult = mult + bonusMult;
+  const finalScore = totalPoints * totalMult;
+
   return {
     handId,
     handName: category?.labelDe || handId,
-    basePoints: getBasePoints(handId, level),
-    pips: calculatePips(handId, dice),
-    mult: getMultiplier(handId),
-    finalScore: calculateHandScore(handId, level, dice),
-    contributingIndices: getContributingDiceIndices(handId, dice),
+    basePoints,
+    pips,
+    mult,
+    bonusPoints,
+    bonusMult,
+    finalScore,
+    contributingIndices,
   };
 }
 

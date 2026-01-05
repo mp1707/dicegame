@@ -191,22 +191,43 @@ interface DieEnhancement {
 - Only spawns if at least one pip across all dice is enhanceable
 - Costs: Points = $8, Mult = $14
 
-**Dice Editor Flow** (`DiceEditorModal.tsx`):
+**Dice Editor Flow** (`DiceEditorModal.tsx` + `DiePreview3D.tsx`):
 
 1. **Screen A (Die Picker)**: 2+3 grid of dice, tap to select, "WÜRFEL VERBESSERN" CTA
 2. **Screen B (Face Picker)**: 3D die with drag-to-rotate, snap-to-face, "SEITE VERBESSERN" CTA
+   - Uses R3F pointer events on invisible hit sphere for React Native compatibility
+   - Intuitive gesture mapping: drag down rotates die down, drag right rotates right
+   - Snaps to nearest face on release with haptic feedback
 
 **Colored Pip Rendering** (`Die.tsx`):
 
 - Enhanced pips render in blue (`COLORS.upgradePoints`) or red (`COLORS.upgradeMult`)
 - Emissive material with 0.5 intensity for glow effect
 
-**Scoring Helpers**:
+**Scoring Formula with Enhancements**:
+
+When a hand is scored, enhancement bonuses are calculated from contributing dice only:
+
+```
+finalScore = (basePoints + pips + bonusPoints) × (mult + bonusMult)
+```
+
+- `bonusPoints` = count of "points" pips across all contributing dice × 10
+- `bonusMult` = count of "mult" pips across all contributing dice × 1
+
+**Scoring Helpers** (`utils/gameCore.ts`):
 
 ```typescript
 bonusPointsForDieFace(dieIndex, faceValue, enhancements); // count × 10
 bonusMultForDieFace(dieIndex, faceValue, enhancements); // count × 1
+getScoringBreakdown(handId, level, dice, enhancements); // includes bonusPoints, bonusMult
 ```
+
+**ScoreLip Display** (`components/ui/ScoreLip.tsx`):
+
+- During scoring reveal, displays bonus indicators: blue `(+10)` for points, red `(+1)` for mult
+- Mult number turns red when enhanced (uses `COLORS.upgradeMult`)
+- Mult bonus triggers pulse animation before showing final score
 
 ### Dice Locking Pattern
 
