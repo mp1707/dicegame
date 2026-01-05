@@ -25,19 +25,12 @@ import { getContributingDiceIndices } from "../utils/gameCore";
 const GameEndOverlay = () => {
   const phase = useGameStore((s) => s.phase);
 
-  if (phase !== "WIN_SCREEN" && phase !== "LOSE_SCREEN") return null;
-
-  const isWon = phase === "WIN_SCREEN";
+  if (phase !== "WIN_SCREEN") return null;
 
   return (
     <View style={styles.gameEndOverlay}>
-      <Text
-        style={[
-          styles.gameEndText,
-          { color: isWon ? COLORS.green : COLORS.red },
-        ]}
-      >
-        {isWon ? "GEWONNEN!" : "VERLOREN"}
+      <Text style={[styles.gameEndText, { color: COLORS.green }]}>
+        GEWONNEN!
       </Text>
     </View>
   );

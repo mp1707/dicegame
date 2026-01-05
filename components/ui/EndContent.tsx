@@ -1,8 +1,8 @@
 import React from "react";
-import { View, StyleSheet } from "react-native";
-import { Trophy, Skull } from "lucide-react-native";
+import { View, StyleSheet, Image } from "react-native";
+import { Trophy } from "lucide-react-native";
 import { GameText } from "../shared";
-import { HUDCard } from "../ui-kit";
+import { HUDCard, InsetSlot } from "../ui-kit";
 import { COLORS, SPACING, DIMENSIONS } from "../../constants/theme";
 import { useGameStore } from "../../store/gameStore";
 import { formatNumber } from "../../utils/yahtzeeScoring";
@@ -25,49 +25,52 @@ export const EndContent: React.FC = () => {
     <View style={styles.container}>
       {/* Hero section */}
       <View style={styles.hero}>
-        <View
-          style={[
-            styles.iconContainer,
-            isWin ? styles.iconContainerWin : styles.iconContainerLose,
-          ]}
-        >
-          {isWin ? (
+        {isWin && (
+          <View style={[styles.iconContainer, styles.iconContainerWin]}>
             <Trophy size={DIMENSIONS.iconSize.xl} color={COLORS.gold} />
-          ) : (
-            <Skull size={DIMENSIONS.iconSize.xl} color={COLORS.coral} />
-          )}
-        </View>
+          </View>
+        )}
 
-        <GameText
-          variant="displayLarge"
-          style={[styles.title, isWin ? styles.titleWin : styles.titleLose]}
-        >
-          {isWin ? "GEWONNEN!" : "VERLOREN"}
-        </GameText>
+        {isWin && (
+          <GameText
+            variant="displayLarge"
+            style={[styles.title, styles.titleWin]}
+          >
+            GEWONNEN!
+          </GameText>
+        )}
 
         <GameText variant="bodyMedium" color={COLORS.textMuted}>
-          {isWin ? "All 8 levels completed!" : `Failed at Level ${levelNumber}`}
+          {isWin && "All 8 levels completed!"}
         </GameText>
       </View>
 
-      {/* Stats card */}
+      {/* Stats section - New Layout with Insets */}
       <HUDCard style={styles.statsCard}>
         <View style={styles.statRow}>
           <GameText variant="bodyMedium" color={COLORS.textMuted}>
             Final Money
           </GameText>
-          <GameText variant="scoreboardSmall" color={COLORS.gold}>
-            ${formatNumber(money)}
-          </GameText>
+          <InsetSlot style={styles.valueInset}>
+            <Image
+              source={require("../../assets/icons/coin.png")}
+              style={styles.iconSm}
+            />
+            <GameText variant="scoreboardSmall" color={COLORS.gold}>
+              {formatNumber(money)}
+            </GameText>
+          </InsetSlot>
         </View>
 
         <View style={styles.statRow}>
           <GameText variant="bodyMedium" color={COLORS.textMuted}>
             Levels Completed
           </GameText>
-          <GameText variant="scoreboardSmall">
-            {isWin ? 8 : currentLevelIndex} / 8
-          </GameText>
+          <InsetSlot style={styles.valueInset}>
+            <GameText variant="scoreboardSmall" color={COLORS.text}>
+              {isWin ? 8 : currentLevelIndex} / 8
+            </GameText>
+          </InsetSlot>
         </View>
       </HUDCard>
     </View>
@@ -98,11 +101,6 @@ const styles = StyleSheet.create({
     borderWidth: DIMENSIONS.borderWidth,
     borderColor: COLORS.gold,
   },
-  iconContainerLose: {
-    backgroundColor: COLORS.overlays.coralSubtle,
-    borderWidth: DIMENSIONS.borderWidth,
-    borderColor: COLORS.coral,
-  },
   title: {
     textAlign: "center",
     letterSpacing: 2,
@@ -112,9 +110,6 @@ const styles = StyleSheet.create({
     textShadowColor: COLORS.shadows.goldStrong,
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 12,
-  },
-  titleLose: {
-    color: COLORS.coral,
   },
   statsCard: {
     alignSelf: "center",
@@ -126,5 +121,19 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: SPACING.xs,
+    height: 36, // Fixed height for alignment
+  },
+  valueInset: {
+    width: "33%", // Take a third of the row
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: SPACING.xs,
+    paddingVertical: SPACING.xs,
+  },
+  iconSm: {
+    width: DIMENSIONS.iconSize.xs, // Slightly smaller than header
+    height: DIMENSIONS.iconSize.xs,
+    resizeMode: "contain",
   },
 });

@@ -12,6 +12,7 @@ import { FooterControls } from "../../ui/FooterControls";
 import { CashoutTrayOverlay } from "../../ui/CashoutTrayOverlay";
 import { ShopTrayOverlay } from "../../ui/ShopTrayOverlay";
 import { DiceEditorTrayOverlay } from "../../ui/DiceEditorTrayOverlay";
+import { LoseTrayOverlay } from "../../ui/LoseTrayOverlay";
 
 interface PhaseDeckProps {
   /** The DiceTray component (3D scene) - rendered inside PlayConsole */
@@ -51,6 +52,8 @@ export const PhaseDeck: React.FC<PhaseDeckProps> = ({ diceTray }) => {
       case "DICE_EDITOR_DIE":
       case "DICE_EDITOR_FACE":
         return <DiceEditorTrayOverlay />;
+      case "LOSE_SCREEN":
+        return <LoseTrayOverlay />;
       default:
         return null;
     }

@@ -6,22 +6,24 @@ import { COLORS, SPACING } from "../../constants/theme";
 interface TrayOverlayTitleProps {
   title: string;
   subtitle?: React.ReactNode;
+  color?: string;
 }
 
 /**
  * TrayOverlayTitle - Consistent title component for tray overlays
  *
  * Visuals:
- * - Title: Big, white, drop shadow
+ * - Title: Big, white (or colored), drop shadow
  * - Subtitle: Smaller, white, drop shadow (optional)
  */
 export const TrayOverlayTitle: React.FC<TrayOverlayTitleProps> = ({
   title,
   subtitle,
+  color = COLORS.text,
 }) => {
   return (
     <View style={styles.container}>
-      <GameText variant="displayLarge" color={COLORS.text} style={styles.title}>
+      <GameText variant="displayLarge" color={color} style={styles.title}>
         {title}
       </GameText>
       {typeof subtitle === "string" ? (
