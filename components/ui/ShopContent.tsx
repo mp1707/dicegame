@@ -1,51 +1,26 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { View, StyleSheet } from "react-native";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  Easing,
-} from "react-native-reanimated";
-import { ArrowUp, ShoppingBag, Sparkles } from "lucide-react-native";
-import { GameText } from "../shared";
+import { ArrowUp, Sparkles } from "lucide-react-native";
 import { ShopItemCard } from "./ShopItemCard";
 import { COLORS, SPACING, DIMENSIONS, ANIMATION } from "../../constants/theme";
 import { useGameStore } from "../../store/gameStore";
 import { getDiceUpgradeCost } from "../../utils/gameCore";
 
 /**
- * ShopContent - Redesigned shop for bottom panel slot
+ * ShopContent - Shop grid for bottom panel slot (SHOP_MAIN phase)
  *
  * Features:
- * - Header with title (money shown permanently in game header)
- * - Subtitle instruction
  * - 2x2 grid with ShopItemCard components
  * - Dice enhancement card (dynamic based on spawn type)
  * - Staggered entrance animations
+ *
+ * Note: Title and subtitle are now displayed in ShopTrayOverlay instead.
  */
 export const ShopContent: React.FC = () => {
   const money = useGameStore((s) => s.money);
   const selectUpgradeItem = useGameStore((s) => s.selectUpgradeItem);
   const shopDiceUpgradeType = useGameStore((s) => s.shopDiceUpgradeType);
   const openDiceEditor = useGameStore((s) => s.openDiceEditor);
-
-  // Header animations
-  const headerOpacity = useSharedValue(0);
-  const headerTranslateY = useSharedValue(6);
-
-  useEffect(() => {
-    // Title fade + drop
-    headerOpacity.value = withTiming(1, { duration: 200 });
-    headerTranslateY.value = withTiming(0, {
-      duration: 200,
-      easing: Easing.out(Easing.quad),
-    });
-  }, []);
-
-  const headerAnimStyle = useAnimatedStyle(() => ({
-    opacity: headerOpacity.value,
-    transform: [{ translateY: headerTranslateY.value }],
-  }));
 
   const handleUpgrade = () => {
     selectUpgradeItem();
@@ -81,25 +56,6 @@ export const ShopContent: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header with Title */}
-      <Animated.View style={[styles.header, headerAnimStyle]}>
-        <ShoppingBag size={DIMENSIONS.iconSize.md} color={COLORS.cyan} />
-        <GameText variant="displaySmall" color={COLORS.text}>
-          SHOP
-        </GameText>
-      </Animated.View>
-
-      {/* Subtitle */}
-      <Animated.View style={headerAnimStyle}>
-        <GameText
-          variant="bodySmall"
-          color={COLORS.textMuted}
-          style={styles.subtitle}
-        >
-          Wähle ein Upgrade
-        </GameText>
-      </Animated.View>
-
       {/* Shop Grid - 2x2 */}
       <View style={styles.gridContainer}>
         {/* Row 1 */}
@@ -179,17 +135,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: SPACING.screenPadding,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: SPACING.sm,
-    marginBottom: SPACING.xs,
-  },
-  subtitle: {
-    textAlign: "center",
-    marginBottom: SPACING.sm,
   },
   gridContainer: {
     flex: 1,

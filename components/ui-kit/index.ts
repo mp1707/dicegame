@@ -13,5 +13,6 @@ export { SectionHeader } from "./SectionHeader";
 export { Divider } from "./Divider";
 
 export { NumericCapsule } from "./NumericCapsule";
+export { TrayOverlay } from "./TrayOverlay";
 
 // Flow components (PhaseDeck) - will be exported from ./flow

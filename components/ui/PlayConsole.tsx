@@ -24,7 +24,10 @@ import { Sparks } from "../ui-kit/Sparks";
 import { useGameStore } from "../../store/gameStore";
 import { formatNumber } from "../../utils/yahtzeeScoring";
 import { formatCompactNumber } from "../../utils/formatting";
-import { triggerNotificationSuccess, triggerLightImpact } from "../../utils/haptics";
+import {
+  triggerNotificationSuccess,
+  triggerLightImpact,
+} from "../../utils/haptics";
 
 // Animated components - Use Animated.View/Text directly from reanimated
 
@@ -33,6 +36,8 @@ interface PlayConsoleProps {
   diceTray: React.ReactNode;
   /** ScoreLip content (score display) */
   scoreLip: React.ReactNode;
+  /** Optional overlay content for tray area (cashout, shop, etc.) */
+  trayOverlay?: React.ReactNode;
   /** Additional style */
   style?: ViewStyle;
 }
@@ -50,6 +55,7 @@ interface PlayConsoleProps {
 export const PlayConsole: React.FC<PlayConsoleProps> = ({
   diceTray,
   scoreLip,
+  trayOverlay,
   style,
 }) => {
   const currentLevelIndex = useGameStore((s) => s.currentLevelIndex);
@@ -377,8 +383,15 @@ export const PlayConsole: React.FC<PlayConsoleProps> = ({
       {/* === TrayWindow Section (Dice Felt Inset) === */}
       <View style={styles.trayWindow}>
         <View style={styles.trayInset}>
-          {/* Inner shadow overlays for depth */}
+          {/* Always render the dice tray (green felt) */}
           <View style={styles.trayContent}>{diceTray}</View>
+
+          {/* Overlay content on top of dice when present */}
+          {trayOverlay && (
+            <View style={styles.trayOverlayContainer} pointerEvents="box-none">
+              {trayOverlay}
+            </View>
+          )}
 
           {/* Depth overlay */}
           <View style={styles.depthOverlay} pointerEvents="none">
@@ -527,6 +540,11 @@ const styles = StyleSheet.create({
   trayContent: {
     flex: 1,
     overflow: "hidden",
+  },
+  trayOverlayContainer: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "center",
+    alignItems: "center",
   },
   depthOverlay: {
     ...StyleSheet.absoluteFillObject,
