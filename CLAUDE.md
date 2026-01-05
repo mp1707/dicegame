@@ -437,6 +437,50 @@ import { Surface, HUDCard, InsetSlot, Chip, SectionHeader, Divider } from "../ui
 - ProgressBar: Inset track, animated gradient fill, leading shine
 - Only `PrimaryButton` and `TileButton` should have 3D bevels and glows
 
+### New Feature UI Guidelines
+
+When building new features (modals, screens, flows), follow these guidelines to maintain UI consistency:
+
+**Component Selection Hierarchy:**
+
+1. **Interactive elements** → Use `PrimaryButton` (CTAs) or `TileButton` (grid items)
+2. **Containers** → Use `Surface` (panel, inset, chip, overlay variants)
+3. **Status badges** → Use `Chip` component
+4. **Text** → Use `GameText` with typography variants
+5. **Spacing** → Use `SPACING.*` constants
+6. **Dimensions** → Use `DIMENSIONS.*` or `LAYOUT.*` constants
+
+**Pre-Implementation Checklist:**
+
+Before writing new UI code, verify:
+
+- [ ] Am I using an existing UI kit component instead of a raw `View`/`Pressable`?
+- [ ] Are all colors from `COLORS.*` (no hex literals)?
+- [ ] Are all spacings from `SPACING.*` (no magic numbers)?
+- [ ] Are all dimensions from `DIMENSIONS.*` or `LAYOUT.*`?
+- [ ] Are touch targets at least `LAYOUT.minTouchTarget` (44px)?
+- [ ] Do interactive elements have proper 3D bevels (via `PrimaryButton`/`TileButton`)?
+
+**Gap Handling Protocol:**
+
+If you need a component, color, or dimension that doesn't exist in the theme:
+
+1. **Stop and ask the user** before creating custom styles
+2. Propose adding the new token to `constants/theme.ts`
+3. Propose adding a new UI kit component if the pattern will be reused
+4. Only proceed with inline styles if the user confirms it's a one-off
+
+**Common Mistakes to Avoid:**
+
+| ❌ Wrong                                | ✅ Right                           |
+| --------------------------------------- | ---------------------------------- |
+| `<Pressable style={{...}}>` for CTAs    | `<PrimaryButton label="..." />`    |
+| `<View style={{border: 1}}>` for badges | `<Chip label="..." color="..." />` |
+| `width: 72` hardcoded                   | `width: DIMENSIONS.tileHeight`     |
+| `height: 40` for touch targets          | `height: LAYOUT.minTouchTarget`    |
+| `backgroundColor: "#352B58"`            | `backgroundColor: COLORS.surface`  |
+| `gap: 8`                                | `gap: SPACING.sm`                  |
+
 ### Money/Cost Display Convention
 
 All money and cost displays follow a consistent pattern:

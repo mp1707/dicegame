@@ -12,9 +12,15 @@ import Animated, {
 } from "react-native-reanimated";
 import { X, Dices, ChevronLeft } from "lucide-react-native";
 import { Canvas } from "@react-three/fiber";
-import { GameText } from "../shared";
-import { Surface } from "../ui-kit";
-import { COLORS, SPACING, DIMENSIONS, ANIMATION } from "../../constants/theme";
+import { GameText, PrimaryButton } from "../shared";
+import { Surface, Chip } from "../ui-kit";
+import {
+  COLORS,
+  SPACING,
+  DIMENSIONS,
+  ANIMATION,
+  LAYOUT,
+} from "../../constants/theme";
 import { useGameStore, DiceUpgradeType } from "../../store/gameStore";
 import {
   getDiceUpgradeCost,
@@ -294,12 +300,15 @@ export const DiceEditorModal: React.FC = () => {
           </View>
 
           {/* Upgrade type indicator */}
-          <View style={[styles.typeIndicator, { borderColor: upgradeColor }]}>
-            <GameText variant="bodySmall" color={upgradeColor}>
-              {pendingUpgradeType === "points"
-                ? "+10 Punkte/Pip"
-                : "+1 Mult/Pip"}
-            </GameText>
+          <View style={styles.typeIndicatorContainer}>
+            <Chip
+              label={
+                pendingUpgradeType === "points"
+                  ? "+10 Punkte/Pip"
+                  : "+1 Mult/Pip"
+              }
+              color={pendingUpgradeType === "points" ? "cyan" : "coral"}
+            />
           </View>
 
           {/* Content */}
@@ -343,26 +352,14 @@ export const DiceEditorModal: React.FC = () => {
               </View>
 
               {/* CTA */}
-              <Pressable
-                onPress={handleAdvanceToFacePicker}
+              <PrimaryButton
+                label="WÜRFEL VERBESSERN"
+                variant={pendingUpgradeType === "points" ? "cyan" : "coral"}
                 disabled={selectedEditorDie === null}
-                style={[
-                  styles.ctaButton,
-                  { backgroundColor: upgradeColor },
-                  selectedEditorDie === null && styles.ctaButtonDisabled,
-                ]}
-              >
-                <GameText
-                  variant="buttonMedium"
-                  color={
-                    selectedEditorDie === null
-                      ? COLORS.textMuted
-                      : COLORS.textDark
-                  }
-                >
-                  WÜRFEL VERBESSERN
-                </GameText>
-              </Pressable>
+                onPress={handleAdvanceToFacePicker}
+                compact
+                style={styles.ctaButton}
+              />
             </View>
           ) : (
             <View style={styles.content}>
@@ -453,31 +450,17 @@ export const DiceEditorModal: React.FC = () => {
                 )}
               </View>
 
-              {
-                /* CTA - invisible but present during success animation to maintain layout */
-                <Pressable
-                  onPress={successState ? undefined : handleApplyUpgrade}
+              {/* CTA - wrapped for opacity control during success animation */}
+              <View style={successState ? { opacity: 0 } : undefined}>
+                <PrimaryButton
+                  label="SEITE VERBESSERN"
+                  variant={pendingUpgradeType === "points" ? "cyan" : "coral"}
                   disabled={!!successState || !canEnhanceFace || !canAfford}
-                  style={[
-                    styles.ctaButton,
-                    { backgroundColor: upgradeColor },
-                    (!!successState || !canEnhanceFace || !canAfford) &&
-                      styles.ctaButtonDisabled,
-                    successState && { opacity: 0 }, // Hide visually but keep layout
-                  ]}
-                >
-                  <GameText
-                    variant="buttonMedium"
-                    color={
-                      !canEnhanceFace || !canAfford
-                        ? COLORS.textMuted
-                        : COLORS.textDark
-                    }
-                  >
-                    SEITE VERBESSERN
-                  </GameText>
-                </Pressable>
-              }
+                  onPress={handleApplyUpgrade}
+                  compact
+                  style={styles.ctaButton}
+                />
+              </View>
             </View>
           )}
         </Surface>
@@ -524,12 +507,8 @@ const styles = StyleSheet.create({
   headerSpacer: {
     width: DIMENSIONS.iconSize.md + SPACING.xs * 2,
   },
-  typeIndicator: {
+  typeIndicatorContainer: {
     alignSelf: "center",
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs,
-    borderRadius: DIMENSIONS.borderRadiusSmall,
-    borderWidth: 1,
     marginTop: SPACING.sm,
   },
   content: {
@@ -548,13 +527,13 @@ const styles = StyleSheet.create({
   },
   dieTileWrapper: {},
   dieTile: {
-    width: 72,
-    height: 72,
+    width: DIMENSIONS.tileHeight, // Use theme-based sizing
+    height: DIMENSIONS.tileHeight,
     borderRadius: DIMENSIONS.borderRadius,
     backgroundColor: COLORS.surface2,
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 2,
+    borderWidth: DIMENSIONS.borderWidth,
     borderColor: COLORS.overlays.whiteMild,
   },
   dieTileSelected: {
@@ -574,18 +553,13 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   selectionIndicator: {
-    height: 40,
+    height: LAYOUT.minTouchTarget, // Use accessibility standard
     justifyContent: "center",
     alignItems: "center",
   },
   ctaButton: {
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.xl,
-    borderRadius: DIMENSIONS.borderRadius,
-    alignItems: "center",
-  },
-  ctaButtonDisabled: {
-    backgroundColor: COLORS.surface2,
+    // PrimaryButton needs minimal height constraint
+    minHeight: 48,
   },
   dieViewerContainer: {
     flex: 1,
@@ -603,8 +577,8 @@ const styles = StyleSheet.create({
     gap: SPACING.xs,
   },
   faceStripItem: {
-    width: 40,
-    height: 40,
+    width: LAYOUT.minTouchTarget, // Accessibility compliant
+    height: LAYOUT.minTouchTarget,
     justifyContent: "center",
     alignItems: "center",
     borderRadius: DIMENSIONS.borderRadiusSmall,
