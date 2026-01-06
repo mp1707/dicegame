@@ -195,13 +195,18 @@ interface DieEnhancement {
 
 1. **DICE_EDITOR_DIE phase** (`DieEditorContent.tsx`): Single row of 5 TileButtons for die selection. Icons use `die.png`. Labels: "Würfel 1" through "Würfel 5". CTAs: ZURÜCK (back to shop) + WEITER (advance to face selection).
 
-   - **3D Die Preview**: PlayConsole tray shows the selected die as a rotatable 3D preview (via `SingleDiePreview.tsx`), allowing players to inspect existing enhancements before choosing which die to upgrade.
+   - **TileButton Enhancement Pills**: Each die tile shows enhancement summary pills in bottom corners:
+     - Bottom-left (blue): Sum of points enhancements on all faces (e.g., "+30" = 3 pips enhanced)
+     - Bottom-right (red): Sum of mult enhancements on all faces
+   - **3D Die Preview**: PlayConsole tray shows selected die with continuous multi-axis rotation (Y + X axes) for full face inspection
+   - **Manual Rotation**: User can drag to rotate; auto-rotation pauses during drag and resumes from current position on release (no flicker/snap)
 
 2. **DICE_EDITOR_FACE phase** (`FaceEditorContent.tsx`): 2x3 grid of TileButtons for face selection. Icons use `1die.png` through `6die.png`. Labels: "Seite 1" through "Seite 6". CTAs: ZURÜCK (back to die selection) + VERBESSERN (apply upgrade).
-   - **3D Die in Tray**: Same rotatable 3D preview as DICE_EDITOR_DIE phase
-   - **3D Rotation**: Uses World Axis rotation for consistent "follow-finger" dragging behavior
+   - **TileButton Enhancement Pills**: Each face tile shows enhancement count for that specific face
+   - **3D Die in Tray**: Same rotatable 3D preview, but with face snapping enabled
+   - **3D Rotation**: Uses World Axis quaternion rotation for consistent "follow-finger" dragging
    - **Face Sync**: Tapping a face button rotates the 3D die to that face; manually rotating the die updates the selected face button
-   - Snaps to nearest face on release with haptic feedback
+   - **Snap Behavior**: Snaps to nearest face on release with haptic feedback (only in this phase)
 
 **Colored Pip Rendering** (`Die.tsx`):
 
@@ -536,6 +541,22 @@ PhaseDeck
 ```
 
 **Note:** During `DICE_EDITOR_DIE` and `DICE_EDITOR_FACE` phases, the TrayWindow shows a single large rotatable die (`SingleDiePreview`) instead of the normal `DiceTray` with 5 dice.
+
+**PlayConsole Phase-Aware Header:**
+
+The goal header in PlayConsole changes based on phase:
+
+- **LEVEL_PLAY**: Normal "ERREICHE X PUNKTE" goal display with progress bar
+- **SHOP phases**: Shows "SHOP" in large text, progress bar hidden
+- **DICE_EDITOR phases**: Shows "WÜRFEL VERBESSERN" with colored upgrade pill (+10 Punkte or +1 Mult)
+
+**TrayOverlay Titles:**
+
+Tray overlays use `TrayOverlayTitle` with fade-in + move-up animation (FadeInUp/FadeOutDown):
+
+- **ShopTrayOverlay**: "Wähle ein Upgrade" (no subtitle, SHOP is in header)
+- **UpgradeTrayOverlay**: "Verbessere eine Hand" / "+5 Punkte"
+- **DiceEditorTrayOverlay**: "Würfel wählen" or "Seite wählen" / "Schritt 1/2" or "Schritt 2/2"
 
 **Phase → BottomPanel Content:**
 

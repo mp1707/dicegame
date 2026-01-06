@@ -255,6 +255,8 @@ interface InteractiveDieProps {
   previewFace?: number;
   previewPipIndex?: number;
   previewColor?: string;
+  /** Whether to snap to nearest face after user releases touch (default: true) */
+  snapOnRelease?: boolean;
 }
 
 const InteractiveDie = React.forwardRef<THREE.Group, InteractiveDieProps>(
@@ -270,6 +272,7 @@ const InteractiveDie = React.forwardRef<THREE.Group, InteractiveDieProps>(
       previewFace,
       previewPipIndex,
       previewColor,
+      snapOnRelease = true,
     },
     ref
   ) => {
@@ -357,8 +360,8 @@ const InteractiveDie = React.forwardRef<THREE.Group, InteractiveDieProps>(
 
     const handlePointerUp = (e: any) => {
       if (!isInteractive) return;
-      if (isDragging.current && localRef.current) {
-        // Start snapping
+      if (isDragging.current && localRef.current && snapOnRelease) {
+        // Start snapping (only if snapOnRelease is enabled)
         const quaternion = localRef.current.quaternion.clone();
         const frontFace = detectFrontFace(quaternion);
         targetQuaternion.current.copy(FACE_ROTATIONS[frontFace]);
@@ -370,8 +373,10 @@ const InteractiveDie = React.forwardRef<THREE.Group, InteractiveDieProps>(
     useFrame((_, delta) => {
       if (!isInteractive || !localRef.current) return;
 
+      // Handle snapping and auto-rotating to selected face
       if (isSnapping.current || isAutoRotating.current) {
-        const speed = isAutoRotating.current ? 0.1 : 0.15;
+        // Use consistent speed for both snapping and auto-rotating
+        const speed = 0.15;
         localRef.current.quaternion.slerp(targetQuaternion.current, speed);
 
         if (
@@ -383,6 +388,30 @@ const InteractiveDie = React.forwardRef<THREE.Group, InteractiveDieProps>(
         }
       }
 
+      // Continuous slow rotation when not dragging, snapping, or auto-rotating
+      // This only applies when no face is selected (DICE_EDITOR_DIE phase behavior)
+      if (
+        !isDragging.current &&
+        !isSnapping.current &&
+        !isAutoRotating.current &&
+        selectedFace === null
+      ) {
+        // Multi-axis continuous rotation using quaternion
+        // Rotate around both Y and a tilted X axis for full face display
+        const rotY = new THREE.Quaternion().setFromAxisAngle(
+          new THREE.Vector3(0, 1, 0),
+          delta * 0.25 // Slow Y rotation
+        );
+        const rotX = new THREE.Quaternion().setFromAxisAngle(
+          new THREE.Vector3(1, 0, 0),
+          delta * 0.15 // Slower X rotation
+        );
+        // Apply rotations
+        localRef.current.quaternion.premultiply(rotY);
+        localRef.current.quaternion.premultiply(rotX);
+      }
+
+      // Detect front face when snapping completes
       if (!isAutoRotating.current) {
         const newFace = detectFrontFace(localRef.current.quaternion);
         if (
@@ -506,17 +535,9 @@ const CameraController = ({ phase }: { phase: GamePhase }) => {
   const { camera } = useThree();
 
   useFrame((state, delta) => {
-    // DICE_EDITOR_DIE: High angle, overview of the ring
-    // DICE_EDITOR_FACE: Standard view (lower, straighter) for face editing
-    const targetPos =
-      phase === "DICE_EDITOR_DIE"
-        ? new THREE.Vector3(0, 1.2, 5.0) // Closer and slightly lower
-        : new THREE.Vector3(0, 0, 4.0); // Closer for face editing
-
-    // Target rotation (Euler)
-    // DICE_EDITOR_DIE: Look down slightly (-0.20 rad)
-    // DICE_EDITOR_FACE: Look straight (0 rad)
-    const targetRotX = phase === "DICE_EDITOR_DIE" ? -0.2 : 0;
+    // Same camera position for both phases - single die view
+    const targetPos = new THREE.Vector3(0, 0, 4.0);
+    const targetRotX = 0;
 
     const speed = 4 * delta;
 
@@ -525,8 +546,6 @@ const CameraController = ({ phase }: { phase: GamePhase }) => {
 
     // Lerp rotation (X axis is the main one changing)
     camera.rotation.x += (targetRotX - camera.rotation.x) * speed;
-
-    // Ensure scaling/aspect is clean? Usually handled by R3F.
   });
 
   return null;
@@ -561,135 +580,66 @@ const DiceScene: React.FC<DiceSceneProps> = ({
   previewPipIndex,
   previewColor,
 }) => {
-  // Use createRef for stable object refs to pass to children
-  const diceRefs = useMemo(
-    () => [0, 1, 2, 3, 4].map(() => React.createRef<THREE.Group>()),
-    []
-  );
+  // Single die ref
+  const dieRef = useRef<THREE.Group>(null);
 
-  // Carousel state
-  const carouselRotation = useRef(0);
+  // Animation state
+  const entranceY = useRef(2); // Start above for drop-in
 
-  // Scene Logic: Layout & Rotation Sync
+  // Scene Logic: Single die positioning and animations
   useFrame((state, delta) => {
-    const selectedRefObject = diceRefs[dieIndex];
-    if (!selectedRefObject) return;
+    const group = dieRef.current;
+    if (!group) return;
 
-    const selectedGroup = selectedRefObject.current;
+    // Target position (centered)
+    const targetX = 0;
+    const targetY = 0;
+    const targetZ = 0.5;
+    const targetScale = 1.3;
 
-    // 1. Sync Rotation: All dice match the selected die (visual rotation of the die itself)
-    if (selectedGroup) {
-      const masterQuat = selectedGroup.quaternion;
-      diceRefs.forEach((ref, i) => {
-        if (i !== dieIndex && ref.current) {
-          ref.current.quaternion.copy(masterQuat);
-        }
-      });
-    }
+    // Entrance animation (drop from above with bounce)
+    const lerpSpeed = 5 * delta;
+    entranceY.current = entranceY.current * (1 - lerpSpeed * 3);
+    if (Math.abs(entranceY.current) < 0.01) entranceY.current = 0;
 
-    // 2. Animate Carousel Rotation
-    // 5 dice = 360 degrees / 5 = 72 degrees per die (2PI / 5)
-    // We want dieIndex to be at angle 0 (Front)
-    // So carousel rotation should be -dieIndex * STEP
-    const ANGLE_STEP = (Math.PI * 2) / 5;
-    const targetRotation = -dieIndex * ANGLE_STEP;
+    // Apply position with entrance offset
+    group.position.x += (targetX - group.position.x) * lerpSpeed;
+    group.position.y +=
+      (targetY + entranceY.current - group.position.y) * lerpSpeed;
+    group.position.z += (targetZ - group.position.z) * lerpSpeed;
 
-    // Shortest path logic:
-    let diff = targetRotation - carouselRotation.current;
-    // Normalize to -PI..PI
-    while (diff > Math.PI) diff -= Math.PI * 2;
-    while (diff < -Math.PI) diff += Math.PI * 2;
+    // Apply scale
+    const s = group.scale.x + (targetScale - group.scale.x) * lerpSpeed;
+    group.scale.setScalar(s);
 
-    // Apply rotation
-    const rotSpeed = 4 * delta;
-    carouselRotation.current += diff * rotSpeed;
-
-    // 3. Position Dice in Circle
-    const RADIUS = 3.5;
-    const CENTER_Z = -RADIUS; // So front is at Z=0 (RADIUS + CENTER_Z = 0)
-
-    diceRefs.forEach((ref, i) => {
-      const group = ref.current;
-      if (!group) return;
-
-      // Calculate Angle on Carousel
-      const theta = i * ANGLE_STEP + carouselRotation.current;
-
-      // Calculate Circle Position
-      const circleX = RADIUS * Math.sin(theta);
-      const circleZ = CENTER_Z + RADIUS * Math.cos(theta);
-
-      const target = { x: circleX, y: 0, z: circleZ, scale: 1.0, opacity: 1 };
-
-      if (phase === "DICE_EDITOR_DIE") {
-        // Die Selection
-        if (i === dieIndex) {
-          target.scale = 1.2;
-          target.y = 0;
-        } else {
-          target.scale = 1.0;
-          target.y = 0;
-        }
-      } else {
-        // Face Selection
-        if (i === dieIndex) {
-          target.x = 0;
-          target.y = 0;
-          target.z = 0.5; // Zoom in
-          target.scale = 1.3;
-        } else {
-          // Fly away from current circle pos
-          const normX = Math.sin(theta);
-          const normZ = Math.cos(theta);
-          target.x = circleX + normX * 8;
-          target.z = circleZ + normZ * 8 - 5;
-          target.y = -5;
-          target.scale = 0;
-        }
-      }
-
-      // Apply
-      const lerpSpeed = 5 * delta;
-      group.position.x += (target.x - group.position.x) * lerpSpeed;
-      group.position.y += (target.y - group.position.y) * lerpSpeed;
-      group.position.z += (target.z - group.position.z) * lerpSpeed;
-
-      const s = group.scale.x + (target.scale - group.scale.x) * lerpSpeed;
-      group.scale.setScalar(s);
-
-      group.visible = s > 0.05;
-    });
+    group.visible = true;
   });
+
+  // Get enhancement for selected die
+  const enhancement = allEnhancements[dieIndex] || {
+    faces: Array(6).fill([]),
+  };
 
   return (
     <>
       <ambientLight intensity={0.6} />
       <directionalLight position={[5, 5, 5]} intensity={0.8} />
 
-      {/* Render all 5 dice */}
-      {[0, 1, 2, 3, 4].map((i) => {
-        const isSelected = i === dieIndex;
-        const enhancement = allEnhancements[i] || {
-          faces: Array(6).fill([]),
-        };
-
-        return (
-          <InteractiveDie
-            key={i}
-            ref={diceRefs[i]}
-            enhancements={enhancement}
-            isInteractive={isSelected}
-            selectedFace={isSelected ? selectedFace : null}
-            onFaceChange={isSelected ? onFaceSelect : undefined}
-            upgradeType={isSelected ? upgradeType : null}
-            enhancedFace={isSelected ? enhancedFace : undefined}
-            enhancedPipIndex={isSelected ? enhancedPipIndex : undefined}
-            previewFace={isSelected ? previewFace : undefined}
-            previewPipIndex={isSelected ? previewPipIndex : undefined}
-            previewColor={previewColor}
-          />
-        );
-      })}
+      {/* Render only selected die */}
+      <InteractiveDie
+        ref={dieRef}
+        enhancements={enhancement}
+        isInteractive={true}
+        selectedFace={selectedFace}
+        onFaceChange={onFaceSelect}
+        upgradeType={upgradeType}
+        enhancedFace={enhancedFace}
+        enhancedPipIndex={enhancedPipIndex}
+        previewFace={previewFace}
+        previewPipIndex={previewPipIndex}
+        previewColor={previewColor}
+        snapOnRelease={phase === "DICE_EDITOR_FACE"}
+      />
     </>
   );
 };

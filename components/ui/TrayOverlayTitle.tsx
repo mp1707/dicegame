@@ -1,5 +1,11 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
+import Animated, {
+  FadeIn,
+  FadeOut,
+  FadeInUp,
+  FadeOutDown,
+} from "react-native-reanimated";
 import { GameText } from "../shared";
 import { COLORS, SPACING } from "../../constants/theme";
 
@@ -15,6 +21,7 @@ interface TrayOverlayTitleProps {
  * Visuals:
  * - Title: Big, white (or colored), drop shadow
  * - Subtitle: Smaller, white, drop shadow (optional)
+ * - Animation: Fade in + move up (not sideways slide)
  */
 export const TrayOverlayTitle: React.FC<TrayOverlayTitleProps> = ({
   title,
@@ -22,7 +29,11 @@ export const TrayOverlayTitle: React.FC<TrayOverlayTitleProps> = ({
   color = COLORS.text,
 }) => {
   return (
-    <View style={styles.container}>
+    <Animated.View
+      entering={FadeInUp.duration(250)}
+      exiting={FadeOutDown.duration(200)}
+      style={styles.container}
+    >
       <GameText variant="displayLarge" color={color} style={styles.title}>
         {title}
       </GameText>
@@ -34,10 +45,10 @@ export const TrayOverlayTitle: React.FC<TrayOverlayTitleProps> = ({
         >
           {subtitle}
         </GameText>
-      ) : (
+      ) : subtitle ? (
         <View style={styles.subtitleContainer}>{subtitle}</View>
-      )}
-    </View>
+      ) : null}
+    </Animated.View>
   );
 };
 

@@ -5,6 +5,7 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   withDelay,
+  withSequence,
   Easing,
 } from "react-native-reanimated";
 import { TileButton, TileButtonState } from "../shared";
@@ -36,37 +37,65 @@ export const DieEditorContent: React.FC = () => {
     return "active";
   };
 
+  // Get enhancement sums for a die (across all 6 faces)
+  const getDieEnhanceSums = (dieIndex: number) => {
+    const die = diceEnhancements[dieIndex];
+    if (!die) return { points: 0, mult: 0 };
+
+    let points = 0;
+    let mult = 0;
+    die.faces.forEach((face) => {
+      face.forEach((pip) => {
+        if (pip === "points") points++;
+        else if (pip === "mult") mult++;
+      });
+    });
+    return { points, mult };
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.rowsContainer}>
         {/* Row 1: Dice 1-3 */}
         <View style={styles.diceRow}>
-          {[0, 1, 2].map((index) => (
-            <AnimatedDieTile
-              key={index}
-              index={index}
-              state={getDieState(index)}
-              onPress={() => selectEditorDie(index)}
-              delay={
-                ANIMATION.shop.headerDelay + index * ANIMATION.shop.gridStagger
-              }
-            />
-          ))}
+          {[0, 1, 2].map((index) => {
+            const sums = getDieEnhanceSums(index);
+            return (
+              <AnimatedDieTile
+                key={index}
+                index={index}
+                state={getDieState(index)}
+                onPress={() => selectEditorDie(index)}
+                delay={
+                  ANIMATION.shop.headerDelay +
+                  index * ANIMATION.shop.gridStagger
+                }
+                enhancePoints={sums.points}
+                enhanceMult={sums.mult}
+              />
+            );
+          })}
         </View>
 
         {/* Row 2: Dice 4-5 */}
         <View style={styles.diceRow}>
-          {[3, 4].map((index) => (
-            <AnimatedDieTile
-              key={index}
-              index={index}
-              state={getDieState(index)}
-              onPress={() => selectEditorDie(index)}
-              delay={
-                ANIMATION.shop.headerDelay + index * ANIMATION.shop.gridStagger
-              }
-            />
-          ))}
+          {[3, 4].map((index) => {
+            const sums = getDieEnhanceSums(index);
+            return (
+              <AnimatedDieTile
+                key={index}
+                index={index}
+                state={getDieState(index)}
+                onPress={() => selectEditorDie(index)}
+                delay={
+                  ANIMATION.shop.headerDelay +
+                  index * ANIMATION.shop.gridStagger
+                }
+                enhancePoints={sums.points}
+                enhanceMult={sums.mult}
+              />
+            );
+          })}
         </View>
       </View>
     </View>
@@ -79,6 +108,8 @@ interface AnimatedDieTileProps {
   state: TileButtonState;
   onPress: () => void;
   delay: number;
+  enhancePoints?: number;
+  enhanceMult?: number;
 }
 
 const AnimatedDieTile: React.FC<AnimatedDieTileProps> = ({
@@ -86,10 +117,15 @@ const AnimatedDieTile: React.FC<AnimatedDieTileProps> = ({
   state,
   onPress,
   delay,
+  enhancePoints,
+  enhanceMult,
 }) => {
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(10);
+  const scale = useSharedValue(1);
+  const prevStateRef = React.useRef(state);
 
+  // Entrance animation
   useEffect(() => {
     opacity.value = withDelay(
       delay,
@@ -104,9 +140,21 @@ const AnimatedDieTile: React.FC<AnimatedDieTileProps> = ({
     );
   }, []);
 
+  // Selection pulse animation
+  useEffect(() => {
+    if (state === "selected" && prevStateRef.current !== "selected") {
+      // Quick scale pulse on selection
+      scale.value = withSequence(
+        withTiming(1.08, { duration: 80 }),
+        withTiming(1, { duration: 120, easing: Easing.out(Easing.quad) })
+      );
+    }
+    prevStateRef.current = state;
+  }, [state]);
+
   const animStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
-    transform: [{ translateY: translateY.value }],
+    transform: [{ translateY: translateY.value }, { scale: scale.value }],
   }));
 
   return (
@@ -119,6 +167,9 @@ const AnimatedDieTile: React.FC<AnimatedDieTileProps> = ({
         state={state}
         onPress={onPress}
         style={styles.tile}
+        showLevelBadge={false}
+        enhancePoints={enhancePoints}
+        enhanceMult={enhanceMult}
       />
     </Animated.View>
   );

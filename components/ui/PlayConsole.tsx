@@ -72,6 +72,7 @@ export const PlayConsole: React.FC<PlayConsoleProps> = ({
   const rollsRemaining = useGameStore((s) => s.rollsRemaining);
   const handsRemaining = useGameStore((s) => s.handsRemaining);
   const phase = useGameStore((s) => s.phase);
+  const pendingUpgradeType = useGameStore((s) => s.pendingUpgradeType);
 
   // Money count-up animation state
   const [displayedMoney, setDisplayedMoney] = useState(money);
@@ -246,7 +247,40 @@ export const PlayConsole: React.FC<PlayConsoleProps> = ({
           <View style={styles.centerColumn}>
             <InsetSlot padding="none" style={styles.goalSlot}>
               <View style={styles.goalTextContainer}>
-                {levelWon ? (
+                {/* Phase-aware content */}
+                {phase === "SHOP_MAIN" || phase === "SHOP_PICK_UPGRADE" ? (
+                  // Shop Phase Layout - Big "SHOP" text
+                  <GameText variant="displayLarge" color={COLORS.text}>
+                    SHOP
+                  </GameText>
+                ) : phase === "DICE_EDITOR_DIE" ||
+                  phase === "DICE_EDITOR_FACE" ? (
+                  // Dice Editor Phase Layout - Single line + pill
+                  <View style={styles.diceEditorGoal}>
+                    <GameText variant="label" color={COLORS.text}>
+                      WÜRFEL VERBESSERN
+                    </GameText>
+                    <View style={styles.upgradePillContainer}>
+                      <View
+                        style={[
+                          styles.upgradePill,
+                          {
+                            backgroundColor:
+                              pendingUpgradeType === "points"
+                                ? COLORS.upgradePoints
+                                : COLORS.upgradeMult,
+                          },
+                        ]}
+                      >
+                        <GameText variant="label" color={COLORS.text}>
+                          {pendingUpgradeType === "points"
+                            ? "+10 Punkte"
+                            : "+1 Mult"}
+                        </GameText>
+                      </View>
+                    </View>
+                  </View>
+                ) : levelWon ? (
                   // Win State Layout
                   <View style={styles.winTextWrapper}>
                     <GameText
@@ -290,29 +324,39 @@ export const PlayConsole: React.FC<PlayConsoleProps> = ({
                 )}
               </View>
 
-              <Animated.View style={[styles.progressBarTrack, barTrackStyle]}>
-                <Animated.View style={[styles.progressBarFill, progressStyle]}>
-                  {/* Shine Effect */}
+              {/* Hide progress bar for shop and dice editor phases */}
+              {phase !== "SHOP_MAIN" &&
+                phase !== "SHOP_PICK_UPGRADE" &&
+                phase !== "DICE_EDITOR_DIE" &&
+                phase !== "DICE_EDITOR_FACE" && (
                   <Animated.View
-                    style={[
-                      StyleSheet.absoluteFill,
-                      { width: "40%" },
-                      shineStyle,
-                    ]}
+                    style={[styles.progressBarTrack, barTrackStyle]}
                   >
-                    <LinearGradient
-                      colors={[
-                        "transparent",
-                        COLORS.overlays.whiteStrong,
-                        "transparent",
-                      ]}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      style={StyleSheet.absoluteFill}
-                    />
+                    <Animated.View
+                      style={[styles.progressBarFill, progressStyle]}
+                    >
+                      {/* Shine Effect */}
+                      <Animated.View
+                        style={[
+                          StyleSheet.absoluteFill,
+                          { width: "40%" },
+                          shineStyle,
+                        ]}
+                      >
+                        <LinearGradient
+                          colors={[
+                            "transparent",
+                            COLORS.overlays.whiteStrong,
+                            "transparent",
+                          ]}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 0 }}
+                          style={StyleSheet.absoluteFill}
+                        />
+                      </Animated.View>
+                    </Animated.View>
                   </Animated.View>
-                </Animated.View>
-              </Animated.View>
+                )}
             </InsetSlot>
             {isWinAnimating && (
               <Sparks
@@ -618,6 +662,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 2,
+  },
+  diceEditorGoal: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+  },
+  upgradePillContainer: {
+    alignItems: "center",
+    marginTop: 2,
+  },
+  upgradePill: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.overlays.whiteSubtle,
   },
   winLabel: {
     marginBottom: -2,

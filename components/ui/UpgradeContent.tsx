@@ -177,14 +177,7 @@ export const UpgradeContent: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header - centered title only */}
-      <Animated.View style={[styles.header, headerAnimStyle]}>
-        <GameText variant="bodyMedium" color={COLORS.textMuted}>
-          SELECT UPGRADE (+5 BASE)
-        </GameText>
-      </Animated.View>
-
-      {/* Horizontal Upgrade Tiles */}
+      {/* Horizontal Upgrade Tiles - header is now in UpgradeTrayOverlay */}
       <View style={styles.optionsContainer}>
         {upgradeOptions.map((handId, index) => {
           const currentLevel = handLevels[handId];
@@ -227,7 +220,7 @@ const styles = StyleSheet.create({
   },
   optionsContainer: {
     flexDirection: "row",
-    gap: SPACING.xs, // Reduced gap
+    gap: SPACING.xxs, // Tighter gap to match shop
     height: 120,
     alignItems: "flex-start",
   },

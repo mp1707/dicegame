@@ -38,6 +38,10 @@ export interface TileButtonProps {
   onLongPress?: () => void;
   style?: StyleProp<ViewStyle>;
   showLevelBadge?: boolean;
+  /** Optional: Points enhancement sum (shows blue pill in bottom-left) */
+  enhancePoints?: number;
+  /** Optional: Mult enhancement sum (shows red pill in bottom-right) */
+  enhanceMult?: number;
 }
 
 const DEPTH = 4;
@@ -84,6 +88,8 @@ export const TileButton = ({
   onLongPress,
   style,
   showLevelBadge = true,
+  enhancePoints,
+  enhanceMult,
 }: TileButtonProps) => {
   const pressable = isPressableState(state);
   const prevState = useRef(state);
@@ -244,6 +250,30 @@ export const TileButton = ({
             </View>
           )}
 
+          {/* Enhancement pills - bottom corners */}
+          {enhancePoints !== undefined && enhancePoints > 0 && (
+            <View style={[styles.enhancePill, styles.enhancePillLeft]}>
+              <GameText
+                variant="caption"
+                color={COLORS.text}
+                style={styles.enhancePillText}
+              >
+                +{enhancePoints * 10}
+              </GameText>
+            </View>
+          )}
+          {enhanceMult !== undefined && enhanceMult > 0 && (
+            <View style={[styles.enhancePill, styles.enhancePillRight]}>
+              <GameText
+                variant="caption"
+                color={COLORS.text}
+                style={styles.enhancePillText}
+              >
+                +{enhanceMult}
+              </GameText>
+            </View>
+          )}
+
           {/* Center: Icon (or checkmark if used) */}
           <View style={styles.iconContainer}>{renderIcon()}</View>
 
@@ -303,11 +333,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     gap: SPACING.xxs,
+    width: "100%",
+    height: "100%",
   },
   levelBadge: {
     position: "absolute",
-    top: 5,
-    right: -4,
+    top: 6,
+    right: 6,
     paddingHorizontal: SPACING.xs,
     paddingVertical: 1,
     borderRadius: SPACING.xs,
@@ -327,5 +359,26 @@ const styles = StyleSheet.create({
   labelText: {
     textAlign: "center",
     lineHeight: 12,
+  },
+  enhancePill: {
+    position: "absolute",
+    bottom: 6,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: COLORS.overlays.whiteSubtle,
+  },
+  enhancePillLeft: {
+    left: 6,
+    backgroundColor: COLORS.upgradePoints,
+  },
+  enhancePillRight: {
+    right: 6,
+    backgroundColor: COLORS.upgradeMult,
+  },
+  enhancePillText: {
+    fontSize: 7,
+    letterSpacing: 0.2,
   },
 });

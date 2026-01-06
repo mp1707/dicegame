@@ -5,12 +5,13 @@ import { TrayOverlayTitle } from "./TrayOverlayTitle";
 import { SPACING } from "../../constants/theme";
 
 /**
- * ShopTrayOverlay - Title for the dice tray area during SHOP_MAIN phase
+ * UpgradeTrayOverlay - Title for the dice tray area during SHOP_PICK_UPGRADE phase
  *
  * Displays:
- * - "Wähle ein Upgrade" title (no subtitle, SHOP is in header)
+ * - "Verbessere eine Hand" title
+ * - "+5 Punkte" subtitle
  */
-export const ShopTrayOverlay: React.FC = () => {
+export const UpgradeTrayOverlay: React.FC = () => {
   return (
     <View style={styles.container} pointerEvents="box-none">
       <Animated.View
@@ -18,7 +19,7 @@ export const ShopTrayOverlay: React.FC = () => {
         exiting={FadeOutDown.duration(200)}
         style={styles.content}
       >
-        <TrayOverlayTitle title="Wähle ein Upgrade" />
+        <TrayOverlayTitle title="Verbessere eine Hand" subtitle="+5 Punkte" />
       </Animated.View>
     </View>
   );
