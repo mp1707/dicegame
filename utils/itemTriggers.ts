@@ -251,6 +251,9 @@ export interface EffectContext {
     amount: number; // absolute discount
   }>;
 
+  // Hand manipulation (for Fokus item)
+  handsToRemove: number; // Remove hands from handsRemaining
+
   // Meta-flags
   cancelAction: boolean; // Prevent the triggering action
 }
@@ -271,6 +274,7 @@ export function createEffectContext(): EffectContext {
     moneyChange: 0,
     handLevelChanges: [],
     discounts: [],
+    handsToRemove: 0,
     cancelAction: false,
   };
 }

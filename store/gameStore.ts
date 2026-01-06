@@ -33,9 +33,13 @@ import {
   resetShopUsage,
   tickCooldowns,
   applyEffects,
+  registerItem,
+  createRegisteredItem,
   type TriggerType,
   type GameStateSnapshot,
 } from "../utils/itemSystem";
+// Items registry
+import { SHOP_ITEMS, getShopItemById } from "../items";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -67,6 +71,7 @@ interface GameState {
   money: number;
   handLevels: Record<HandId, number>;
   diceEnhancements: DieEnhancement[]; // 5 dice with pip upgrades
+  ownedItems: string[]; // IDs of purchased items
 
   // Level state (resets each level)
   levelScore: number;
@@ -100,6 +105,11 @@ interface GameState {
   // Shop state
   upgradeOptions: HandId[];
   shopDiceUpgradeType: DiceUpgradeType | null; // Which dice upgrade is available in shop
+  shopItemId: string | null; // Which purchasable item is available in shop (null if none/purchased)
+
+  // Item modal state (global, rendered in App.tsx)
+  itemModalId: string | null; // Item ID to show in modal (null = closed)
+  itemModalShowPurchase: boolean; // Whether to show purchase CTA
 
   // Dice editor state (controlled by phase, not modal)
   pendingUpgradeType: DiceUpgradeType | null;
@@ -133,6 +143,7 @@ interface GameState {
   selectUpgradeItem: () => void;
   pickUpgradeHand: (handId: HandId) => void;
   closeShopNextLevel: () => void;
+  purchaseItem: (itemId: string) => void;
 
   // Dice editor actions
   openDiceEditor: (type: DiceUpgradeType) => void;
@@ -147,6 +158,10 @@ interface GameState {
   toggleOverview: () => void;
   forceWin: () => void;
   setIsWinAnimating: (isAnimating: boolean) => void;
+
+  // Item modal actions
+  openItemModal: (itemId: string, showPurchase: boolean) => void;
+  closeItemModal: () => void;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -158,6 +173,7 @@ const getInitialRunState = () => ({
   money: 0,
   handLevels: getInitialHandLevels(),
   diceEnhancements: getInitialDiceEnhancements(),
+  ownedItems: [] as string[],
 });
 
 const getInitialLevelState = (levelIndex: number) => ({
@@ -191,6 +207,9 @@ const getInitialUIState = () => ({
   revealState: null as RevealState | null,
   upgradeOptions: [] as HandId[],
   shopDiceUpgradeType: null as DiceUpgradeType | null,
+  shopItemId: null as string | null,
+  itemModalId: null as string | null,
+  itemModalShowPurchase: false,
   pendingUpgradeType: null as DiceUpgradeType | null,
   selectedEditorDie: null as number | null,
   selectedEditorFace: null as number | null,
@@ -277,9 +296,12 @@ export const useGameStore = create<GameState>((set, get) => ({
       buildTriggerContext(getSnapshot(state))
     );
 
-    // Apply any extra rolls granted by items
-    if (effects.extraRolls > 0) {
-      set((s) => ({ rollsRemaining: s.rollsRemaining + effects.extraRolls }));
+    // Apply Fokus item effects: convert extra hands into extra rolls
+    if (effects.handsToRemove > 0 || effects.extraRolls > 0) {
+      set((s) => ({
+        rollsRemaining: s.rollsRemaining + effects.extraRolls,
+        handsRemaining: Math.max(1, s.handsRemaining - effects.handsToRemove),
+      }));
     }
   },
 
@@ -589,6 +611,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       handsRemaining,
       rollsUsedThisLevel,
       diceEnhancements,
+      ownedItems,
     } = get();
 
     const rewards = calculateRewards({
@@ -607,10 +630,22 @@ export const useGameStore = create<GameState>((set, get) => ({
         Math.random() < DICE_UPGRADE_CONFIG.rarityPoints ? "points" : "mult";
     }
 
+    // Determine which item to spawn in shop
+    // For now, spawn Fokus if not already owned
+    let shopItem: string | null = null;
+    const availableItems = SHOP_ITEMS.filter(
+      (item) => !ownedItems.includes(item.id)
+    );
+    if (availableItems.length > 0) {
+      // Pick a random available item (for now just pick the first one)
+      shopItem = availableItems[0].id;
+    }
+
     set({
       money: rewards.newMoney,
       phase: "SHOP_MAIN",
       shopDiceUpgradeType: shopDiceUpgrade,
+      shopItemId: shopItem,
     });
 
     // Reset shop usage counters
@@ -678,6 +713,48 @@ export const useGameStore = create<GameState>((set, get) => ({
       // Start next level (triggers LEVEL_START internally)
       get().startLevel(nextLevelIndex);
     }
+  },
+
+  purchaseItem: (itemId: string) => {
+    const { money, ownedItems } = get();
+
+    // Get item definition
+    const itemDef = getShopItemById(itemId);
+    if (!itemDef) {
+      console.warn(`[purchaseItem] Unknown item ID: ${itemId}`);
+      return;
+    }
+
+    // Check if already owned
+    if (ownedItems.includes(itemId)) {
+      console.warn(`[purchaseItem] Already owned: ${itemId}`);
+      return;
+    }
+
+    // Check affordability
+    if (money < itemDef.cost) {
+      console.warn(`[purchaseItem] Cannot afford: ${itemId}`);
+      return;
+    }
+
+    // Purchase the item
+    set({
+      money: money - itemDef.cost,
+      ownedItems: [...ownedItems, itemId],
+      shopItemId: null, // Remove from shop after purchase
+    });
+
+    // Register the item with the trigger system
+    registerItem(createRegisteredItem(itemDef));
+
+    // Emit SHOP_PURCHASE trigger
+    emitTrigger(
+      "SHOP_PURCHASE",
+      buildTriggerContext(getSnapshot(get()), {
+        purchasedItemId: itemId,
+        moneyDelta: -itemDef.cost,
+      })
+    );
   },
 
   // ───────────────────────────────────────────────────────────────────────────
@@ -808,6 +885,24 @@ export const useGameStore = create<GameState>((set, get) => ({
       levelWon: true,
       winShownYet: true, // Mark as shown so we don't re-trigger animation
       phase: "LEVEL_PLAY",
+    });
+  },
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Item Modal Actions
+  // ───────────────────────────────────────────────────────────────────────────
+
+  openItemModal: (itemId: string, showPurchase: boolean) => {
+    set({
+      itemModalId: itemId,
+      itemModalShowPurchase: showPurchase,
+    });
+  },
+
+  closeItemModal: () => {
+    set({
+      itemModalId: null,
+      itemModalShowPurchase: false,
     });
   },
 }));

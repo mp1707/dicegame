@@ -83,6 +83,9 @@ dice-game/
 ├── index.ts                 # Entry point with polyfills
 ├── App.tsx                  # Main layout + PhaseDeck integration
 ├── constants/theme.ts       # Colors, typography, spacing, animation
+├── items/                   # Purchasable items/relics
+│   ├── index.ts             # Items registry + exports
+│   └── fokus.ts             # Fokus item (hands → rolls conversion)
 ├── utils/
 │   ├── yahtzeeScoring.ts    # Hand validation logic
 │   ├── gameCore.ts          # Scoring, levels, rewards, dice enhancements (pure TS)
@@ -99,7 +102,7 @@ dice-game/
 │   │   ├── ScoreLip.tsx     # Integrated score readout strip (inside PlayConsole)
 │   │   ├── FooterControls.tsx
 │   │   ├── CashoutResultList.tsx # Inline reward breakdown
-│   │   ├── ShopContent.tsx  # Shop grid with upgrade items
+│   │   ├── ShopContent.tsx  # Shop grid with upgrade items + purchasable items
 │   │   ├── DieEditorContent.tsx # Die selection panel (DICE_EDITOR_DIE phase)
 │   │   ├── FaceEditorContent.tsx # Face selection panel (DICE_EDITOR_FACE phase)
 │   │   └── DiePreview3D.tsx # 3D die viewer for face selection
@@ -116,7 +119,7 @@ dice-game/
 │   │   └── flow/
 │   │       └── PhaseDeck.tsx # Sliding transition orchestrator
 │   ├── scoring/
-│   │   ├── SpecialSection.tsx # Special row (placeholder, coming soon)
+│   │   ├── SpecialSection.tsx # Owned items display (tap to view details)
 │   │   ├── UpperSection.tsx # 6 dice slots (1-6)
 │   │   └── LowerSection.tsx # 7 poker hand slots
 │   ├── screens/
@@ -125,7 +128,8 @@ dice-game/
 │   │   ├── UpgradePickerScreen.tsx # (exports UpgradePickerPanel)
 │   │   └── EndScreen.tsx    # Win/Lose screens (exports EndPanel)
 │   └── modals/
-│       └── OverviewModal.tsx # Hand levels + formulas
+│       ├── OverviewModal.tsx # Hand levels + formulas
+│       └── ItemDetailModal.tsx # Item details with highlighted keywords
 ```
 
 ### Game State (`store/gameStore.ts`)
@@ -1316,8 +1320,12 @@ Triggers are emitted in `gameStore.ts` at these action points:
 utils/
 ├── itemTriggers.ts      # Core trigger types, emitter, context
 ├── itemEffects.ts       # Effect categories, factories, applicators
-├── itemDefinitions.ts   # Item types, catalog, example items
+├── itemDefinitions.ts   # Item types, catalog, example items (templates)
 └── itemSystem.ts        # Barrel exports
+
+items/
+├── index.ts             # Items registry + getShopItemById, SHOP_ITEMS
+└── fokus.ts             # Fokus item definition
 ```
 
 ### Integration Notes
@@ -1326,3 +1334,90 @@ utils/
 - Usage counters reset at: `HAND_START` (per-hand), `LEVEL_START` (per-level), `SHOP_ENTER` (per-shop)
 - Cooldowns tick down at `HAND_SCORED`
 - Effects accumulate in `EffectContext` and are applied by `applyEffects()`
+
+---
+
+## Purchasable Items System
+
+Items can be purchased in the shop and provide permanent effects for the run. Each item follows the trigger grammar and integrates with the item trigger system.
+
+### Adding a New Item
+
+1. **Create item file** in `items/`:
+
+```typescript
+// items/my_item.ts
+import type { ItemDefinition } from "../utils/itemDefinitions";
+import type { TriggerHandler } from "../utils/itemTriggers";
+
+const myEffect: TriggerHandler = (context, effects) => {
+  // Modify effects based on context
+  effects.bonusPoints += 10;
+};
+
+export const MY_ITEM: ItemDefinition = {
+  id: "my_item",
+  name: "Mein Item",
+  description: "Beim Start des Levels: +10 Punkte.",
+  rarity: "uncommon",
+  cost: 7,
+  icon: "my_icon.png", // From assets/items/
+  triggers: [
+    {
+      triggerId: "LEVEL_START",
+      handler: myEffect,
+    },
+  ],
+};
+```
+
+2. **Register in `items/index.ts`**:
+
+```typescript
+import { MY_ITEM } from "./my_item";
+export const SHOP_ITEMS: ItemDefinition[] = [FOKUS_ITEM, MY_ITEM];
+export { MY_ITEM } from "./my_item";
+```
+
+3. **Add icon mapping** in `ShopContent.tsx` and `SpecialSection.tsx`:
+
+```typescript
+const ITEM_ICONS: Record<string, any> = {
+  fokus: require("../../assets/items/brain.png"),
+  my_item: require("../../assets/items/my_icon.png"),
+};
+```
+
+### Current Items
+
+| ID      | Name  | Cost | Trigger       | Effect                                        |
+| ------- | ----- | ---- | ------------- | --------------------------------------------- |
+| `fokus` | Fokus | $7   | `LEVEL_START` | Converts extra hands into rolls (4H+3R→1H+6R) |
+
+### Item UI Flow
+
+1. **Shop Display**: Items appear in the shop grid (ShopContent) with icon, name, and price
+2. **Detail Modal**: Tapping shows `ItemDetailModal` with description and "KAUFEN" CTA
+3. **Purchase**: On purchase, item is added to `ownedItems` and registered with trigger system
+4. **Display**: Owned items appear in `SpecialSection` (top of scoring grid)
+5. **Info Modal**: Tapping owned item shows detail modal (without purchase CTA)
+
+### EffectContext Fields for Items
+
+Items can modify these fields in their handlers:
+
+```typescript
+effects.bonusPoints += N; // +Punkte
+effects.bonusMult += N; // +Mult
+effects.extraRolls += N; // Extra rolls
+effects.handsToRemove = N; // Remove hands (Fokus)
+effects.moneyChange += N; // +/- money
+effects.diceModifications.push({ index, newValue, bump });
+effects.lockChanges.push({ index, shouldLock });
+```
+
+### ItemDetailModal Features
+
+- **Highlighted keywords**: "Hände"/"Hand" → cyan, "Würfe"/"Wurf"/"Würfel" → gold
+- **InsetSlot icon container**: Item icon in recessed container
+- **Optional purchase CTA**: Shows "KAUFEN" with price when in shop context

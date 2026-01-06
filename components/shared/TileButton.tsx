@@ -78,226 +78,234 @@ const isPressableState = (state: TileButtonState): boolean => {
 };
 
 // P3.4: Memoize to prevent unnecessary re-renders from parent updates
-export const TileButton = React.memo(({
-  icon,
-  iconSource,
-  labelLine1,
-  labelLine2,
-  level = 1,
-  state,
-  onPress,
-  onLongPress,
-  style,
-  showLevelBadge = true,
-  enhancePoints,
-  enhanceMult,
-}: TileButtonProps) => {
-  const pressable = isPressableState(state);
-  const prevState = useRef(state);
+export const TileButton = React.memo(
+  ({
+    icon,
+    iconSource,
+    labelLine1,
+    labelLine2,
+    level = 1,
+    state,
+    onPress,
+    onLongPress,
+    style,
+    showLevelBadge = true,
+    enhancePoints,
+    enhanceMult,
+  }: TileButtonProps) => {
+    const pressable = isPressableState(state);
+    const prevState = useRef(state);
 
-  // Shine sweep animation value
-  const shinePosition = useSharedValue(-1);
+    // Shine sweep animation value
+    const shinePosition = useSharedValue(-1);
 
-  // Shine sweep animation when becoming selected
-  useEffect(() => {
-    if (state === "selected" && prevState.current !== "selected") {
-      shinePosition.value = -1;
-      shinePosition.value = withTiming(1.5, {
-        duration: ANIMATION.tile.select.shineDuration,
-        easing: Easing.out(Easing.quad),
-      });
-    }
-    prevState.current = state;
-  }, [state]);
+    // Shine sweep animation when becoming selected
+    useEffect(() => {
+      if (state === "selected" && prevState.current !== "selected") {
+        shinePosition.value = -1;
+        shinePosition.value = withTiming(1.5, {
+          duration: ANIMATION.tile.select.shineDuration,
+          easing: Easing.out(Easing.quad),
+        });
+      }
+      prevState.current = state;
+    }, [state]);
 
-  const shineAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: interpolate(shinePosition.value, [-1, 1.5], [-100, 200]) },
-    ],
-    opacity: interpolate(
-      shinePosition.value,
-      [-1, 0, 0.5, 1.5],
-      [0, 0.6, 0.4, 0]
-    ),
-  }));
+    const shineAnimatedStyle = useAnimatedStyle(() => ({
+      transform: [
+        {
+          translateX: interpolate(shinePosition.value, [-1, 1.5], [-100, 200]),
+        },
+      ],
+      opacity: interpolate(
+        shinePosition.value,
+        [-1, 0, 0.5, 1.5],
+        [0, 0.6, 0.4, 0]
+      ),
+    }));
 
-  // Get face styles based on state
-  const getFaceStyles = () => {
-    const base = {
-      backgroundColor: COLORS.tile,
-      borderColor: COLORS.overlays.whiteMild,
-      borderWidth: 2,
-      borderTopWidth: 2,
-      borderTopColor: COLORS.overlays.whiteMedium,
-      borderBottomWidth: 3,
-      borderBottomColor: COLORS.overlays.blackMedium,
+    // Get face styles based on state
+    const getFaceStyles = () => {
+      const base = {
+        backgroundColor: COLORS.tile,
+        borderColor: COLORS.overlays.whiteMild,
+        borderWidth: 2,
+        borderTopWidth: 2,
+        borderTopColor: COLORS.overlays.whiteMedium,
+        borderBottomWidth: 3,
+        borderBottomColor: COLORS.overlays.blackMedium,
+      };
+
+      switch (state) {
+        case "active":
+          return {
+            ...base,
+            borderTopColor: COLORS.overlays.whiteMedium,
+            borderBottomWidth: 2, // Thinner lip to match inactive state
+            borderBottomColor: COLORS.shadow,
+          };
+
+        case "selected":
+          return {
+            ...base,
+            borderColor: COLORS.cyan,
+            borderTopWidth: 2,
+            borderTopColor: COLORS.overlays.whiteStrong,
+            borderBottomWidth: 2, // Match thickness of active/inactive states
+            borderBottomColor: COLORS.shadow, // Consistent solid depth
+          };
+
+        case "used":
+          return {
+            backgroundColor: COLORS.tileDisabled,
+            borderColor: COLORS.overlays.whiteMild,
+            borderWidth: 2,
+            borderTopWidth: 2,
+            borderTopColor: COLORS.overlays.whiteSubtle,
+            borderBottomWidth: 2,
+            borderBottomColor: COLORS.overlays.blackSubtle,
+          };
+
+        case "invalid":
+        case "default":
+        default:
+          return {
+            backgroundColor: COLORS.tileDisabled,
+            borderColor: COLORS.overlays.blackMild,
+            borderWidth: 2,
+            borderTopWidth: 2,
+            borderTopColor: COLORS.overlays.blackMedium,
+            borderBottomWidth: 2,
+            borderBottomColor: COLORS.overlays.whiteSubtle,
+          };
+      }
     };
 
-    switch (state) {
-      case "active":
-        return {
-          ...base,
-          borderTopColor: COLORS.overlays.whiteMedium,
-          borderBottomWidth: 2, // Thinner lip to match inactive state
-          borderBottomColor: COLORS.shadow,
-        };
+    const faceStyles = getFaceStyles();
+    const textColor = getTextColor(state);
+    const contentOpacity = getContentOpacity(state);
+    const showShine = state === "selected";
 
-      case "selected":
-        return {
-          ...base,
-          borderColor: COLORS.cyan,
-          borderTopWidth: 2,
-          borderTopColor: COLORS.overlays.whiteStrong,
-          borderBottomWidth: 2, // Match thickness of active/inactive states
-          borderBottomColor: COLORS.shadow, // Consistent solid depth
-        };
+    // Shadow/glow for selected state
+    const glowStyle =
+      state === "selected"
+        ? {
+            shadowColor: COLORS.cyan,
+            shadowOpacity: 0.6,
+            shadowRadius: 10,
+            shadowOffset: { width: 0, height: 0 },
+            elevation: 8,
+          }
+        : {};
 
-      case "used":
-        return {
-          backgroundColor: COLORS.tileDisabled,
-          borderColor: COLORS.overlays.whiteMild,
-          borderWidth: 2,
-          borderTopWidth: 2,
-          borderTopColor: COLORS.overlays.whiteSubtle,
-          borderBottomWidth: 2,
-          borderBottomColor: COLORS.overlays.blackSubtle,
-        };
+    const renderIcon = () => {
+      if (state === "used") {
+        return <Check size={18} color={COLORS.goldDark} strokeWidth={2.5} />;
+      }
 
-      case "invalid":
-      case "default":
-      default:
-        return {
-          backgroundColor: COLORS.tileDisabled,
-          borderColor: COLORS.overlays.blackMild,
-          borderWidth: 2,
-          borderTopWidth: 2,
-          borderTopColor: COLORS.overlays.blackMedium,
-          borderBottomWidth: 2,
-          borderBottomColor: COLORS.overlays.whiteSubtle,
-        };
-    }
-  };
+      if (iconSource) {
+        return (
+          <Image
+            source={iconSource}
+            style={{
+              width: 28,
+              height: 28,
+              opacity: state === "selected" ? 1 : 0.8,
+              margin: -2,
+            }}
+            resizeMode="contain"
+          />
+        );
+      }
 
-  const faceStyles = getFaceStyles();
-  const textColor = getTextColor(state);
-  const contentOpacity = getContentOpacity(state);
-  const showShine = state === "selected";
+      return icon;
+    };
 
-  // Shadow/glow for selected state
-  const glowStyle =
-    state === "selected"
-      ? {
-          shadowColor: COLORS.cyan,
-          shadowOpacity: 0.6,
-          shadowRadius: 10,
-          shadowOffset: { width: 0, height: 0 },
-          elevation: 8,
-        }
-      : {};
-
-  const renderIcon = () => {
-    if (state === "used") {
-      return <Check size={18} color={COLORS.goldDark} strokeWidth={2.5} />;
-    }
-
-    if (iconSource) {
-      return (
-        <Image
-          source={iconSource}
-          style={{
-            width: 28,
-            height: 28,
-            opacity: state === "selected" ? 1 : 0.8,
-            margin: -5,
-          }}
-          resizeMode="contain"
-        />
-      );
-    }
-
-    return icon;
-  };
-
-  return (
-    <View style={[styles.wrapper, glowStyle, style]}>
-      <Pressable3DBase
-        onPress={onPress}
-        disabled={!pressable}
-        depth={DEPTH}
-        borderRadius={DIMENSIONS.borderRadiusSmall}
-        hapticOnPressIn={state === "selected" ? "none" : "selection"}
-        hapticOnPress="none"
-        showLighting={false}
-        style={styles.pressable}
-        base={<View style={styles.base} />}
-        face={
-          <View style={[styles.face, faceStyles]}>
-            {/* Shine sweep overlay for selected state */}
-            {showShine && (
-              <Animated.View
-                style={[styles.shineOverlay, shineAnimatedStyle]}
-              />
+    return (
+      <View style={[styles.wrapper, glowStyle, style]}>
+        <Pressable3DBase
+          onPress={onPress}
+          disabled={!pressable}
+          depth={DEPTH}
+          borderRadius={DIMENSIONS.borderRadiusSmall}
+          hapticOnPressIn={state === "selected" ? "none" : "selection"}
+          hapticOnPress="none"
+          showLighting={false}
+          style={styles.pressable}
+          base={<View style={styles.base} />}
+          face={
+            <View style={[styles.face, faceStyles]}>
+              {/* Shine sweep overlay for selected state */}
+              {showShine && (
+                <Animated.View
+                  style={[styles.shineOverlay, shineAnimatedStyle]}
+                />
+              )}
+            </View>
+          }
+        >
+          <View style={[styles.content, { opacity: contentOpacity }]}>
+            {/* Level badge - top right corner */}
+            {showLevelBadge && (
+              <View style={styles.levelBadge}>
+                <GameText variant="caption" style={styles.badgeText}>
+                  LV{level}
+                </GameText>
+              </View>
             )}
-          </View>
-        }
-      >
-        <View style={[styles.content, { opacity: contentOpacity }]}>
-          {/* Level badge - top right corner */}
-          {showLevelBadge && (
-            <View style={styles.levelBadge}>
-              <GameText variant="caption" style={styles.badgeText}>
-                LV{level}
-              </GameText>
-            </View>
-          )}
 
-          {/* Enhancement pills - bottom corners */}
-          {enhancePoints !== undefined && enhancePoints > 0 && (
-            <View style={[styles.enhancePill, styles.enhancePillLeft]}>
-              <GameText
-                variant="caption"
-                color={COLORS.text}
-                style={styles.enhancePillText}
-              >
-                +{enhancePoints * 10}
-              </GameText>
-            </View>
-          )}
-          {enhanceMult !== undefined && enhanceMult > 0 && (
-            <View style={[styles.enhancePill, styles.enhancePillRight]}>
-              <GameText
-                variant="caption"
-                color={COLORS.text}
-                style={styles.enhancePillText}
-              >
-                +{enhanceMult}
-              </GameText>
-            </View>
-          )}
+            {/* Enhancement pills - bottom corners */}
+            {enhancePoints !== undefined && enhancePoints > 0 && (
+              <View style={[styles.enhancePill, styles.enhancePillLeft]}>
+                <GameText
+                  variant="caption"
+                  color={COLORS.text}
+                  style={styles.enhancePillText}
+                >
+                  +{enhancePoints * 10}
+                </GameText>
+              </View>
+            )}
+            {enhanceMult !== undefined && enhanceMult > 0 && (
+              <View style={[styles.enhancePill, styles.enhancePillRight]}>
+                <GameText
+                  variant="caption"
+                  color={COLORS.text}
+                  style={styles.enhancePillText}
+                >
+                  +{enhanceMult}
+                </GameText>
+              </View>
+            )}
 
-          {/* Center: Icon (or checkmark if used) */}
-          <View style={styles.iconContainer}>{renderIcon()}</View>
+            {/* Center: Icon (or checkmark if used) */}
+            <View style={styles.iconContainer}>{renderIcon()}</View>
 
-          {/* Bottom: Label (explicit two-line support) */}
-          <View style={styles.labelContainer}>
-            <GameText variant="body" color={textColor} style={styles.labelText}>
-              {labelLine1}
-            </GameText>
-            {labelLine2 !== undefined && (
+            {/* Bottom: Label (explicit two-line support) */}
+            <View style={styles.labelContainer}>
               <GameText
                 variant="body"
                 color={textColor}
                 style={styles.labelText}
               >
-                {labelLine2}
+                {labelLine1}
               </GameText>
-            )}
+              {labelLine2 !== undefined && (
+                <GameText
+                  variant="body"
+                  color={textColor}
+                  style={styles.labelText}
+                >
+                  {labelLine2}
+                </GameText>
+              )}
+            </View>
           </View>
-        </View>
-      </Pressable3DBase>
-    </View>
-  );
-});
+        </Pressable3DBase>
+      </View>
+    );
+  }
+);
 
 const styles = StyleSheet.create({
   wrapper: {

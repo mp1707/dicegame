@@ -11,10 +11,17 @@ import { useFonts } from "expo-font";
 import { DiceTray } from "./components/DiceTray";
 import { SingleDiePreview } from "./components/SingleDiePreview";
 import { OverviewModal } from "./components/modals/OverviewModal";
+import { ItemDetailModal } from "./components/modals/ItemDetailModal";
 import { PhaseDeck } from "./components/ui-kit/flow";
 import { useGameStore } from "./store/gameStore";
+import { getShopItemById } from "./items";
 import { COLORS, SPACING } from "./constants/theme";
 import { LayoutProvider, useLayout } from "./utils/LayoutContext";
+
+// Icon mapping for items (shared with ShopContent/SpecialSection)
+const ITEM_ICONS: Record<string, any> = {
+  fokus: require("./assets/items/skull.png"),
+};
 
 // Layout constants - PlayConsole internal dimensions
 const PANEL_BORDER = 2; // Surface panel border
@@ -62,6 +69,24 @@ const AppContent: React.FC = () => {
   const toggleOverview = useGameStore((s) => s.toggleOverview);
   const phase = useGameStore((s) => s.phase);
   const selectedEditorDie = useGameStore((s) => s.selectedEditorDie);
+
+  // Item modal state
+  const itemModalId = useGameStore((s) => s.itemModalId);
+  const itemModalShowPurchase = useGameStore((s) => s.itemModalShowPurchase);
+  const closeItemModal = useGameStore((s) => s.closeItemModal);
+  const purchaseItem = useGameStore((s) => s.purchaseItem);
+  const money = useGameStore((s) => s.money);
+
+  // Get item for modal
+  const modalItem = itemModalId ? getShopItemById(itemModalId) : null;
+  const canAffordItem = modalItem ? money >= modalItem.cost : false;
+
+  const handlePurchaseFromModal = () => {
+    if (itemModalId) {
+      purchaseItem(itemModalId);
+      closeItemModal();
+    }
+  };
 
   // Check if we're in dice editor mode (show single die preview)
   const isInDiceEditor =
@@ -134,6 +159,22 @@ const AppContent: React.FC = () => {
 
           {/* Modals */}
           <OverviewModal visible={overviewVisible} onClose={toggleOverview} />
+
+          {/* Global Item Detail Modal */}
+          {modalItem && (
+            <ItemDetailModal
+              visible={!!itemModalId}
+              onClose={closeItemModal}
+              title={modalItem.name}
+              description={modalItem.description}
+              iconSource={ITEM_ICONS[modalItem.id] || ITEM_ICONS.fokus}
+              price={itemModalShowPurchase ? modalItem.cost : undefined}
+              canAfford={canAffordItem}
+              onPurchase={
+                itemModalShowPurchase ? handlePurchaseFromModal : undefined
+              }
+            />
+          )}
         </SafeAreaView>
       </View>
 

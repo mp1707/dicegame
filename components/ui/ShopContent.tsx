@@ -4,12 +4,18 @@ import { ArrowUp } from "lucide-react-native";
 import { COLORS, SPACING, DIMENSIONS, ANIMATION } from "../../constants/theme";
 import { useGameStore } from "../../store/gameStore";
 import { getDiceUpgradeCost } from "../../utils/gameCore";
+import { getShopItemById } from "../../items";
 import { GameText, TileButton, TileButtonState } from "../shared";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import {
   triggerSelectionHaptic,
   triggerImpactMedium,
 } from "../../utils/haptics";
+
+// Icon mapping for shop items
+const ITEM_ICONS: Record<string, any> = {
+  fokus: require("../../assets/items/skull.png"),
+};
 
 /**
  * ShopContent - Shop grid for bottom panel slot (SHOP_MAIN phase)
@@ -18,15 +24,19 @@ import {
  * - 2x2 grid with TileButton components
  * - Matches UpgradeContent visual style (price below tile)
  * - Dice enhancement card (dynamic based on spawn type)
+ * - Purchasable item slot (e.g., Fokus)
  * - Staggered entrance animations
  *
  * Note: Title and subtitle are now displayed in ShopTrayOverlay instead.
+ * Note: ItemDetailModal is rendered globally in App.tsx
  */
 export const ShopContent: React.FC = () => {
   const money = useGameStore((s) => s.money);
   const selectUpgradeItem = useGameStore((s) => s.selectUpgradeItem);
   const shopDiceUpgradeType = useGameStore((s) => s.shopDiceUpgradeType);
+  const shopItemId = useGameStore((s) => s.shopItemId);
   const openDiceEditor = useGameStore((s) => s.openDiceEditor);
+  const openItemModal = useGameStore((s) => s.openItemModal);
 
   const handleUpgrade = () => {
     triggerImpactMedium();
@@ -37,6 +47,13 @@ export const ShopContent: React.FC = () => {
     if (shopDiceUpgradeType) {
       triggerImpactMedium();
       openDiceEditor(shopDiceUpgradeType);
+    }
+  };
+
+  const handleItemPress = () => {
+    if (shopItemId) {
+      triggerSelectionHaptic();
+      openItemModal(shopItemId, true); // true = show purchase CTA
     }
   };
 
@@ -71,6 +88,16 @@ export const ShopContent: React.FC = () => {
   const diceState: TileButtonState = !diceUpgradeConfig
     ? "used" // "soon" / unavailable
     : canAffordDice
+    ? "active"
+    : "invalid";
+
+  // Purchasable Item (e.g., Fokus)
+  const shopItem = shopItemId ? getShopItemById(shopItemId) : null;
+  const itemPrice = shopItem?.cost ?? 0;
+  const canAffordItem = shopItem ? money >= itemPrice : false;
+  const itemState: TileButtonState = !shopItem
+    ? "invalid" // No item available / already purchased
+    : canAffordItem
     ? "active"
     : "invalid";
 
@@ -152,19 +179,35 @@ export const ShopContent: React.FC = () => {
           </ShopTileWrapper>
         </View>
 
-        {/* Row 2 - Placeholders */}
+        {/* Row 2 - Fokus Item + Placeholder */}
         <View style={styles.row}>
-          {/* Jokers - Soon */}
+          {/* Fokus Item (or placeholder if already owned) */}
           <ShopTileWrapper delay={getItemDelay(1, 0)}>
-            <TileButton
-              iconSource={undefined} // No icon yet
-              labelLine1="JOKERS"
-              state="invalid" // dimmed
-              onPress={() => {}}
-              style={styles.tile}
-              showLevelBadge={false}
-            />
-            {renderSoonPill()}
+            {shopItem ? (
+              <>
+                <TileButton
+                  iconSource={ITEM_ICONS[shopItem.id] || ITEM_ICONS.fokus}
+                  labelLine1={shopItem.name.toUpperCase()}
+                  state={itemState}
+                  onPress={handleItemPress}
+                  style={styles.tile}
+                  showLevelBadge={false}
+                />
+                {renderCostPill(itemPrice, canAffordItem)}
+              </>
+            ) : (
+              <>
+                <TileButton
+                  iconSource={undefined}
+                  labelLine1="ITEMS"
+                  state="invalid"
+                  onPress={() => {}}
+                  style={styles.tile}
+                  showLevelBadge={false}
+                />
+                {renderSoonPill()}
+              </>
+            )}
           </ShopTileWrapper>
 
           {/* Powers - Soon */}
