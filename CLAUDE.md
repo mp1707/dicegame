@@ -1148,6 +1148,8 @@ In UI copy (German), keep the order rigid:
 
 > **Beim/Wenn/Nach …:** _Effekt._ _(Limit/Charges)_
 
+> **📖 When writing item descriptions, consult `ITEM_SEMANTICS.md` for the exact German phrasing for each trigger, condition, effect, and limiter.**
+
 ### Trigger Families
 
 All triggers are organized into families with precise timing:
