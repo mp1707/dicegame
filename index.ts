@@ -13,6 +13,39 @@ import "react-native-polyfill-globals/auto";
 import { registerRootComponent } from "expo";
 import App from "./App";
 
+// Suppress known warnings/logs from Expo/Three.js integration
+const originalWarn = console.warn;
+const originalLog = console.log;
+
+console.warn = (...args) => {
+  const msg = args[0];
+  if (typeof msg === "string") {
+    // Suppress "deprecated parameters" warning from expo-gl
+    if (
+      msg.includes(
+        "using deprecated parameters for the initialization function"
+      )
+    )
+      return;
+    // Suppress EXT_color_buffer_float warning
+    if (msg.includes("EXT_color_buffer_float extension not supported")) return;
+  }
+  originalWarn(...args);
+};
+
+console.log = (...args) => {
+  const msg = args[0];
+  if (typeof msg === "string") {
+    // Suppress verbose GL pixelStorei logs
+    if (
+      msg.includes("pixelStorei") &&
+      msg.includes("doesn't support this parameter")
+    )
+      return;
+  }
+  originalLog(...args);
+};
+
 // registerRootComponent calls AppRegistry.registerComponent('main', () => App);
 // It also ensures that whether you load the app in Expo Go or in a native build,
 // the environment is set up appropriately
