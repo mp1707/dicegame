@@ -63,8 +63,9 @@ export const SingleDiePreview: React.FC<SingleDiePreviewProps> = ({
     <View style={[styles.container, { height: containerHeight }]}>
       {/* 3D Die */}
       <DiePreview3D
+        phase={phase}
         dieIndex={selectedEditorDie}
-        enhancements={diceEnhancements}
+        allEnhancements={diceEnhancements}
         selectedFace={selectedEditorFace}
         onFaceSelect={selectEditorFace}
         upgradeType={pendingUpgradeType}

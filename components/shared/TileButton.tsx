@@ -130,8 +130,9 @@ export const TileButton = ({
       case "active":
         return {
           ...base,
-          borderBottomWidth: 4,
-          borderBottomColor: COLORS.overlays.blackMedium,
+          borderTopColor: COLORS.overlays.whiteMedium,
+          borderBottomWidth: 2, // Thinner lip to match inactive state
+          borderBottomColor: COLORS.shadow,
         };
 
       case "selected":
@@ -140,8 +141,8 @@ export const TileButton = ({
           borderColor: COLORS.cyan,
           borderTopWidth: 2,
           borderTopColor: COLORS.overlays.whiteStrong,
-          borderBottomWidth: 4,
-          borderBottomColor: COLORS.overlays.blackStrong,
+          borderBottomWidth: 2, // Match thickness of active/inactive states
+          borderBottomColor: COLORS.shadow, // Consistent solid depth
         };
 
       case "used":

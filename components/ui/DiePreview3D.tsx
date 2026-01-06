@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from "react";
+import React, { useRef, useMemo, useEffect } from "react";
 import { View, StyleSheet } from "react-native";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { RoundedBox } from "@react-three/drei";
@@ -8,6 +8,7 @@ import {
   DiceUpgradeType,
   PipState,
 } from "../../utils/gameCore";
+import { GamePhase } from "../../store/gameStore";
 import { COLORS } from "../../constants/theme";
 import { triggerSelectionHaptic } from "../../utils/haptics";
 
@@ -141,15 +142,12 @@ const Pip: React.FC<PipProps> = ({
       ? COLORS.upgradeMult
       : undefined;
 
-  // Light Up and Settle Animation (for newly enhanced pips)
-  // OR Continuous Pulse Animation (for preview pips)
   useFrame((_, delta) => {
     if (!meshRef.current || !materialRef.current) return;
 
-    // Preview pip: continuous color pulse (color -> black -> color)
+    // Preview pip: continuous color pulse
     if (isPreview && previewColor) {
       timeRef.current += delta;
-      // Pulse cycle: 0.8s period
       const pulse = (Math.sin(timeRef.current * 8) + 1) / 2; // 0 to 1
       const r = parseInt(previewColor.slice(1, 3), 16) / 255;
       const g = parseInt(previewColor.slice(3, 5), 16) / 255;
@@ -170,12 +168,12 @@ const Pip: React.FC<PipProps> = ({
     let emissiveIntensity = 0.4;
 
     if (t < 0.1) {
-      // Phase 1: Ignition (0 -> 100ms)
+      // Phase 1: Ignition
       const progress = t / 0.1;
-      scale = 1 + progress * 0.4; // 1.0 -> 1.4
-      emissiveIntensity = 0.4 + progress * 2.1; // 0.4 -> 2.5 (Very bright!)
+      scale = 1 + progress * 0.4;
+      emissiveIntensity = 0.4 + progress * 2.1;
     } else {
-      // Phase 2 & 3: Decay and Settle (100ms+)
+      // Phase 2 & 3: Decay and Settle
       const settleT = t - 0.1;
       scale = 1 + 0.4 * Math.exp(-settleT * 6) * Math.cos(settleT * 20);
       emissiveIntensity = 0.4 + 2.1 * Math.exp(-settleT * 3);
@@ -210,8 +208,8 @@ interface DieFaceProps {
   rotation: [number, number, number];
   position: [number, number, number];
   pipStates: PipState[];
-  enhancedPipIndex?: number; // Index of pip currently being enhanced (pulsing)
-  previewPipIndex?: number; // Index of pip to preview (continuous pulse)
+  enhancedPipIndex?: number;
+  previewPipIndex?: number;
   previewColor?: string;
 }
 
@@ -243,276 +241,317 @@ const DieFace: React.FC<DieFaceProps> = ({
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Interactive Die
+// Interactive Die (Supports forwarded ref and interactivity toggle)
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface InteractiveDieProps {
   enhancements: DieEnhancement;
+  isInteractive: boolean;
   selectedFace: number | null;
-  onFaceChange: (face: number) => void;
+  onFaceChange?: (face: number) => void;
   upgradeType: DiceUpgradeType | null;
-  enhancedFace?: number; // Face with the enhanced pip (1-6)
-  enhancedPipIndex?: number; // Index of enhanced pip on that face
-  previewFace?: number; // Face to show preview pulse (1-6)
-  previewPipIndex?: number; // Index of pip to preview
-  previewColor?: string; // Color for preview pulse
+  enhancedFace?: number;
+  enhancedPipIndex?: number;
+  previewFace?: number;
+  previewPipIndex?: number;
+  previewColor?: string;
 }
 
-const InteractiveDie: React.FC<InteractiveDieProps> = ({
-  enhancements,
-  selectedFace,
-  onFaceChange,
-  upgradeType,
-  enhancedFace,
-  enhancedPipIndex,
-  previewFace,
-  previewPipIndex,
-  previewColor,
-}) => {
-  const groupRef = useRef<THREE.Group>(null);
-  const isDragging = useRef(false);
-  const previousPointer = useRef({ x: 0, y: 0 });
-  const currentFaceRef = useRef<number | null>(null);
+const InteractiveDie = React.forwardRef<THREE.Group, InteractiveDieProps>(
+  (
+    {
+      enhancements,
+      isInteractive,
+      selectedFace,
+      onFaceChange,
+      upgradeType,
+      enhancedFace,
+      enhancedPipIndex,
+      previewFace,
+      previewPipIndex,
+      previewColor,
+    },
+    ref
+  ) => {
+    // Ensure we have a usable ref (handling both function and object refs for safety, though we'll pass object refs)
+    const localRef = useRef<THREE.Group>(null);
+    React.useImperativeHandle(ref, () => localRef.current as THREE.Group);
 
-  // Target rotation for snapping
-  const targetQuaternion = useRef(new THREE.Quaternion());
-  const isSnapping = useRef(false);
-  const isAutoRotating = useRef(false);
+    // Internal state only matters if interactive
+    const isDragging = useRef(false);
+    const previousPointer = useRef({ x: 0, y: 0 });
+    const currentFaceRef = useRef<number | null>(null);
 
-  // Effect to handle programmatic face selection
-  React.useEffect(() => {
-    if (selectedFace !== null && !isDragging.current) {
-      // Find the target rotation for this face
-      const target = FACE_ROTATIONS[selectedFace];
-      if (target) {
-        targetQuaternion.current.copy(target);
-        isAutoRotating.current = true;
+    const targetQuaternion = useRef(new THREE.Quaternion());
+    const isSnapping = useRef(false);
+    const isAutoRotating = useRef(false);
+
+    // Sync internal state when becoming interactive
+    useEffect(() => {
+      if (isInteractive && localRef.current) {
+        targetQuaternion.current.copy(localRef.current.quaternion);
         isSnapping.current = false;
+        isAutoRotating.current = false;
+        isDragging.current = false;
       }
-    }
-  }, [selectedFace]);
+    }, [isInteractive]);
 
-  // Detect which face is closest to camera
-  const detectFrontFace = (quaternion: THREE.Quaternion): number => {
-    const cameraDirection = new THREE.Vector3(0, 0, 1);
-    let bestDot = -1;
-    let bestFace = 1;
+    // Handle programmatic face selection
+    useEffect(() => {
+      // Only process face selection if this die is the interactive one
+      if (isInteractive && selectedFace !== null && !isDragging.current) {
+        const target = FACE_ROTATIONS[selectedFace];
+        if (target) {
+          targetQuaternion.current.copy(target);
+          isAutoRotating.current = true;
+          isSnapping.current = false;
+        }
+      }
+    }, [selectedFace, isInteractive]);
 
-    FACE_NORMALS.forEach(({ face, normal }) => {
-      const worldNormal = normal.clone().applyQuaternion(quaternion);
-      const dot = worldNormal.dot(cameraDirection);
-      if (dot > bestDot) {
-        bestDot = dot;
-        bestFace = face;
+    const detectFrontFace = (quaternion: THREE.Quaternion): number => {
+      const cameraDirection = new THREE.Vector3(0, 0, 1);
+      let bestDot = -1;
+      let bestFace = 1;
+      FACE_NORMALS.forEach(({ face, normal }) => {
+        const worldNormal = normal.clone().applyQuaternion(quaternion);
+        const dot = worldNormal.dot(cameraDirection);
+        if (dot > bestDot) {
+          bestDot = dot;
+          bestFace = face;
+        }
+      });
+      return bestFace;
+    };
+
+    const handlePointerDown = (e: any) => {
+      if (!isInteractive) return;
+      e.stopPropagation();
+      isDragging.current = true;
+      isSnapping.current = false;
+      isAutoRotating.current = false;
+      previousPointer.current = { x: e.point.x, y: e.point.y };
+    };
+
+    const handlePointerMove = (e: any) => {
+      if (!isInteractive || !isDragging.current || !localRef.current) return;
+      e.stopPropagation();
+
+      const deltaX = (e.point.x - previousPointer.current.x) * 3;
+      const deltaY = (e.point.y - previousPointer.current.y) * 3;
+
+      const rotateY = new THREE.Quaternion().setFromAxisAngle(
+        new THREE.Vector3(0, 1, 0),
+        deltaX
+      );
+      const rotateX = new THREE.Quaternion().setFromAxisAngle(
+        new THREE.Vector3(1, 0, 0),
+        -deltaY
+      );
+
+      localRef.current.quaternion.premultiply(rotateY);
+      localRef.current.quaternion.premultiply(rotateX);
+
+      previousPointer.current = { x: e.point.x, y: e.point.y };
+    };
+
+    const handlePointerUp = (e: any) => {
+      if (!isInteractive) return;
+      if (isDragging.current && localRef.current) {
+        // Start snapping
+        const quaternion = localRef.current.quaternion.clone();
+        const frontFace = detectFrontFace(quaternion);
+        targetQuaternion.current.copy(FACE_ROTATIONS[frontFace]);
+        isSnapping.current = true;
+      }
+      isDragging.current = false;
+    };
+
+    useFrame((_, delta) => {
+      if (!isInteractive || !localRef.current) return;
+
+      if (isSnapping.current || isAutoRotating.current) {
+        const speed = isAutoRotating.current ? 0.1 : 0.15;
+        localRef.current.quaternion.slerp(targetQuaternion.current, speed);
+
+        if (
+          localRef.current.quaternion.angleTo(targetQuaternion.current) < 0.01
+        ) {
+          localRef.current.quaternion.copy(targetQuaternion.current);
+          isSnapping.current = false;
+          isAutoRotating.current = false;
+        }
+      }
+
+      if (!isAutoRotating.current) {
+        const newFace = detectFrontFace(localRef.current.quaternion);
+        if (
+          newFace !== currentFaceRef.current &&
+          onFaceChange &&
+          isSnapping.current &&
+          localRef.current.quaternion.angleTo(targetQuaternion.current) < 0.05
+        ) {
+          currentFaceRef.current = newFace;
+          if (newFace !== selectedFace) {
+            onFaceChange(newFace);
+          }
+        }
       }
     });
 
-    return bestFace;
-  };
+    const getPipStates = (faceValue: number): PipState[] => {
+      return enhancements.faces[faceValue - 1] || [];
+    };
 
-  // R3F pointer event handlers (work in React Native)
-  const handlePointerDown = (e: any) => {
-    e.stopPropagation();
-    isDragging.current = true;
-    isSnapping.current = false;
-    isAutoRotating.current = false;
-    // Use uv or point coordinates for consistent tracking
-    previousPointer.current = { x: e.point.x, y: e.point.y };
-  };
+    return (
+      <group ref={localRef}>
+        {/* Interaction Sphere */}
+        <mesh
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerLeave={handlePointerUp}
+        >
+          <sphereGeometry args={[DIE_SIZE * 1.2, 16, 16]} />
+          <meshBasicMaterial transparent opacity={0} />
+        </mesh>
 
-  const handlePointerMove = (e: any) => {
-    if (!isDragging.current || !groupRef.current) return;
-    e.stopPropagation();
+        <RoundedBox
+          args={[DIE_SIZE, DIE_SIZE, DIE_SIZE]}
+          radius={0.1}
+          smoothness={4}
+        >
+          <meshStandardMaterial
+            color="#f5f5f5"
+            metalness={0.1}
+            roughness={0.4}
+          />
+        </RoundedBox>
 
-    // Calculate rotation based on pointer movement in 3D space
-    const deltaX = (e.point.x - previousPointer.current.x) * 3;
-    const deltaY = (e.point.y - previousPointer.current.y) * 3;
+        {[1, 2, 3, 4, 5, 6].map((face) => {
+          let rot: [number, number, number] = [0, 0, 0];
+          let pos: [number, number, number] = [0, 0, 0];
 
-    // Rotate around WORLD axes to prevent "gimbal lock" feel and confusing local rotation
-    const rotateY = new THREE.Quaternion().setFromAxisAngle(
-      new THREE.Vector3(0, 1, 0),
-      deltaX
+          if (face === 1) {
+            rot = [0, Math.PI / 2, 0];
+            pos = [FACE_OFFSET, 0, 0];
+          }
+          if (face === 6) {
+            rot = [0, -Math.PI / 2, 0];
+            pos = [-FACE_OFFSET, 0, 0];
+          }
+          if (face === 3) {
+            rot = [-Math.PI / 2, 0, 0];
+            pos = [0, FACE_OFFSET, 0];
+          }
+          if (face === 4) {
+            rot = [Math.PI / 2, 0, 0];
+            pos = [0, -FACE_OFFSET, 0];
+          }
+          if (face === 2) {
+            rot = [0, 0, 0];
+            pos = [0, 0, FACE_OFFSET];
+          }
+          if (face === 5) {
+            rot = [0, Math.PI, 0];
+            pos = [0, 0, -FACE_OFFSET];
+          }
+
+          return (
+            <DieFace
+              key={face}
+              faceValue={face}
+              rotation={rot}
+              position={pos}
+              pipStates={getPipStates(face)}
+              enhancedPipIndex={
+                enhancedFace === face ? enhancedPipIndex : undefined
+              }
+              previewPipIndex={
+                previewFace === face ? previewPipIndex : undefined
+              }
+              previewColor={previewColor}
+            />
+          );
+        })}
+      </group>
     );
-    const rotateX = new THREE.Quaternion().setFromAxisAngle(
-      new THREE.Vector3(1, 0, 0),
-      -deltaY
-    );
-
-    // Apply world rotations: pre-multiply to apply in world space
-    groupRef.current.quaternion.premultiply(rotateY);
-    groupRef.current.quaternion.premultiply(rotateX);
-
-    previousPointer.current = { x: e.point.x, y: e.point.y };
-  };
-
-  const handlePointerUp = (e: any) => {
-    if (isDragging.current && groupRef.current) {
-      // Start snapping to nearest face
-      const quaternion = groupRef.current.quaternion.clone();
-      const frontFace = detectFrontFace(quaternion);
-      targetQuaternion.current.copy(FACE_ROTATIONS[frontFace]);
-      isSnapping.current = true;
-    }
-    isDragging.current = false;
-  };
-
-  useFrame((_, delta) => {
-    if (!groupRef.current) return;
-
-    if (isSnapping.current || isAutoRotating.current) {
-      // Slerp toward target
-      const speed = isAutoRotating.current ? 0.1 : 0.15;
-      groupRef.current.quaternion.slerp(targetQuaternion.current, speed);
-
-      // Check if close enough
-      if (
-        groupRef.current.quaternion.angleTo(targetQuaternion.current) < 0.01
-      ) {
-        groupRef.current.quaternion.copy(targetQuaternion.current);
-        isSnapping.current = false;
-        isAutoRotating.current = false;
-      }
-    }
-
-    // Detect current front face only if dragging or snapping (not auto-rotating to avoid updates during animation)
-    if (!isAutoRotating.current) {
-      const newFace = detectFrontFace(groupRef.current.quaternion);
-      if (newFace !== currentFaceRef.current) {
-        currentFaceRef.current = newFace;
-        // Only trigger haptic/callback if actual change and not just initial setup
-        if (selectedFace !== null || currentFaceRef.current !== 1) {
-          // We don't want to spam callbacks during drag, but we want haptics
-          // triggerSelectionHaptic(); // Optional: might be too much during drag
-        }
-
-        // Update parent only when snapping is done or during drag if desired
-        // For smoother UI, maybe only update on snap completion?
-        // But user wants to see "Current Face" update?
-        // Let's stick to update on snap completion or debounce
-      }
-
-      // We must update the parent when the face changes so the UI reflects it
-      // But avoid circular updates if this was triggered BY the parent
-      if (
-        newFace !== selectedFace &&
-        !isAutoRotating.current &&
-        isSnapping.current &&
-        groupRef.current.quaternion.angleTo(targetQuaternion.current) < 0.05
-      ) {
-        onFaceChange(newFace);
-      }
-    }
-  });
-
-  // Get pip states for each face
-  const getPipStates = (faceValue: number): PipState[] => {
-    return enhancements.faces[faceValue - 1] || [];
-  };
-
-  return (
-    <group ref={groupRef}>
-      {/* Invisible sphere for touch interaction - larger than die for easier grabbing */}
-      <mesh
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerLeave={handlePointerUp}
-      >
-        <sphereGeometry args={[DIE_SIZE * 1.2, 16, 16]} />
-        <meshBasicMaterial transparent opacity={0} />
-      </mesh>
-
-      <RoundedBox
-        args={[DIE_SIZE, DIE_SIZE, DIE_SIZE]}
-        radius={0.1}
-        smoothness={4}
-      >
-        <meshStandardMaterial color="#f5f5f5" metalness={0.1} roughness={0.4} />
-      </RoundedBox>
-
-      {/* Face 1 - Right (+X) */}
-      <DieFace
-        faceValue={1}
-        rotation={[0, Math.PI / 2, 0]}
-        position={[FACE_OFFSET, 0, 0]}
-        pipStates={getPipStates(1)}
-        enhancedPipIndex={enhancedFace === 1 ? enhancedPipIndex : undefined}
-        previewPipIndex={previewFace === 1 ? previewPipIndex : undefined}
-        previewColor={previewColor}
-      />
-      {/* Face 6 - Left (-X) */}
-      <DieFace
-        faceValue={6}
-        rotation={[0, -Math.PI / 2, 0]}
-        position={[-FACE_OFFSET, 0, 0]}
-        pipStates={getPipStates(6)}
-        enhancedPipIndex={enhancedFace === 6 ? enhancedPipIndex : undefined}
-        previewPipIndex={previewFace === 6 ? previewPipIndex : undefined}
-        previewColor={previewColor}
-      />
-      {/* Face 3 - Top (+Y) */}
-      <DieFace
-        faceValue={3}
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, FACE_OFFSET, 0]}
-        pipStates={getPipStates(3)}
-        enhancedPipIndex={enhancedFace === 3 ? enhancedPipIndex : undefined}
-        previewPipIndex={previewFace === 3 ? previewPipIndex : undefined}
-        previewColor={previewColor}
-      />
-      {/* Face 4 - Bottom (-Y) */}
-      <DieFace
-        faceValue={4}
-        rotation={[Math.PI / 2, 0, 0]}
-        position={[0, -FACE_OFFSET, 0]}
-        pipStates={getPipStates(4)}
-        enhancedPipIndex={enhancedFace === 4 ? enhancedPipIndex : undefined}
-        previewPipIndex={previewFace === 4 ? previewPipIndex : undefined}
-        previewColor={previewColor}
-      />
-      {/* Face 2 - Front (+Z) */}
-      <DieFace
-        faceValue={2}
-        rotation={[0, 0, 0]}
-        position={[0, 0, FACE_OFFSET]}
-        pipStates={getPipStates(2)}
-        enhancedPipIndex={enhancedFace === 2 ? enhancedPipIndex : undefined}
-        previewPipIndex={previewFace === 2 ? previewPipIndex : undefined}
-        previewColor={previewColor}
-      />
-      {/* Face 5 - Back (-Z) */}
-      <DieFace
-        faceValue={5}
-        rotation={[0, Math.PI, 0]}
-        position={[0, 0, -FACE_OFFSET]}
-        pipStates={getPipStates(5)}
-        enhancedPipIndex={enhancedFace === 5 ? enhancedPipIndex : undefined}
-        previewPipIndex={previewFace === 5 ? previewPipIndex : undefined}
-        previewColor={previewColor}
-      />
-    </group>
-  );
-};
+  }
+);
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Main Component
+// Main Component (Scene Coordinator)
 // ─────────────────────────────────────────────────────────────────────────────
 
-interface DiePreview3DProps {
-  dieIndex: number;
-  enhancements: DieEnhancement[];
+export interface DiePreview3DProps {
+  phase: GamePhase;
+  dieIndex: number; // Selected die index (0-4)
+  allEnhancements: DieEnhancement[];
   selectedFace: number | null;
   onFaceSelect: (face: number) => void;
   upgradeType: DiceUpgradeType | null;
-  enhancedFace?: number; // Face with newly enhanced pip (1-6)
-  enhancedPipIndex?: number; // Index of newly enhanced pip
-  previewFace?: number; // Face to show preview pulse (1-6)
-  previewPipIndex?: number; // Index of pip to preview
+  enhancedFace?: number;
+  enhancedPipIndex?: number;
+  previewFace?: number;
+  previewPipIndex?: number;
 }
 
-export const DiePreview3D: React.FC<DiePreview3DProps> = ({
+// ─────────────────────────────────────────────────────────────────────────────
+// Camera Controller
+// ─────────────────────────────────────────────────────────────────────────────
+
+import { useThree } from "@react-three/fiber";
+
+const CameraController = ({ phase }: { phase: GamePhase }) => {
+  const { camera } = useThree();
+
+  useFrame((state, delta) => {
+    // DICE_EDITOR_DIE: High angle, overview of the ring
+    // DICE_EDITOR_FACE: Standard view (lower, straighter) for face editing
+    const targetPos =
+      phase === "DICE_EDITOR_DIE"
+        ? new THREE.Vector3(0, 1.2, 5.0) // Closer and slightly lower
+        : new THREE.Vector3(0, 0, 4.0); // Closer for face editing
+
+    // Target rotation (Euler)
+    // DICE_EDITOR_DIE: Look down slightly (-0.20 rad)
+    // DICE_EDITOR_FACE: Look straight (0 rad)
+    const targetRotX = phase === "DICE_EDITOR_DIE" ? -0.2 : 0;
+
+    const speed = 4 * delta;
+
+    // Lerp position
+    camera.position.lerp(targetPos, speed);
+
+    // Lerp rotation (X axis is the main one changing)
+    camera.rotation.x += (targetRotX - camera.rotation.x) * speed;
+
+    // Ensure scaling/aspect is clean? Usually handled by R3F.
+  });
+
+  return null;
+};
+
+// ... inside DiceScene ... (removed comment)
+
+interface DiceSceneProps {
+  phase: GamePhase;
+  dieIndex: number;
+  allEnhancements: DieEnhancement[];
+  selectedFace: number | null;
+  onFaceSelect: (face: number) => void;
+  upgradeType: DiceUpgradeType | null;
+  enhancedFace?: number;
+  enhancedPipIndex?: number;
+  previewFace?: number;
+  previewPipIndex?: number;
+  previewColor?: string;
+}
+
+const DiceScene: React.FC<DiceSceneProps> = ({
+  phase,
   dieIndex,
-  enhancements,
+  allEnhancements,
   selectedFace,
   onFaceSelect,
   upgradeType,
@@ -520,33 +559,158 @@ export const DiePreview3D: React.FC<DiePreview3DProps> = ({
   enhancedPipIndex,
   previewFace,
   previewPipIndex,
+  previewColor,
 }) => {
-  const dieEnhancement = enhancements[dieIndex] || { faces: Array(6).fill([]) };
+  // Use createRef for stable object refs to pass to children
+  const diceRefs = useMemo(
+    () => [0, 1, 2, 3, 4].map(() => React.createRef<THREE.Group>()),
+    []
+  );
 
-  // Compute preview color from upgrade type
+  // Carousel state
+  const carouselRotation = useRef(0);
+
+  // Scene Logic: Layout & Rotation Sync
+  useFrame((state, delta) => {
+    const selectedRefObject = diceRefs[dieIndex];
+    if (!selectedRefObject) return;
+
+    const selectedGroup = selectedRefObject.current;
+
+    // 1. Sync Rotation: All dice match the selected die (visual rotation of the die itself)
+    if (selectedGroup) {
+      const masterQuat = selectedGroup.quaternion;
+      diceRefs.forEach((ref, i) => {
+        if (i !== dieIndex && ref.current) {
+          ref.current.quaternion.copy(masterQuat);
+        }
+      });
+    }
+
+    // 2. Animate Carousel Rotation
+    // 5 dice = 360 degrees / 5 = 72 degrees per die (2PI / 5)
+    // We want dieIndex to be at angle 0 (Front)
+    // So carousel rotation should be -dieIndex * STEP
+    const ANGLE_STEP = (Math.PI * 2) / 5;
+    const targetRotation = -dieIndex * ANGLE_STEP;
+
+    // Shortest path logic:
+    let diff = targetRotation - carouselRotation.current;
+    // Normalize to -PI..PI
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+
+    // Apply rotation
+    const rotSpeed = 4 * delta;
+    carouselRotation.current += diff * rotSpeed;
+
+    // 3. Position Dice in Circle
+    const RADIUS = 3.5;
+    const CENTER_Z = -RADIUS; // So front is at Z=0 (RADIUS + CENTER_Z = 0)
+
+    diceRefs.forEach((ref, i) => {
+      const group = ref.current;
+      if (!group) return;
+
+      // Calculate Angle on Carousel
+      const theta = i * ANGLE_STEP + carouselRotation.current;
+
+      // Calculate Circle Position
+      const circleX = RADIUS * Math.sin(theta);
+      const circleZ = CENTER_Z + RADIUS * Math.cos(theta);
+
+      const target = { x: circleX, y: 0, z: circleZ, scale: 1.0, opacity: 1 };
+
+      if (phase === "DICE_EDITOR_DIE") {
+        // Die Selection
+        if (i === dieIndex) {
+          target.scale = 1.2;
+          target.y = 0;
+        } else {
+          target.scale = 1.0;
+          target.y = 0;
+        }
+      } else {
+        // Face Selection
+        if (i === dieIndex) {
+          target.x = 0;
+          target.y = 0;
+          target.z = 0.5; // Zoom in
+          target.scale = 1.3;
+        } else {
+          // Fly away from current circle pos
+          const normX = Math.sin(theta);
+          const normZ = Math.cos(theta);
+          target.x = circleX + normX * 8;
+          target.z = circleZ + normZ * 8 - 5;
+          target.y = -5;
+          target.scale = 0;
+        }
+      }
+
+      // Apply
+      const lerpSpeed = 5 * delta;
+      group.position.x += (target.x - group.position.x) * lerpSpeed;
+      group.position.y += (target.y - group.position.y) * lerpSpeed;
+      group.position.z += (target.z - group.position.z) * lerpSpeed;
+
+      const s = group.scale.x + (target.scale - group.scale.x) * lerpSpeed;
+      group.scale.setScalar(s);
+
+      group.visible = s > 0.05;
+    });
+  });
+
+  return (
+    <>
+      <ambientLight intensity={0.6} />
+      <directionalLight position={[5, 5, 5]} intensity={0.8} />
+
+      {/* Render all 5 dice */}
+      {[0, 1, 2, 3, 4].map((i) => {
+        const isSelected = i === dieIndex;
+        const enhancement = allEnhancements[i] || {
+          faces: Array(6).fill([]),
+        };
+
+        return (
+          <InteractiveDie
+            key={i}
+            ref={diceRefs[i]}
+            enhancements={enhancement}
+            isInteractive={isSelected}
+            selectedFace={isSelected ? selectedFace : null}
+            onFaceChange={isSelected ? onFaceSelect : undefined}
+            upgradeType={isSelected ? upgradeType : null}
+            enhancedFace={isSelected ? enhancedFace : undefined}
+            enhancedPipIndex={isSelected ? enhancedPipIndex : undefined}
+            previewFace={isSelected ? previewFace : undefined}
+            previewPipIndex={isSelected ? previewPipIndex : undefined}
+            previewColor={previewColor}
+          />
+        );
+      })}
+    </>
+  );
+};
+
+export const DiePreview3D: React.FC<DiePreview3DProps> = (props) => {
+  // Compute preview color here to pass down, or let scene handle it
+  // Props are passed through directly to DiceScene
+
   const previewColor =
-    upgradeType === "points"
+    props.upgradeType === "points"
       ? COLORS.upgradePoints
-      : upgradeType === "mult"
+      : props.upgradeType === "mult"
       ? COLORS.upgradeMult
       : undefined;
 
   return (
     <View style={styles.container}>
-      <Canvas camera={{ position: [0, -0.3, 2.8], fov: 50 }}>
-        <ambientLight intensity={0.6} />
-        <directionalLight position={[5, 5, 5]} intensity={0.8} />
-        <InteractiveDie
-          enhancements={dieEnhancement}
-          selectedFace={selectedFace}
-          onFaceChange={onFaceSelect}
-          upgradeType={upgradeType}
-          enhancedFace={enhancedFace}
-          enhancedPipIndex={enhancedPipIndex}
-          previewFace={previewFace}
-          previewPipIndex={previewPipIndex}
-          previewColor={previewColor}
-        />
+      {/* Moved camera back and up for overhead view of the circle */}
+      <Canvas camera={{ fov: 35 }}>
+        <CameraController phase={props.phase} />
+        <DiceScene {...props} previewColor={previewColor} />
       </Canvas>
     </View>
   );
