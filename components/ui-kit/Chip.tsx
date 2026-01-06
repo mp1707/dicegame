@@ -55,7 +55,8 @@ const CHIP_COLORS: Record<ChipColor, { bg: string; text: string; border: string 
  * IMPORTANT: Chips are NOT tappable. They are purely informational.
  * If you need a tappable badge, use a button component instead.
  */
-export const Chip: React.FC<ChipProps> = ({
+// P3.4: Memoize to prevent unnecessary re-renders from parent updates
+export const Chip: React.FC<ChipProps> = React.memo(({
   label,
   color = "muted",
   size = "sm",
@@ -85,7 +86,7 @@ export const Chip: React.FC<ChipProps> = ({
       </GameText>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   chip: {

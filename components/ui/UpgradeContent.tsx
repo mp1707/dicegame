@@ -6,7 +6,7 @@ import Animated, {
   withTiming,
   withDelay,
   withSpring,
-  withSequence,
+  runOnJS,
 } from "react-native-reanimated";
 import { GameText, TileButton, TileButtonState } from "../shared";
 import { COLORS, SPACING, DIMENSIONS, ANIMATION } from "../../constants/theme";
@@ -150,6 +150,9 @@ export const UpgradeContent: React.FC = () => {
   // Track selected card for animation
   const [selectedHandId, setSelectedHandId] = useState<HandId | null>(null);
 
+  // P2.4: Shared value to sync animation timing with action callback
+  const selectionProgress = useSharedValue(0);
+
   // Header animation
   const headerOpacity = useSharedValue(0);
   const headerTranslateY = useSharedValue(6);
@@ -164,13 +167,21 @@ export const UpgradeContent: React.FC = () => {
     transform: [{ translateY: headerTranslateY.value }],
   }));
 
+  // P2.4: Use Reanimated callback instead of setTimeout for precise timing
   const handleSelectHand = useCallback(
     (handId: HandId) => {
       setSelectedHandId(handId);
-      // Delay the actual action to show animation
-      setTimeout(() => {
-        pickUpgradeHand(handId);
-      }, 400); // 400ms to allow shine animation
+      // Use animation callback synced to TileButton shine duration
+      selectionProgress.value = 0;
+      selectionProgress.value = withTiming(
+        1,
+        { duration: ANIMATION.tile.select.shineDuration },
+        (finished) => {
+          if (finished) {
+            runOnJS(pickUpgradeHand)(handId);
+          }
+        }
+      );
     },
     [pickUpgradeHand]
   );

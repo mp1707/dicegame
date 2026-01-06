@@ -206,21 +206,32 @@ export const DieOutline = ({ isLocked, lockedDiceCount }: DieOutlineProps) => {
     outerAlpha = Math.min(outerAlpha, config.maxAlpha);
     innerAlpha = Math.min(innerAlpha, config.maxAlpha);
 
-    // Apply to materials
+    // P4.1: Apply to materials only if changed (cache optimization)
     if (outerMatRef.current) {
-      outerMatRef.current.opacity = outerAlpha;
-      outerMatRef.current.visible = outerAlpha > 0.01;
+      const newVisible = outerAlpha > 0.01;
+      if (outerMatRef.current.opacity !== outerAlpha) {
+        outerMatRef.current.opacity = outerAlpha;
+      }
+      if (outerMatRef.current.visible !== newVisible) {
+        outerMatRef.current.visible = newVisible;
+      }
     }
     if (innerMatRef.current) {
-      innerMatRef.current.opacity = innerAlpha;
-      innerMatRef.current.visible = innerAlpha > 0.01;
+      const newVisible = innerAlpha > 0.01;
+      if (innerMatRef.current.opacity !== innerAlpha) {
+        innerMatRef.current.opacity = innerAlpha;
+      }
+      if (innerMatRef.current.visible !== newVisible) {
+        innerMatRef.current.visible = newVisible;
+      }
     }
 
-    // Keep frame loop running during transitions or pulses
+    // Keep frame loop running during transitions or active pulse phases
+    // P1.2: Only invalidate during lock transitions or actual pulse animation (not idle wait)
     if (lockProgressRef.current > 0.01 && lockProgressRef.current < 0.99) {
       state.invalidate();
     }
-    if (pulsePhaseRef.current !== "idle") {
+    if (pulsePhaseRef.current === "down" || pulsePhaseRef.current === "up") {
       state.invalidate();
     }
   });

@@ -7,6 +7,7 @@
  * Reference device: iPhone Air (420×912pt, ~818pt usable)
  */
 
+import { useMemo } from "react";
 import { useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LAYOUT } from "../constants/theme";
@@ -79,34 +80,56 @@ export const useLayoutUnits = (): LayoutUnits => {
   const upperSlotHeight = upperSectionHeight;
   const lowerSlotHeight = lowerSectionHeight;
 
-  return {
-    // Section heights
-    headerHeight,
-    diceTrayHeight,
-    scoreRowHeight,
-    scoringGridHeight,
-    footerHeight,
+  // P3.3: Memoize return value to prevent unnecessary child re-renders
+  return useMemo(
+    () => ({
+      // Section heights
+      headerHeight,
+      diceTrayHeight,
+      scoreRowHeight,
+      scoringGridHeight,
+      footerHeight,
 
-    // Slot heights (3 equal rows)
-    specialSlotHeight,
-    upperSlotHeight,
-    lowerSlotHeight,
-    sectionLabelHeight,
+      // Slot heights (3 equal rows)
+      specialSlotHeight,
+      upperSlotHeight,
+      lowerSlotHeight,
+      sectionLabelHeight,
 
-    // Scaling
-    fontScale,
+      // Scaling
+      fontScale,
 
-    // Dimensions
-    screenWidth,
-    screenHeight,
-    usableHeight,
+      // Dimensions
+      screenWidth,
+      screenHeight,
+      usableHeight,
 
-    // Insets
-    insets: {
-      top: insets.top,
-      bottom: insets.bottom,
-      left: insets.left,
-      right: insets.right,
-    },
-  };
+      // Insets
+      insets: {
+        top: insets.top,
+        bottom: insets.bottom,
+        left: insets.left,
+        right: insets.right,
+      },
+    }),
+    [
+      headerHeight,
+      diceTrayHeight,
+      scoreRowHeight,
+      scoringGridHeight,
+      footerHeight,
+      specialSlotHeight,
+      upperSlotHeight,
+      lowerSlotHeight,
+      sectionLabelHeight,
+      fontScale,
+      screenWidth,
+      screenHeight,
+      usableHeight,
+      insets.top,
+      insets.bottom,
+      insets.left,
+      insets.right,
+    ]
+  );
 };

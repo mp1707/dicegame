@@ -77,7 +77,8 @@ const isPressableState = (state: TileButtonState): boolean => {
   return state === "active" || state === "selected";
 };
 
-export const TileButton = ({
+// P3.4: Memoize to prevent unnecessary re-renders from parent updates
+export const TileButton = React.memo(({
   icon,
   iconSource,
   labelLine1,
@@ -296,7 +297,7 @@ export const TileButton = ({
       </Pressable3DBase>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   wrapper: {

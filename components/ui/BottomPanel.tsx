@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { StyleSheet } from "react-native";
 import Animated, { SlideInLeft, SlideOutRight, Easing } from "react-native-reanimated";
 import { useGameStore } from "../../store/gameStore";
@@ -55,17 +55,24 @@ export const BottomPanel: React.FC = () => {
     }
   };
 
-  // Snappy easing-based entering animation with delay
-  const enteringAnimation = SlideInLeft
-    .duration(SLIDE_DURATION)
-    .easing(Easing.out(Easing.quad))
-    .delay(incomingDelay);
+  // P4.3: Memoize animation configs to avoid recreation on every render
+  const enteringAnimation = useMemo(
+    () => SlideInLeft
+      .duration(SLIDE_DURATION)
+      .easing(Easing.out(Easing.quad))
+      .delay(incomingDelay),
+    []
+  );
 
-  // Snappy easing-based exiting animation (immediate, no delay)
-  const exitingAnimation = SlideOutRight
-    .duration(SLIDE_DURATION)
-    .easing(Easing.in(Easing.quad));
+  const exitingAnimation = useMemo(
+    () => SlideOutRight
+      .duration(SLIDE_DURATION)
+      .easing(Easing.in(Easing.quad)),
+    []
+  );
 
+  // Note: key={phase} is required for Reanimated entering/exiting animations to trigger.
+  // The remount is intentional - content components should be memoized to minimize work.
   return (
     <Animated.View
       key={phase}

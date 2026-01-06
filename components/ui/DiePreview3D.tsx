@@ -531,21 +531,29 @@ export interface DiePreview3DProps {
 
 import { useThree } from "@react-three/fiber";
 
+// P4.2: Pre-allocated target position to avoid per-frame allocation
+const CAMERA_TARGET_POS = new THREE.Vector3(0, 0, 4.0);
+const CAMERA_SETTLE_THRESHOLD = 0.01;
+
 const CameraController = ({ phase }: { phase: GamePhase }) => {
   const { camera } = useThree();
 
   useFrame((state, delta) => {
-    // Same camera position for both phases - single die view
-    const targetPos = new THREE.Vector3(0, 0, 4.0);
-    const targetRotX = 0;
+    // P4.2: Early exit if camera already at target
+    const posDist = camera.position.distanceTo(CAMERA_TARGET_POS);
+    const rotDist = Math.abs(camera.rotation.x);
+
+    if (posDist < CAMERA_SETTLE_THRESHOLD && rotDist < CAMERA_SETTLE_THRESHOLD) {
+      return; // Camera settled, skip lerping
+    }
 
     const speed = 4 * delta;
 
     // Lerp position
-    camera.position.lerp(targetPos, speed);
+    camera.position.lerp(CAMERA_TARGET_POS, speed);
 
     // Lerp rotation (X axis is the main one changing)
-    camera.rotation.x += (targetRotX - camera.rotation.x) * speed;
+    camera.rotation.x += (0 - camera.rotation.x) * speed;
   });
 
   return null;

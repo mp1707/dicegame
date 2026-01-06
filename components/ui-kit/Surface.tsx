@@ -32,7 +32,8 @@ const PADDING_VALUES: Record<PaddingPreset, number> = {
  * IMPORTANT: Surface is NON-INTERACTIVE (View only).
  * For tappable elements, use PrimaryButton or TileButton instead.
  */
-export const Surface: React.FC<SurfaceProps> = ({
+// P3.4: Memoize to prevent unnecessary re-renders from parent updates
+export const Surface: React.FC<SurfaceProps> = React.memo(({
   variant = "panel",
   padding = "md",
   style,
@@ -46,7 +47,7 @@ export const Surface: React.FC<SurfaceProps> = ({
       {children}
     </View>
   );
-};
+});
 
 const VARIANT_STYLES = StyleSheet.create({
   panel: {

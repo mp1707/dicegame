@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useMemo } from "react";
 import { RigidBody, RapierRigidBody } from "@react-three/rapier";
 import * as THREE from "three";
 import { ThreeEvent, useFrame } from "@react-three/fiber";
@@ -183,6 +183,14 @@ export const Die = ({
   const lockPopStartRef = useRef(0);
   const lockPopPhaseRef = useRef<"none" | "up" | "down">("none");
 
+  // P1.4: Pooled objects for reveal animation (avoid per-frame allocations)
+  const tempQuaternion = useMemo(() => new THREE.Quaternion(), []);
+  const tempUpVector = useMemo(() => new THREE.Vector3(0, 1, 0), []);
+  const tempWorldNormal = useMemo(() => new THREE.Vector3(), []);
+  const tempRotationToUp = useMemo(() => new THREE.Quaternion(), []);
+  const tempYAxisCorrection = useMemo(() => new THREE.Quaternion(), []);
+  const tempBestFaceNormal = useMemo(() => new THREE.Vector3(), []);
+
   // Trigger Roll Logic - only when rollTrigger changes
   useEffect(() => {
     if (rollTrigger > prevRollTrigger.current) {
@@ -252,24 +260,21 @@ export const Die = ({
   };
 
   // Face Detection Logic - report to parent via callback
+  // P1.4: Uses pooled objects to avoid allocations
   const handleSleep = () => {
     if (!rigidBody.current) return;
 
     const rotation = rigidBody.current.rotation();
-    const quaternion = new THREE.Quaternion(
-      rotation.x,
-      rotation.y,
-      rotation.z,
-      rotation.w
-    );
-    const upVector = new THREE.Vector3(0, 1, 0);
+    tempQuaternion.set(rotation.x, rotation.y, rotation.z, rotation.w);
+    tempUpVector.set(0, 1, 0);
 
     let bestDot = -1.0;
     let resultFace = 1;
 
     FACE_NORMALS.forEach(({ face, normal }) => {
-      const worldNormal = normal.clone().applyQuaternion(quaternion);
-      const dot = worldNormal.dot(upVector);
+      // P1.4: Reuse tempWorldNormal instead of cloning
+      tempWorldNormal.copy(normal).applyQuaternion(tempQuaternion);
+      const dot = tempWorldNormal.dot(tempUpVector);
       if (dot > bestDot) {
         bestDot = dot;
         resultFace = face;
@@ -323,41 +328,37 @@ export const Die = ({
           capturedPhysicsQuaternionRef.current
         );
 
-        // Calculate target quaternion to show top face upward
-        const upVector = new THREE.Vector3(0, 1, 0);
+        // P1.4: Calculate target quaternion to show top face upward (using pooled objects)
+        tempUpVector.set(0, 1, 0);
         let bestDot = -1;
-        let bestFaceNormal = new THREE.Vector3(0, 1, 0);
+        tempBestFaceNormal.set(0, 1, 0);
         let bestFace = 3; // Track which face is on top
 
         FACE_NORMALS.forEach(({ face, normal }) => {
-          const worldNormal = normal
-            .clone()
+          // P1.4: Reuse tempWorldNormal instead of cloning
+          tempWorldNormal
+            .copy(normal)
             .applyQuaternion(capturedPhysicsQuaternionRef.current);
-          const dot = worldNormal.dot(upVector);
+          const dot = tempWorldNormal.dot(tempUpVector);
           if (dot > bestDot) {
             bestDot = dot;
-            bestFaceNormal = normal.clone();
+            tempBestFaceNormal.copy(normal);
             bestFace = face;
           }
         });
 
-        // Create quaternion that rotates the best face to point up
-        const rotationToUp = new THREE.Quaternion();
-        rotationToUp.setFromUnitVectors(bestFaceNormal, upVector);
+        // P1.4: Create quaternion that rotates the best face to point up (using pooled object)
+        tempRotationToUp.setFromUnitVectors(tempBestFaceNormal, tempUpVector);
 
         // Apply face-specific orientation correction
         // Face 6 pips are arranged as two vertical columns - rotate around Y to align
         // Use premultiply so Y rotation happens AFTER the face is pointing up
         if (bestFace === 6) {
-          const yAxisCorrection = new THREE.Quaternion();
-          yAxisCorrection.setFromAxisAngle(
-            new THREE.Vector3(0, 1, 0),
-            Math.PI / 2
-          );
-          rotationToUp.premultiply(yAxisCorrection);
+          tempYAxisCorrection.setFromAxisAngle(tempUpVector, Math.PI / 2);
+          tempRotationToUp.premultiply(tempYAxisCorrection);
         }
 
-        targetQuaternionRef.current.copy(rotationToUp);
+        targetQuaternionRef.current.copy(tempRotationToUp);
 
         wasRevealActiveRef.current = true;
 
@@ -430,8 +431,9 @@ export const Die = ({
       wasRevealActiveRef.current = false;
     }
 
-    // Continuously report position for slot sorting (ensures positions are current before reveal)
-    if (!isRevealActive && rigidBody.current && isVisible) {
+    // P1.3: Report position for slot sorting only while dice are still moving
+    // Gate on settleReportedRef to stop continuous callbacks after settle
+    if (!isRevealActive && rigidBody.current && isVisible && !settleReportedRef.current) {
       onPositionUpdate(index, rigidBody.current.translation().x);
     }
 

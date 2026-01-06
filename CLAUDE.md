@@ -862,3 +862,260 @@ const styles = StyleSheet.create({
   },
 });
 ```
+
+---
+
+## Performance Guidelines
+
+This app runs 3D physics simulation, complex animations, and reactive state. **Thermal management is critical** - the device should stay cool during normal gameplay. Follow these patterns to prevent performance regressions.
+
+### Critical Rule: Idle State = Near-Zero Work
+
+When the player is "thinking" (dice settled, no animations running), the app should do **almost nothing**:
+- Physics paused
+- No render loop invalidations
+- No JS intervals/timeouts ticking
+- Animations cancelled or complete
+
+### Physics Optimization (`DiceTray.tsx`)
+
+**Pattern: Pause physics when not needed**
+
+```typescript
+// DiceTray.tsx - Physics pause based on game state
+const [allDiceSettled, setAllDiceSettled] = useState(true);
+
+<Physics
+  gravity={[0, -18, 0]}
+  updateLoop="independent"
+  paused={allDiceSettled && !isRolling && !isRevealing}  // ← CRITICAL
+>
+```
+
+**Anti-patterns:**
+- ❌ `paused={false}` always (physics runs 24/7)
+- ❌ Not tracking settle state
+- ❌ Running physics during reveal animation (dice are lerped, not simulated)
+
+### 3D Render Loop (`frameloop="demand"`)
+
+The Canvas uses `frameloop="demand"` which only renders when `invalidate()` is called. This saves massive GPU cycles.
+
+**Pattern: Only invalidate during active animations**
+
+```typescript
+// DieOutline.tsx - Only invalidate during active pulse phases
+useFrame((state) => {
+  // ✅ Only invalidate when actually animating
+  if (pulsePhaseRef.current === "up" || pulsePhaseRef.current === "down") {
+    state.invalidate();
+  }
+  // ❌ DON'T invalidate during "idle" or "wait" phases
+});
+```
+
+**Pattern: Gate position updates on settle state**
+
+```typescript
+// Die.tsx - Stop updating after dice settle
+if (!isRevealActive && rigidBody.current && isVisible && !settleReportedRef.current) {
+  onPositionUpdate(index, rigidBody.current.translation().x);
+}
+// After settle is reported, this callback stops firing
+```
+
+**Pattern: Early exit when at target**
+
+```typescript
+// DiePreview3D.tsx - Skip lerping when camera settled
+const posDist = camera.position.distanceTo(CAMERA_TARGET_POS);
+if (posDist < 0.01) return; // Already at target, skip work
+```
+
+**Anti-patterns:**
+- ❌ Calling `invalidate()` unconditionally in useFrame
+- ❌ Lerping values that are already at target
+- ❌ Running useFrame logic when component is offscreen
+
+### Object Pooling in useFrame
+
+Creating objects inside `useFrame` causes GC pressure (stutters every few seconds).
+
+**Pattern: Pre-allocate reusable objects**
+
+```typescript
+// Die.tsx - Pooled objects outside useFrame
+const tempQuaternion = useMemo(() => new THREE.Quaternion(), []);
+const tempVector = useMemo(() => new THREE.Vector3(), []);
+const tempUpVector = useMemo(() => new THREE.Vector3(0, 1, 0), []);
+
+useFrame(() => {
+  // ✅ Reuse pooled objects
+  tempQuaternion.copy(someQuat);
+  tempVector.set(x, y, z);
+
+  // ❌ DON'T allocate inside useFrame
+  // const newQuat = new THREE.Quaternion(); // BAD - 60 allocations/sec
+});
+```
+
+**Anti-patterns:**
+- ❌ `new THREE.Vector3()` inside useFrame
+- ❌ `.clone()` inside useFrame (allocates new object)
+- ❌ Array spreads `[...arr]` inside useFrame
+
+### Animation Lifecycle Management
+
+Animations must stop when not visible or relevant.
+
+**Pattern: Cancel animations when leaving phase**
+
+```typescript
+// ShopItemCard.tsx - Stop shimmer when leaving shop
+const phase = useGameStore((s) => s.phase);
+const isInShop = phase === "SHOP_MAIN" || phase === "SHOP_PICK_UPGRADE";
+
+useEffect(() => {
+  if (state === "soon" && isInShop) {
+    shimmerPosition.value = withRepeat(...);
+  } else {
+    cancelAnimation(shimmerPosition);  // ← CRITICAL
+    shimmerPosition.value = -1;
+  }
+  return () => cancelAnimation(shimmerPosition);
+}, [state, isInShop]);
+```
+
+**Pattern: Use Reanimated callbacks instead of setTimeout**
+
+```typescript
+// UpgradeContent.tsx - Sync with animation completion
+selectionProgress.value = withTiming(
+  1,
+  { duration: ANIMATION.tile.select.shineDuration },
+  (finished) => {
+    if (finished) {
+      runOnJS(pickUpgradeHand)(handId);  // ← Called at exact animation end
+    }
+  }
+);
+
+// ❌ DON'T use setTimeout with hardcoded delays
+// setTimeout(() => pickUpgradeHand(handId), 400); // Timing drift risk
+```
+
+**Anti-patterns:**
+- ❌ `withRepeat(..., -1)` without phase-awareness (infinite loop)
+- ❌ `setInterval` on JS thread for animations (use Reanimated)
+- ❌ Hardcoded `setTimeout` delays that don't match animation durations
+- ❌ Not cleaning up animations in useEffect return
+
+### Zustand State Management
+
+Improper subscriptions cause cascade re-renders across many components.
+
+**Pattern: Batch selectors with useShallow**
+
+```typescript
+// PlayConsole.tsx - Single batched subscription
+import { useShallow } from "zustand/react/shallow";
+
+const {
+  money,
+  levelGoal,
+  levelScore,
+  phase,
+  // ... other fields
+} = useGameStore(
+  useShallow((s) => ({
+    money: s.money,
+    levelGoal: s.levelGoal,
+    levelScore: s.levelScore,
+    phase: s.phase,
+  }))
+);
+
+// ❌ DON'T use separate subscriptions for each field
+// const money = useGameStore((s) => s.money);      // Re-render on money change
+// const levelGoal = useGameStore((s) => s.levelGoal); // Re-render on goal change
+// This causes N re-renders instead of 1
+```
+
+**Pattern: Stable action references**
+
+```typescript
+// Actions don't need useShallow - they're stable references
+const rollDice = useGameStore((s) => s.rollDice);
+const selectHand = useGameStore((s) => s.selectHand);
+```
+
+### React.memo for Repeated Components
+
+Components rendered in lists (13 HandSlots, 5 dice, shop cards) must be memoized.
+
+**Pattern: Wrap with React.memo**
+
+```typescript
+// ScoringGrid.tsx - Memoize to prevent 13× re-renders
+const HandSlot = React.memo(({ handId, labelLine1 }: Props) => {
+  // Batch internal selectors too
+  const { handLevel, isUsed, isSelected } = useGameStore(
+    useShallow((s) => ({
+      handLevel: s.handLevels[handId],
+      isUsed: s.usedHandsThisLevel.includes(handId),
+      isSelected: s.selectedHandId === handId,
+    }))
+  );
+  // ...
+});
+```
+
+**Memoized components in this codebase:**
+- `HandSlot` (13 instances in ScoringGrid)
+- `TileButton`, `Surface`, `InsetSlot`, `Chip` (UI-kit)
+- Layout context value (`useLayoutUnits.ts`)
+
+### Context Memoization
+
+Context values must be memoized to prevent provider re-renders cascading to all consumers.
+
+**Pattern: Memoize context value**
+
+```typescript
+// useLayoutUnits.ts
+return useMemo(
+  () => ({
+    headerHeight,
+    diceTrayHeight,
+    // ... all properties
+  }),
+  [headerHeight, diceTrayHeight, /* ... dependencies */]
+);
+```
+
+### Performance Checklist for New Features
+
+Before adding new features, verify:
+
+- [ ] **Physics**: Does this need physics? If not, ensure physics stays paused.
+- [ ] **useFrame**: Am I allocating objects? Use pooled/memoized objects.
+- [ ] **useFrame**: Am I always invalidating? Add early-exit conditions.
+- [ ] **Animations**: Do they stop when offscreen/phase changes? Add cleanup.
+- [ ] **Zustand**: Am I using `useShallow` for multi-field selectors?
+- [ ] **Lists**: Are repeated components wrapped in `React.memo`?
+- [ ] **Timers**: Am I using `setTimeout`? Consider Reanimated callbacks instead.
+
+### Key Files with Performance-Critical Code
+
+| File | Critical Patterns |
+|------|-------------------|
+| `DiceTray.tsx` | Physics pause, settle detection |
+| `Die.tsx` | Object pooling, position gating, reveal animation |
+| `DieOutline.tsx` | Conditional invalidate, material caching |
+| `DiePreview3D.tsx` | Camera early exit, pre-allocated vectors |
+| `PlayConsole.tsx` | Batched Zustand selectors |
+| `ScoringGrid.tsx` | Memoized HandSlot components |
+| `ShopItemCard.tsx` | Phase-aware shimmer cancellation |
+| `UpgradeContent.tsx` | Reanimated callbacks |
+| `BottomPanel.tsx` | Memoized animation configs |
+| `useLayoutUnits.ts` | Memoized context value |

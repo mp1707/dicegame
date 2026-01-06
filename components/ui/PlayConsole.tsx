@@ -22,6 +22,7 @@ import { GameText } from "../shared";
 import { Surface, InsetSlot } from "../ui-kit";
 import { Sparks } from "../ui-kit/Sparks";
 import { useGameStore } from "../../store/gameStore";
+import { useShallow } from "zustand/react/shallow";
 import { formatNumber } from "../../utils/yahtzeeScoring";
 import { formatCompactNumber } from "../../utils/formatting";
 import {
@@ -58,21 +59,38 @@ export const PlayConsole: React.FC<PlayConsoleProps> = ({
   trayOverlay,
   style,
 }) => {
-  const currentLevelIndex = useGameStore((s) => s.currentLevelIndex);
-  const money = useGameStore((s) => s.money);
-  const levelGoal = useGameStore((s) => s.levelGoal);
-  const levelScore = useGameStore((s) => s.levelScore);
+  // P3.1: Batch Zustand selectors to reduce subscription overhead
+  // Using useShallow for object equality comparison
+  const {
+    currentLevelIndex,
+    money,
+    levelGoal,
+    levelScore,
+    levelWon,
+    isWinAnimating,
+    rollsRemaining,
+    handsRemaining,
+    phase,
+    pendingUpgradeType,
+  } = useGameStore(
+    useShallow((s) => ({
+      currentLevelIndex: s.currentLevelIndex,
+      money: s.money,
+      levelGoal: s.levelGoal,
+      levelScore: s.levelScore,
+      levelWon: s.levelWon,
+      isWinAnimating: s.isWinAnimating,
+      rollsRemaining: s.rollsRemaining,
+      handsRemaining: s.handsRemaining,
+      phase: s.phase,
+      pendingUpgradeType: s.pendingUpgradeType,
+    }))
+  );
 
-  const levelWon = useGameStore((s) => s.levelWon);
-  const winShownYet = useGameStore((s) => s.winShownYet);
-  const isWinAnimating = useGameStore((s) => s.isWinAnimating);
+  // Action still needs separate selector (function reference is stable)
   const setIsWinAnimating = useGameStore((s) => s.setIsWinAnimating);
 
   const levelNumber = currentLevelIndex + 1;
-  const rollsRemaining = useGameStore((s) => s.rollsRemaining);
-  const handsRemaining = useGameStore((s) => s.handsRemaining);
-  const phase = useGameStore((s) => s.phase);
-  const pendingUpgradeType = useGameStore((s) => s.pendingUpgradeType);
 
   // Money count-up animation state
   const [displayedMoney, setDisplayedMoney] = useState(money);

@@ -21,7 +21,8 @@ interface InsetSlotProps {
  *
  * Creates a "pressed in" / recessed appearance.
  */
-export const InsetSlot: React.FC<InsetSlotProps> = ({
+// P3.4: Memoize to prevent unnecessary re-renders from parent updates
+export const InsetSlot: React.FC<InsetSlotProps> = React.memo(({
   padding = "sm",
   style,
   children,
@@ -31,4 +32,4 @@ export const InsetSlot: React.FC<InsetSlotProps> = ({
       {children}
     </Surface>
   );
-};
+});

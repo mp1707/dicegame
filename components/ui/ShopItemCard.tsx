@@ -18,6 +18,7 @@ import { Chip } from "../ui-kit";
 import { COLORS, SPACING, DIMENSIONS, ANIMATION } from "../../constants/theme";
 import { triggerSelectionHaptic, triggerImpactMedium } from "../../utils/haptics";
 import { SparkleEffect } from "./SparkleEffect";
+import { useGameStore } from "../../store/gameStore";
 
 export type ShopItemState = "affordable" | "unaffordable" | "purchased" | "soon";
 
@@ -86,9 +87,13 @@ export const ShopItemCard: React.FC<ShopItemCardProps> = ({
     opacity.value = withTiming(1, { duration });
   }, [animationDelay]);
 
-  // Shimmer animation for "soon" state
+  // P2.3: Get phase to stop shimmer when leaving shop
+  const phase = useGameStore((s) => s.phase);
+  const isInShop = phase === "SHOP_MAIN" || phase === "SHOP_PICK_UPGRADE";
+
+  // Shimmer animation for "soon" state - P2.3: only run when in shop
   useEffect(() => {
-    if (state === "soon") {
+    if (state === "soon" && isInShop) {
       const interval = ANIMATION.shop.shimmerInterval;
       const duration = ANIMATION.shop.shimmerDuration;
 
@@ -102,11 +107,13 @@ export const ShopItemCard: React.FC<ShopItemCardProps> = ({
         false
       );
     } else {
+      // P2.3: Cancel when leaving shop or when not "soon" state
       cancelAnimation(shimmerPosition);
+      shimmerPosition.value = -1;
     }
 
     return () => cancelAnimation(shimmerPosition);
-  }, [state]);
+  }, [state, isInShop]);
 
   // Purchase feedback
   useEffect(() => {

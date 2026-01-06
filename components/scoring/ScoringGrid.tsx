@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { View, StyleSheet, ImageSourcePropType } from "react-native";
 import { SpecialSection } from "./SpecialSection";
 import { TileButton, TileButtonState, GameText } from "../shared";
 import { COLORS, SPACING } from "../../constants/theme";
 import { useGameStore, useValidHands, HandId } from "../../store/gameStore";
+import { useShallow } from "zustand/react/shallow";
 import { CategoryIcon } from "../ui/CategoryIcon";
 import { useLayout } from "../../utils/LayoutContext";
 
@@ -94,24 +95,37 @@ interface HandSlotProps {
   iconSource: ImageSourcePropType;
 }
 
-const HandSlot = ({
+// P3.2: Memoize HandSlot to prevent unnecessary re-renders (13 instances)
+const HandSlot = React.memo(({
   handId,
   labelLine1,
   labelLine2,
   iconSource,
 }: Omit<HandSlotProps, "slotHeight">) => {
-  const handLevels = useGameStore((s) => s.handLevels);
-  const usedHandsThisLevel = useGameStore((s) => s.usedHandsThisLevel);
-  const selectedHandId = useGameStore((s) => s.selectedHandId);
+  // P3.2: Batch Zustand selectors to reduce subscription overhead
+  const {
+    handLevel,
+    usedHandsThisLevel,
+    selectedHandId,
+    phase,
+    hasRolledThisHand,
+    isRolling,
+  } = useGameStore(
+    useShallow((s) => ({
+      handLevel: s.handLevels[handId],
+      usedHandsThisLevel: s.usedHandsThisLevel,
+      selectedHandId: s.selectedHandId,
+      phase: s.phase,
+      hasRolledThisHand: s.hasRolledThisHand,
+      isRolling: s.isRolling,
+    }))
+  );
+
+  // Actions still need separate selectors (stable function references)
   const selectHand = useGameStore((s) => s.selectHand);
   const deselectHand = useGameStore((s) => s.deselectHand);
   const toggleOverview = useGameStore((s) => s.toggleOverview);
-  const phase = useGameStore((s) => s.phase);
-  const hasRolledThisHand = useGameStore((s) => s.hasRolledThisHand);
-  const isRolling = useGameStore((s) => s.isRolling);
   const validHands = useValidHands();
-
-  const handLevel = handLevels[handId];
 
   // Determine states
   const isUsed = usedHandsThisLevel.includes(handId);
@@ -170,7 +184,7 @@ const HandSlot = ({
       style={{ flex: 1 }}
     />
   );
-};
+});
 
 export const ScoringGrid = () => {
   const layout = useLayout();
