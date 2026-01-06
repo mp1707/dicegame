@@ -151,6 +151,8 @@ export const Die = ({
   const initialPosition = useRef(position);
   const settleReportedRef = useRef(false);
   const stableTimeRef = useRef(0);
+  // Frame counter to skip settle detection right after roll starts (prevents race condition)
+  const framesSinceRollRef = useRef(100); // Start high so existing dice don't trigger
 
   // Animation refs for smooth transitions
   const groupRef = useRef<THREE.Group>(null);
@@ -196,6 +198,7 @@ export const Die = ({
     if (rollTrigger > prevRollTrigger.current) {
       settleReportedRef.current = false;
       stableTimeRef.current = 0;
+      framesSinceRollRef.current = 0; // Reset frame counter on new roll
 
       if (isLocked) {
         // LOCKED DICE: Switch to kinematicPosition to be truly immovable
@@ -433,16 +436,26 @@ export const Die = ({
 
     // P1.3: Report position for slot sorting only while dice are still moving
     // Gate on settleReportedRef to stop continuous callbacks after settle
-    if (!isRevealActive && rigidBody.current && isVisible && !settleReportedRef.current) {
+    if (
+      !isRevealActive &&
+      rigidBody.current &&
+      isVisible &&
+      !settleReportedRef.current
+    ) {
       onPositionUpdate(index, rigidBody.current.translation().x);
     }
 
+    // Increment frame counter
+    framesSinceRollRef.current += 1;
+
     // Settle detection (only for unlocked, unsettled dice, and not during reveal)
+    // Skip for first 10 frames after roll to ensure physics has started
     if (
       !isLocked &&
       !settleReportedRef.current &&
       rigidBody.current &&
-      !isRevealActive
+      !isRevealActive &&
+      framesSinceRollRef.current > 10
     ) {
       const linvel = rigidBody.current.linvel();
       const angvel = rigidBody.current.angvel();

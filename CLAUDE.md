@@ -872,30 +872,34 @@ This app runs 3D physics simulation, complex animations, and reactive state. **T
 ### Critical Rule: Idle State = Near-Zero Work
 
 When the player is "thinking" (dice settled, no animations running), the app should do **almost nothing**:
-- Physics paused
-- No render loop invalidations
+
+- No render loop invalidations (use `frameloop="demand"`)
 - No JS intervals/timeouts ticking
 - Animations cancelled or complete
 
-### Physics Optimization (`DiceTray.tsx`)
+> **Note**: Physics is NOT paused when idle. Pausing/unpausing Rapier causes WASM collision detection JIT on first roll, creating lag. With only 5 dice, idle physics is negligible.
 
-**Pattern: Pause physics when not needed**
+### Physics Considerations (`DiceTray.tsx`)
+
+**Why physics is NOT paused**: Pausing Rapier physics and resuming causes WASM collision detection code to JIT-compile on the first floor impact, creating noticeable lag on the first roll after app load.
+
+**Pattern: Frame guard for settle detection**
 
 ```typescript
-// DiceTray.tsx - Physics pause based on game state
-const [allDiceSettled, setAllDiceSettled] = useState(true);
+// Die.tsx - Skip settle detection for first N frames after roll
+const framesSinceRollRef = useRef(100); // Start high so existing dice don't trigger
 
-<Physics
-  gravity={[0, -18, 0]}
-  updateLoop="independent"
-  paused={allDiceSettled && !isRolling && !isRevealing}  // ← CRITICAL
->
+// In roll trigger effect:
+framesSinceRollRef.current = 0; // Reset on new roll
+
+// In useFrame:
+framesSinceRollRef.current += 1;
+if (framesSinceRollRef.current > 10) {
+  // Now safe to check settle conditions
+}
 ```
 
-**Anti-patterns:**
-- ❌ `paused={false}` always (physics runs 24/7)
-- ❌ Not tracking settle state
-- ❌ Running physics during reveal animation (dice are lerped, not simulated)
+This prevents race conditions where dice report "settled" before physics has time to apply impulses.
 
 ### 3D Render Loop (`frameloop="demand"`)
 
@@ -918,7 +922,12 @@ useFrame((state) => {
 
 ```typescript
 // Die.tsx - Stop updating after dice settle
-if (!isRevealActive && rigidBody.current && isVisible && !settleReportedRef.current) {
+if (
+  !isRevealActive &&
+  rigidBody.current &&
+  isVisible &&
+  !settleReportedRef.current
+) {
   onPositionUpdate(index, rigidBody.current.translation().x);
 }
 // After settle is reported, this callback stops firing
@@ -933,6 +942,7 @@ if (posDist < 0.01) return; // Already at target, skip work
 ```
 
 **Anti-patterns:**
+
 - ❌ Calling `invalidate()` unconditionally in useFrame
 - ❌ Lerping values that are already at target
 - ❌ Running useFrame logic when component is offscreen
@@ -960,6 +970,7 @@ useFrame(() => {
 ```
 
 **Anti-patterns:**
+
 - ❌ `new THREE.Vector3()` inside useFrame
 - ❌ `.clone()` inside useFrame (allocates new object)
 - ❌ Array spreads `[...arr]` inside useFrame
@@ -995,7 +1006,7 @@ selectionProgress.value = withTiming(
   { duration: ANIMATION.tile.select.shineDuration },
   (finished) => {
     if (finished) {
-      runOnJS(pickUpgradeHand)(handId);  // ← Called at exact animation end
+      runOnJS(pickUpgradeHand)(handId); // ← Called at exact animation end
     }
   }
 );
@@ -1005,6 +1016,7 @@ selectionProgress.value = withTiming(
 ```
 
 **Anti-patterns:**
+
 - ❌ `withRepeat(..., -1)` without phase-awareness (infinite loop)
 - ❌ `setInterval` on JS thread for animations (use Reanimated)
 - ❌ Hardcoded `setTimeout` delays that don't match animation durations
@@ -1071,6 +1083,7 @@ const HandSlot = React.memo(({ handId, labelLine1 }: Props) => {
 ```
 
 **Memoized components in this codebase:**
+
 - `HandSlot` (13 instances in ScoringGrid)
 - `TileButton`, `Surface`, `InsetSlot`, `Chip` (UI-kit)
 - Layout context value (`useLayoutUnits.ts`)
@@ -1089,7 +1102,7 @@ return useMemo(
     diceTrayHeight,
     // ... all properties
   }),
-  [headerHeight, diceTrayHeight, /* ... dependencies */]
+  [headerHeight, diceTrayHeight /* ... dependencies */]
 );
 ```
 
@@ -1097,7 +1110,6 @@ return useMemo(
 
 Before adding new features, verify:
 
-- [ ] **Physics**: Does this need physics? If not, ensure physics stays paused.
 - [ ] **useFrame**: Am I allocating objects? Use pooled/memoized objects.
 - [ ] **useFrame**: Am I always invalidating? Add early-exit conditions.
 - [ ] **Animations**: Do they stop when offscreen/phase changes? Add cleanup.
@@ -1107,15 +1119,15 @@ Before adding new features, verify:
 
 ### Key Files with Performance-Critical Code
 
-| File | Critical Patterns |
-|------|-------------------|
-| `DiceTray.tsx` | Physics pause, settle detection |
-| `Die.tsx` | Object pooling, position gating, reveal animation |
-| `DieOutline.tsx` | Conditional invalidate, material caching |
-| `DiePreview3D.tsx` | Camera early exit, pre-allocated vectors |
-| `PlayConsole.tsx` | Batched Zustand selectors |
-| `ScoringGrid.tsx` | Memoized HandSlot components |
-| `ShopItemCard.tsx` | Phase-aware shimmer cancellation |
-| `UpgradeContent.tsx` | Reanimated callbacks |
-| `BottomPanel.tsx` | Memoized animation configs |
-| `useLayoutUnits.ts` | Memoized context value |
+| File                 | Critical Patterns                                        |
+| -------------------- | -------------------------------------------------------- |
+| `DiceTray.tsx`       | Settle detection, shader warmup                          |
+| `Die.tsx`            | Object pooling, frame guard for settle, reveal animation |
+| `DieOutline.tsx`     | Conditional invalidate, material caching                 |
+| `DiePreview3D.tsx`   | Camera early exit, pre-allocated vectors                 |
+| `PlayConsole.tsx`    | Batched Zustand selectors                                |
+| `ScoringGrid.tsx`    | Memoized HandSlot components                             |
+| `ShopItemCard.tsx`   | Phase-aware shimmer cancellation                         |
+| `UpgradeContent.tsx` | Reanimated callbacks                                     |
+| `BottomPanel.tsx`    | Memoized animation configs                               |
+| `useLayoutUnits.ts`  | Memoized context value                                   |

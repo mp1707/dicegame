@@ -4,7 +4,6 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
-  useState,
 } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
@@ -39,30 +38,8 @@ const GameEndOverlay = () => {
 
 const RenderWarmup = ({ rollTrigger }: { rollTrigger: number }) => {
   const { invalidate } = useThree();
-  const warmedUpRef = useRef(false);
 
-  useEffect(() => {
-    if (warmedUpRef.current) return;
-    warmedUpRef.current = true;
-
-    let framesLeft = 3;
-    let rafId = 0;
-
-    const tick = () => {
-      invalidate();
-      framesLeft -= 1;
-      if (framesLeft > 0) {
-        rafId = requestAnimationFrame(tick);
-      }
-    };
-
-    rafId = requestAnimationFrame(tick);
-
-    return () => {
-      if (rafId) cancelAnimationFrame(rafId);
-    };
-  }, [invalidate]);
-
+  // Invalidate on rollTrigger changes to re-render
   useEffect(() => {
     invalidate();
   }, [invalidate, rollTrigger]);
@@ -287,9 +264,6 @@ export const DiceTray = ({
   // When a roll starts, active dice become false.
   const isSleepingRef = useRef<boolean[]>([true, true, true, true, true]);
 
-  // P1.1: Physics pause state - pause when all dice settled to save CPU/GPU
-  const [allDiceSettled, setAllDiceSettled] = useState(true);
-
   const lastRollTriggerRef = useRef(rollTrigger);
 
   // Reset tracking when a new roll starts
@@ -301,9 +275,6 @@ export const DiceTray = ({
     // Reset values source of truth to current, though they will update as dice settle
     settledValuesRef.current = [...diceValues];
     lastRollTriggerRef.current = rollTrigger;
-
-    // P1.1: Physics needs to run during rolls
-    setAllDiceSettled(false);
   }
 
   // Callback: Die woke up (started moving)
@@ -330,9 +301,6 @@ export const DiceTray = ({
         // Only when everything is quiet do we update the game state
         // This prevents the UI from flickering with partial results
         completeRoll([...settledValuesRef.current]);
-
-        // P1.1: All dice settled - pause physics to save CPU/GPU
-        setAllDiceSettled(true);
       }
     },
     [completeRoll]
@@ -391,12 +359,8 @@ export const DiceTray = ({
             defaultFOV={adjustedFOV}
             isRevealing={isRevealing}
           />
-          {/* P1.1: Pause physics when all dice settled and not in reveal to save CPU/GPU */}
-          <Physics
-            gravity={[0, -18, 0]}
-            updateLoop="independent"
-            paused={allDiceSettled && !isRolling && !isRevealing}
-          >
+          {/* Physics always runs - pausing causes first-roll collision JIT lag */}
+          <Physics gravity={[0, -18, 0]} updateLoop="independent">
             {/* Floor - scaled based on container height */}
             <RigidBody type="fixed" restitution={0.05} friction={1}>
               <mesh position={[0, 0, 0]} receiveShadow>
