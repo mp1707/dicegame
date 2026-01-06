@@ -85,8 +85,12 @@ dice-game/
 ├── constants/theme.ts       # Colors, typography, spacing, animation
 ├── utils/
 │   ├── yahtzeeScoring.ts    # Hand validation logic
-│   └── gameCore.ts          # Scoring, levels, rewards, dice enhancements (pure TS)
-├── store/gameStore.ts       # Zustand state (run/level/hand/dice model)
+│   ├── gameCore.ts          # Scoring, levels, rewards, dice enhancements (pure TS)
+│   ├── itemSystem.ts        # Item trigger system barrel exports
+│   ├── itemTriggers.ts      # Trigger types, emitter, context
+│   ├── itemEffects.ts       # Effect categories, factories, applicators
+│   └── itemDefinitions.ts   # Item types, catalog, example items
+├── store/gameStore.ts       # Zustand state (run/level/hand/dice model + trigger emissions)
 ├── components/
 │   ├── Die.tsx              # 3D die with tap-to-lock + colored pips
 │   ├── DiceTray.tsx         # 3D scene with physics
@@ -1131,3 +1135,192 @@ Before adding new features, verify:
 | `UpgradeContent.tsx` | Reanimated callbacks                                     |
 | `BottomPanel.tsx`    | Memoized animation configs                               |
 | `useLayoutUnits.ts`  | Memoized context value                                   |
+
+---
+
+## Item Trigger System (`utils/itemSystem.ts`)
+
+A Balatro-style item/relic system with event-driven triggers. Every item follows the semantic grammar:
+
+**WANN** (Trigger) → **WENN** (Condition) → **WAS** (Effect) → **WIE OFT** (Limit)
+
+In UI copy (German), keep the order rigid:
+
+> **Beim/Wenn/Nach …:** _Effekt._ _(Limit/Charges)_
+
+### Trigger Families
+
+All triggers are organized into families with precise timing:
+
+| Family  | Triggers                                                                                      | Purpose                   |
+| ------- | --------------------------------------------------------------------------------------------- | ------------------------- |
+| Run     | `RUN_START`, `RUN_END`, `ITEM_GAINED`, `ITEM_REMOVED`                                         | Meta-level run events     |
+| Level   | `LEVEL_START`, `LEVEL_WON`, `LEVEL_RESULT_ENTER`, `SHOP_ENTER`, `SHOP_EXIT`                   | Between-round lifecycle   |
+| Hand    | `HAND_START`, `HAND_FIRST_ROLL_START`, `HAND_LAST_ROLL_START`, `HAND_ACCEPTED`, `HAND_SCORED` | Hand attempt within level |
+| Roll    | `ROLL_COMMIT`, `ROLL_SETTLED`, `DIE_LOCK_TOGGLED`                                             | Dice physics/values       |
+| Scoring | `SCORE_PRECALC`, `SCORE_PER_DIE`, `SCORE_APPLIED`                                             | Scoring calculation       |
+| Economy | `SHOP_GENERATE_OFFER`, `SHOP_PURCHASE`, `MONEY_GAIN`, `MONEY_SPEND`                           | Money and shop events     |
+
+### Trigger Context
+
+When a trigger fires, handlers receive a `TriggerContext` with:
+
+```typescript
+interface TriggerContext {
+  // Phase and level info
+  phase: GamePhase;
+  currentLevelIndex: number;
+  money: number;
+
+  // Level progress
+  levelScore: number;
+  levelGoal: number;
+  handsRemaining: number;
+
+  // Hand state
+  rollsRemaining: number;
+  hasRolledThisHand: boolean;
+
+  // Dice state
+  diceValues: number[]; // [5] current face values
+  lockedMask: boolean[]; // [5] which dice are locked
+  selectedHandId: string | null;
+  enhancements: DieEnhancement[];
+
+  // Event-specific (optional)
+  breakdown?: ScoringBreakdown; // For scoring events
+  currentDieIndex?: number; // For SCORE_PER_DIE
+  moneyDelta?: number; // For economy events
+  toggledDieIndex?: number; // For DIE_LOCK_TOGGLED
+}
+```
+
+### Effect Categories
+
+Items can only do things from this constrained set:
+
+**Scoring Math** (maps to `(basePoints + pips + bonusPoints) × (mult + bonusMult)`):
+
+- `+Punkte` → adds to bonusPoints
+- `+Pips` → virtual pip count
+- `+Mult` / `×Mult` → modifies mult
+
+**Roll Manipulation**:
+
+- Extra roll, refund roll, set die value, bump value (+1, max 6)
+
+**Lock Manipulation**:
+
+- Lock/unlock dice, free locks
+
+**Economy**:
+
+- Discount, cashback, interest, bonus money
+
+**Meta Progression**:
+
+- Upgrade hand level, add enhancement pips
+
+### Creating Items
+
+```typescript
+import {
+  ItemDefinition,
+  createRegisteredItem,
+  registerItem,
+  addBonusPoints,
+  countDiceValue,
+} from "../utils/itemSystem";
+
+// Define an item
+const myItem: ItemDefinition = {
+  id: "snake_eyes",
+  name: "Schlangenaugen",
+  description: "Nach der Wertung: Wenn genau 2 Einsen, +10 Punkte.",
+  rarity: "uncommon",
+  cost: 7,
+  icon: "snake.png",
+  triggers: [
+    {
+      triggerId: "SCORE_APPLIED",
+      condition: (ctx) => countDiceValue(ctx, 1) === 2,
+      handler: addBonusPoints(10),
+    },
+  ],
+};
+
+// At run start, register the item
+registerItem(createRegisteredItem(myItem));
+```
+
+### Effect Factories
+
+Common effect builders in `itemEffects.ts`:
+
+```typescript
+// Scoring
+addBonusPoints(amount); // +Punkte
+addBonusMult(amount); // +Mult
+multiplyMult(factor); // ×Mult
+
+// Scaling effects
+addPointsPerLockedDie(pointsPerDie);
+addMultPerDieValue(targetValue, multPerDie);
+addInterest(rate, cap);
+
+// Roll/Lock manipulation
+grantExtraRolls(count);
+refundRoll();
+lockDie(index);
+unlockDie(index);
+
+// Economy
+addMoney(amount);
+applyDiscount(itemId, amount);
+```
+
+### Limiter Types
+
+Control how often items can trigger:
+
+- `{ type: "perHand", count: N }` — N× pro Hand
+- `{ type: "perLevel", count: N }` — N× pro Level
+- `{ type: "perShop", count: N }` — N× pro Shop
+- `{ type: "charges", count: N }` — N Ladungen total
+- `{ type: "cooldown", hands: N }` — Abklingzeit: N Hände
+
+### Trigger Emission Points
+
+Triggers are emitted in `gameStore.ts` at these action points:
+
+| Action                 | Triggers Emitted                                                 |
+| ---------------------- | ---------------------------------------------------------------- |
+| `startNewRun()`        | `RUN_START`                                                      |
+| `startLevel()`         | `LEVEL_START`, `HAND_START`                                      |
+| `triggerRoll()`        | `ROLL_COMMIT`, `HAND_FIRST_ROLL_START`_, `HAND_LAST_ROLL_START`_ |
+| `completeRoll()`       | `ROLL_SETTLED`                                                   |
+| `toggleDiceLock()`     | `DIE_LOCK_TOGGLED`                                               |
+| `acceptHand()`         | `HAND_ACCEPTED`                                                  |
+| `finalizeHand()`       | `HAND_SCORED`, `LEVEL_WON`_, `HAND_START`, `RUN_END`_            |
+| `cashOutNow()`         | `LEVEL_RESULT_ENTER`                                             |
+| `openShop()`           | `MONEY_GAIN`\*, `SHOP_ENTER`, `SHOP_GENERATE_OFFER`              |
+| `closeShopNextLevel()` | `SHOP_EXIT`, `RUN_END`\*                                         |
+
+\*Conditional based on game state
+
+### File Structure
+
+```
+utils/
+├── itemTriggers.ts      # Core trigger types, emitter, context
+├── itemEffects.ts       # Effect categories, factories, applicators
+├── itemDefinitions.ts   # Item types, catalog, example items
+└── itemSystem.ts        # Barrel exports
+```
+
+### Integration Notes
+
+- Items are registered with `registerItem()` and cleared with `clearAllItems()` on new run
+- Usage counters reset at: `HAND_START` (per-hand), `LEVEL_START` (per-level), `SHOP_ENTER` (per-shop)
+- Cooldowns tick down at `HAND_SCORED`
+- Effects accumulate in `EffectContext` and are applied by `applyEffects()`

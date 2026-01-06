@@ -23,6 +23,19 @@ import {
   DICE_UPGRADE_CONFIG,
 } from "../utils/gameCore";
 import { CATEGORIES } from "../utils/yahtzeeScoring";
+// Item trigger system
+import {
+  emitTrigger,
+  buildTriggerContext,
+  clearAllItems,
+  resetLevelUsage,
+  resetHandUsage,
+  resetShopUsage,
+  tickCooldowns,
+  applyEffects,
+  type TriggerType,
+  type GameStateSnapshot,
+} from "../utils/itemSystem";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -186,6 +199,25 @@ const getInitialUIState = () => ({
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Helper: Convert GameState to GameStateSnapshot for trigger context
+// ─────────────────────────────────────────────────────────────────────────────
+
+const getSnapshot = (state: GameState): GameStateSnapshot => ({
+  phase: state.phase,
+  currentLevelIndex: state.currentLevelIndex,
+  money: state.money,
+  levelScore: state.levelScore,
+  levelGoal: state.levelGoal,
+  handsRemaining: state.handsRemaining,
+  rollsRemaining: state.rollsRemaining,
+  hasRolledThisHand: state.hasRolledThisHand,
+  diceValues: state.diceValues,
+  selectedDice: state.selectedDice,
+  selectedHandId: state.selectedHandId,
+  diceEnhancements: state.diceEnhancements,
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Store
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -202,6 +234,9 @@ export const useGameStore = create<GameState>((set, get) => ({
   // ───────────────────────────────────────────────────────────────────────────
 
   startNewRun: () => {
+    // Clear all items from previous run
+    clearAllItems();
+
     set({
       ...getInitialRunState(),
       ...getInitialLevelState(0),
@@ -209,10 +244,19 @@ export const useGameStore = create<GameState>((set, get) => ({
       ...getInitialDiceState(),
       ...getInitialUIState(),
     });
+
+    // Emit RUN_START trigger (items would register before this in full implementation)
+    const state = get();
+    emitTrigger("RUN_START", buildTriggerContext(getSnapshot(state)));
   },
 
   startLevel: (levelIndex: number) => {
     const { handLevels, money } = get();
+
+    // Reset item usage counters for new level
+    resetLevelUsage();
+    resetHandUsage();
+
     set({
       currentLevelIndex: levelIndex,
       money,
@@ -225,6 +269,18 @@ export const useGameStore = create<GameState>((set, get) => ({
       revealState: null,
       upgradeOptions: [],
     });
+
+    // Emit LEVEL_START trigger after state is set
+    const state = get();
+    const effects = emitTrigger(
+      "LEVEL_START",
+      buildTriggerContext(getSnapshot(state))
+    );
+
+    // Apply any extra rolls granted by items
+    if (effects.extraRolls > 0) {
+      set((s) => ({ rollsRemaining: s.rollsRemaining + effects.extraRolls }));
+    }
   },
 
   // ───────────────────────────────────────────────────────────────────────────
@@ -232,7 +288,14 @@ export const useGameStore = create<GameState>((set, get) => ({
   // ───────────────────────────────────────────────────────────────────────────
 
   triggerRoll: () => {
-    const { rollsRemaining, phase, selectedHandId, isRolling } = get();
+    const state = get();
+    const {
+      rollsRemaining,
+      phase,
+      selectedHandId,
+      isRolling,
+      hasRolledThisHand,
+    } = state;
 
     // Can only roll in LEVEL_PLAY phase, with rolls remaining, no hand selected
     if (
@@ -244,11 +307,32 @@ export const useGameStore = create<GameState>((set, get) => ({
       return;
     }
 
-    set((state) => ({
-      rollTrigger: state.rollTrigger + 1,
+    // Emit ROLL_COMMIT trigger (before physics)
+    // Check if this is the first or last roll for conditional triggers
+    const isFirst = !hasRolledThisHand;
+    const isLast = rollsRemaining === 1;
+
+    emitTrigger("ROLL_COMMIT", buildTriggerContext(getSnapshot(state)));
+
+    // Also emit specific first/last roll triggers
+    if (isFirst) {
+      emitTrigger(
+        "HAND_FIRST_ROLL_START",
+        buildTriggerContext(getSnapshot(state))
+      );
+    }
+    if (isLast) {
+      emitTrigger(
+        "HAND_LAST_ROLL_START",
+        buildTriggerContext(getSnapshot(state))
+      );
+    }
+
+    set((s) => ({
+      rollTrigger: s.rollTrigger + 1,
       isRolling: true,
-      rollsRemaining: state.rollsRemaining - 1,
-      rollsUsedThisLevel: state.rollsUsedThisLevel + 1,
+      rollsRemaining: s.rollsRemaining - 1,
+      rollsUsedThisLevel: s.rollsUsedThisLevel + 1,
       hasRolledThisHand: true,
       diceVisible: true,
     }));
@@ -265,6 +349,10 @@ export const useGameStore = create<GameState>((set, get) => ({
         selectedDice: [false, false, false, false, false],
       }),
     });
+
+    // Emit ROLL_SETTLED trigger (dice settled, values final)
+    const state = get();
+    emitTrigger("ROLL_SETTLED", buildTriggerContext(getSnapshot(state)));
   },
 
   setRolling: (isRolling: boolean) => {
@@ -272,18 +360,31 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   toggleDiceLock: (index: number) => {
-    const { hasRolledThisHand, isRolling, selectedHandId } = get();
+    const { hasRolledThisHand, isRolling, selectedHandId, selectedDice } =
+      get();
 
     // Can only lock after first roll, when not rolling, and no hand selected
     if (!hasRolledThisHand || isRolling || selectedHandId !== null) {
       return;
     }
 
+    const wasLocked = selectedDice[index];
+
     set((state) => {
       const newSelected = [...state.selectedDice];
       newSelected[index] = !newSelected[index];
       return { selectedDice: newSelected };
     });
+
+    // Emit DIE_LOCK_TOGGLED trigger
+    const newState = get();
+    emitTrigger(
+      "DIE_LOCK_TOGGLED",
+      buildTriggerContext(getSnapshot(newState), {
+        toggledDieIndex: index,
+        isNowLocked: !wasLocked,
+      })
+    );
   },
 
   // ───────────────────────────────────────────────────────────────────────────
@@ -334,6 +435,15 @@ export const useGameStore = create<GameState>((set, get) => ({
       diceEnhancements
     );
 
+    // Emit HAND_ACCEPTED trigger before revealing
+    emitTrigger(
+      "HAND_ACCEPTED",
+      buildTriggerContext(getSnapshot(get()), {
+        breakdown,
+        contributingIndices: breakdown.contributingIndices,
+      })
+    );
+
     // Start reveal animation and unlock all dice (locks no longer needed during scoring)
     set({
       selectedDice: [false, false, false, false, false],
@@ -378,6 +488,18 @@ export const useGameStore = create<GameState>((set, get) => ({
     const newUsedHands = [...usedHandsThisLevel, selectedHandId];
     const nowWon = newScore >= levelGoal;
 
+    // Emit HAND_SCORED trigger (after scoring calculated)
+    emitTrigger(
+      "HAND_SCORED",
+      buildTriggerContext(getSnapshot(get()), {
+        breakdown: revealState.breakdown,
+        contributingIndices: revealState.breakdown.contributingIndices,
+      })
+    );
+
+    // Tick cooldowns after hand is scored
+    tickCooldowns();
+
     // Check for level end conditions
     if (newHandsRemaining === 0 && !nowWon) {
       // Lost - no hands remaining and didn't reach goal
@@ -390,6 +512,9 @@ export const useGameStore = create<GameState>((set, get) => ({
         selectedHandId: null,
         diceVisible: false,
       });
+
+      // Emit RUN_END trigger for lose
+      emitTrigger("RUN_END", buildTriggerContext(getSnapshot(get())));
       return;
     }
 
@@ -408,8 +533,17 @@ export const useGameStore = create<GameState>((set, get) => ({
       selectedHandId: null,
     });
 
+    // Reset hand usage counters for new hand
+    resetHandUsage();
+
+    // Emit HAND_START trigger for the new hand
+    emitTrigger("HAND_START", buildTriggerContext(getSnapshot(get())));
+
     // Trigger win moment if just won and not shown yet
     if (nowWon && !get().winShownYet) {
+      // Emit LEVEL_WON trigger
+      emitTrigger("LEVEL_WON", buildTriggerContext(getSnapshot(get())));
+
       set({
         winShownYet: true,
         isWinAnimating: true, // Blocks interaction
@@ -437,6 +571,9 @@ export const useGameStore = create<GameState>((set, get) => ({
       phase: "LEVEL_RESULT",
       diceVisible: false,
     });
+
+    // Emit LEVEL_RESULT_ENTER trigger
+    emitTrigger("LEVEL_RESULT_ENTER", buildTriggerContext(getSnapshot(get())));
   },
 
   // ───────────────────────────────────────────────────────────────────────────
@@ -475,6 +612,26 @@ export const useGameStore = create<GameState>((set, get) => ({
       phase: "SHOP_MAIN",
       shopDiceUpgradeType: shopDiceUpgrade,
     });
+
+    // Reset shop usage counters
+    resetShopUsage();
+
+    // Emit MONEY_GAIN trigger for rewards
+    const moneyGained = rewards.newMoney - money;
+    if (moneyGained > 0) {
+      emitTrigger(
+        "MONEY_GAIN",
+        buildTriggerContext(getSnapshot(get()), {
+          moneyDelta: moneyGained,
+        })
+      );
+    }
+
+    // Emit SHOP_ENTER trigger
+    emitTrigger("SHOP_ENTER", buildTriggerContext(getSnapshot(get())));
+
+    // Emit SHOP_GENERATE_OFFER for items to hook into
+    emitTrigger("SHOP_GENERATE_OFFER", buildTriggerContext(getSnapshot(get())));
   },
 
   selectUpgradeItem: () => {
@@ -505,14 +662,20 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   closeShopNextLevel: () => {
+    // Emit SHOP_EXIT trigger before leaving
+    emitTrigger("SHOP_EXIT", buildTriggerContext(getSnapshot(get())));
+
     const { currentLevelIndex } = get();
     const nextLevelIndex = currentLevelIndex + 1;
 
     if (nextLevelIndex >= LEVEL_CONFIG.length) {
       // Completed all 8 levels - show win screen
       set({ phase: "WIN_SCREEN" });
+
+      // Emit RUN_END trigger for win
+      emitTrigger("RUN_END", buildTriggerContext(getSnapshot(get())));
     } else {
-      // Start next level
+      // Start next level (triggers LEVEL_START internally)
       get().startLevel(nextLevelIndex);
     }
   },
