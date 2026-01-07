@@ -4,17 +4,14 @@ A roguelike dice game combining Yahtzee mechanics with progression systems. Buil
 
 ## Tech Stack
 
-| Library                     | Version  | Purpose                         |
-| --------------------------- | -------- | ------------------------------- |
-| `expo`                      | ~54.0.30 | React Native framework          |
-| `three`                     | ^0.176.0 | 3D graphics engine              |
-| `@react-three/fiber`        | ^9.1.2   | React renderer for Three.js     |
-| `@react-three/drei`         | ^10.0.6  | Useful helpers for R3F          |
-| `@react-three/rapier`       | ^2.1.0   | Rapier physics integration      |
-| `@dimforge/rapier3d-compat` | ^0.15.0  | Rapier 3D physics engine (WASM) |
-| `zustand`                   | ^5.0.5   | Lightweight state management    |
-| `react-native-reanimated`   | ^4.2.1   | Native animations               |
-| `polywasm`                  | ^0.2.0   | WebAssembly polyfill for Hermes |
+See `package.json` for complete dependency list and versions.
+
+**Key libraries**:
+- **Expo** - React Native framework
+- **React Three Fiber + Drei + Rapier** - 3D physics simulation
+- **Zustand** - State management
+- **Reanimated** - Native animations
+- **polywasm** - WebAssembly polyfill for Hermes (see setup below)
 
 ---
 
@@ -163,41 +160,28 @@ Key actions: `rollDice`, `selectHand`, `acceptHand`, `finalizeHand`, `cashOutNow
 
 Balatro-style formula: `score = (basePoints + pips) × mult`
 
-- **Base Points**: Start at hand's base value, +5 per hand level upgrade
-- **Pips**: Upper section = sum of matching dice; Lower section = sum of all dice
-- **Mult**: Fixed per hand type (1× for upper, 2-4× for lower)
+- **Base Points**: Hand's base value + (5 × handLevel)
+- **Pips**: Upper = sum of matching dice; Lower = sum of all 5 dice
+- **Mult**: Fixed per hand type (1× upper, 2-4× lower)
 
-Level goals: 50 → 80 → 120 → 180 → 250 → 350 → 480 → 650
+With enhancements: `finalScore = (basePoints + pips + bonusPoints) × (mult + bonusMult)`
+
+See `LEVEL_CONFIG` in `utils/gameCore.ts` for level goals (8 levels total).
 
 ### Reward System
 
-On level complete:
-
-- Base win: $10
-- Per unused hand: $2
-
-Hand upgrade cost: $6 + current hand level
+See `REWARD_CONFIG` in `utils/gameCore.ts` for:
+- Base win bonus per level
+- Per unused hand bonus
+- Hand upgrade cost formula
 
 ### Dice Enhancement System
 
 Players can purchase pip upgrades from the shop to add permanent scoring bonuses to specific die faces.
 
-**Data Model** (`utils/gameCore.ts`):
+**Data Model**: See `DieEnhancement` interface in `utils/gameCore.ts`
 
-```typescript
-type PipState = "none" | "points" | "mult";
-type DiceUpgradeType = "points" | "mult";
-
-interface DieEnhancement {
-  faces: PipState[][]; // 6 faces, each with variable pip count (1-6)
-}
-```
-
-**Shop Integration**:
-
-- Item spawns in SHOP_MAIN with 80% chance for Points (+10 pts/pip), 20% for Mult (+1 mult/pip)
-- Only spawns if at least one pip across all dice is enhanceable
-- Costs: Points = $8, Mult = $14
+**Shop Integration**: See `DICE_UPGRADE_CONFIG` in `utils/gameCore.ts` for spawn rates and costs
 
 **Dice Editor Flow** (Phase-based, integrated into PhaseDeck):
 
@@ -311,15 +295,7 @@ When a player accepts a hand, a coordinated reveal animation plays across multip
 - **Contributing**: Normal opacity, awaiting highlight
 - **Non-contributing**: Dimmed to 30% opacity
 
-**Key timing constants:**
-
-- Position lerp speed: 8 (exponential decay)
-- Delta cap: 33ms (prevents instant jumps after frame gaps)
-- Highlight pulse: 200ms (35% attack, 65% settle)
-- Per-die counting delay: 560ms
-- Initial delay before counting: 640ms
-- Hand score display: 1000ms
-- Total score display: 1600ms
+For timing constants, see `ANIMATION.counting.*` in `constants/theme.ts`.
 
 ### Slot Visual States
 
@@ -337,22 +313,12 @@ To change the dice tray size in the UI and keep the 3D scene in sync, adjust the
 
 The layout system uses percentage-based weights to create stable, game-like proportions across all screen sizes.
 
-**Section Weights (from `LAYOUT.weights` in theme.ts):**
-
-Each major section gets a percentage of usable height (screen height minus safe areas):
-
-| Section       | Weight | Purpose                                           |
-| ------------- | ------ | ------------------------------------------------- |
-| `header`      | 8%     | HUDHeader inside PlayConsole (LV, Goal, Progress) |
-| `diceTray`    | 32%    | TrayWindow inside PlayConsole                     |
-| `scoreRow`    | 6%     | ScoreLip inside PlayConsole                       |
-| `scoringGrid` | 38%    | Three scoring sections                            |
-| `footer`      | 12%    | Action buttons                                    |
-| `gaps`        | 4%     | Spacing between sections                          |
+**Structure**: See `LAYOUT.weights` in `constants/theme.ts` for section percentages.
+**Scoring grid**: See `LAYOUT.scoring` for Special/Upper/Lower ratios.
 
 **Gap System:**
 
-Major section gaps use `SPACING.sectionGap` (16px), applied via `marginTop` in PhaseDeck:
+Major section gaps use `SPACING.sectionGap`, applied via `marginTop` in PhaseDeck:
 
 ```typescript
 // PhaseDeck.tsx - Each layer after TrayModule gets marginTop
@@ -360,18 +326,6 @@ hudLayer: { marginTop: SPACING.sectionGap },      // ScoreRow
 scoringAreaContainer: { marginTop: SPACING.sectionGap },  // ScoringGrid
 footerLayer: { marginTop: SPACING.sectionGap },   // Footer
 ```
-
-**ScoringGrid Structure (3 Equal Rows):**
-
-The ScoringGrid contains three sections with equal height ratios (from `LAYOUT.scoring`):
-
-| Section | Ratio      | Component                           |
-| ------- | ---------- | ----------------------------------- |
-| Special | 0.28 (28%) | `SpecialSection` - placeholder row  |
-| Upper   | 0.28 (28%) | `UpperSection` - 6 dice slots (1-6) |
-| Lower   | 0.28 (28%) | `LowerSection` - 7 poker hand slots |
-| Labels  | 0.09 (9%)  | Section headers (3% each × 3)       |
-| Gaps    | 0.07 (7%)  | Internal spacing                    |
 
 Internal distribution uses `justifyContent: "space-evenly"` for natural spacing.
 
@@ -648,207 +602,70 @@ import { FONT_FAMILY } from "../constants/theme";
 
 Only one font is loaded in `App.tsx`. All text must use this font.
 
-### GameText Component
+## Theme System (`constants/theme.ts`)
 
-Use `GameText` instead of `Text` for all UI text:
+All visual and animation constants are centralized in `constants/theme.ts`. This single-source ensures consistency across the app.
+
+### Structure
+
+**Available constants**:
+- `COLORS.*` - Core palette, overlays, shadows, enhancement colors
+- `TYPOGRAPHY.*` - All text variants (use via `GameText` component)
+- `SPACING.*` - Base scale (xxs→xxl) + semantic spacing
+- `DIMENSIONS.*` - Border radii, widths, icon sizes, touch targets
+- `ANIMATION.*` - All timing, springs, phase transitions
+- `PHYSICS.*` - 3D dice simulation parameters
+- `LAYOUT.*` - Section weights, grid ratios, responsive scaling
+
+### Usage Pattern
 
 ```typescript
+import { COLORS, SPACING, DIMENSIONS, ANIMATION } from "../constants/theme";
 import { GameText } from "../shared";
 
-<GameText variant="displayLarge" color={COLORS.gold}>
-  SCORE: 1234
-</GameText>
+// ✅ Good - Use theme constants
+<View style={{
+  backgroundColor: COLORS.surface,
+  padding: SPACING.lg,
+  borderRadius: DIMENSIONS.borderRadius
+}}>
+  <GameText variant="displayLarge" color={COLORS.gold}>
+    SCORE: 1234
+  </GameText>
+</View>
 
-<GameText variant="bodyMedium" color={COLORS.textMuted}>
-  Select a hand
-</GameText>
+// ❌ Bad - Hardcoded values
+<View style={{ backgroundColor: "#352B58", padding: 16 }}>
+  <Text style={{ fontSize: 32, color: "#FFC857" }}>SCORE: 1234</Text>
+</View>
 ```
 
-**Available variants:**
+### Key Principles
 
-- Display: `displayHuge` (44px), `displayLarge` (32px), `displayMedium` (24px), `displaySmall` (20px)
-- Scoreboard: `scoreboardLarge` (28px), `scoreboardMedium` (22px), `scoreboardSmall` (18px) - with tabular nums
-- Body: `bodyLarge` (16px), `bodyMedium` (14px), `bodySmall` (12px)
-- Labels: `label` (11px, uppercase), `labelSmall` (10px, uppercase), `caption` (8px)
-- Buttons: `buttonLarge` (28px), `buttonMedium` (20px), `buttonSmall` (14px)
+**Single font**: M6x11 pixel font only. Use `GameText` component (wraps `Text` with font).
 
-### Color System
+**Color categories**:
+- Core: bg, surface, text (hierarchy)
+- Accents: cyan (selection), gold (progress), coral (danger), mint (success)
+- Overlays: Pre-mixed rgba values for borders/bevels (use `COLORS.overlays.*`)
+- Shadows: Pre-mixed rgba for text glows (use `COLORS.shadows.*`)
+- Enhancements: Separate blue/red for pip upgrades
 
+**Spacing scale**: 4px increments (xxs=2, xs=4, sm=8, md=12, lg=16, xl=20, xxl=24)
+
+**Animation timing**: See `ANIMATION.*` for all durations, springs, phase transitions. Use constants instead of hardcoding ms values.
+
+**Bevel pattern** (3D effect):
 ```typescript
-import { COLORS } from "../constants/theme";
-
-// Core colors
-COLORS.bg; // #2A2242 - Main background
-COLORS.surface; // #352B58 - Panel/card background
-COLORS.text; // #FFFFFF - Primary text
-COLORS.textMuted; // #AA9ECF - Secondary text
-COLORS.textDark; // #1A1528 - Text on bright backgrounds
-
-// Accent colors
-COLORS.cyan; // #4DEEEA - Selection, info, neutral
-COLORS.gold; // #FFC857 - Goals, progress, money
-COLORS.coral; // #FF5A7A - Danger, cancel, locked
-COLORS.mint; // #6CFFB8 - Success, confirm, buy
-
-// Dice enhancement colors
-COLORS.upgradePoints; // #3B9EFF - Blue pip (+10 points)
-COLORS.upgradeMult; // #FF4D6D - Red pip (+1 mult)
+{
+  borderTopWidth: DIMENSIONS.borderWidthThin,
+  borderTopColor: COLORS.overlays.whiteStrong,
+  borderBottomWidth: DIMENSIONS.borderWidthThick,
+  borderBottomColor: COLORS.overlays.blackMedium,
+}
 ```
 
-### Overlay Colors
-
-Use these for borders, bevels, and semi-transparent backgrounds instead of hardcoding rgba:
-
-```typescript
-// White overlays (for highlights, top bevels)
-COLORS.overlays.whiteSubtle; // rgba(255,255,255,0.05)
-COLORS.overlays.whiteMild; // rgba(255,255,255,0.1)
-COLORS.overlays.whiteMedium; // rgba(255,255,255,0.15)
-COLORS.overlays.whiteStrong; // rgba(255,255,255,0.2)
-
-// Black overlays (for shadows, bottom bevels)
-COLORS.overlays.blackSubtle; // rgba(0,0,0,0.1)
-COLORS.overlays.blackMild; // rgba(0,0,0,0.2)
-COLORS.overlays.blackMedium; // rgba(0,0,0,0.3)
-COLORS.overlays.backdrop; // rgba(0,0,0,0.7) - Modal backdrops
-
-// Accent overlays
-COLORS.overlays.cyanSubtle; // rgba(77,238,234,0.1)
-COLORS.overlays.cyanMild; // rgba(77,238,234,0.15)
-COLORS.overlays.goldSubtle; // rgba(255,200,87,0.15)
-COLORS.overlays.coralSubtle; // rgba(255,90,122,0.15)
-
-// Mint overlays (for success/purchase states)
-COLORS.overlays.mintSubtle; // rgba(108,255,184,0.15)
-COLORS.overlays.mintMild; // rgba(108,255,184,0.25)
-COLORS.overlays.mintGlow; // rgba(108,255,184,0.35)
-
-// Glow overlays (for celebratory effects)
-COLORS.overlays.goldGlow; // rgba(255,200,87,0.4)
-```
-
-### Shadow Colors (for text glow effects)
-
-```typescript
-COLORS.shadows.gold; // rgba(255,200,87,0.3)
-COLORS.shadows.goldStrong; // rgba(255,200,87,0.5)
-COLORS.shadows.cyan; // rgba(77,238,234,0.4)
-COLORS.shadows.mint; // rgba(108,255,184,0.4)
-COLORS.shadows.mintStrong; // rgba(108,255,184,0.6)
-COLORS.shadows.black; // rgba(0,0,0,0.6)
-```
-
-### Spacing
-
-```typescript
-import { SPACING } from "../constants/theme";
-
-// Base scale
-SPACING.xxs; // 2
-SPACING.xs; // 4
-SPACING.sm; // 8
-SPACING.md; // 12
-SPACING.lg; // 16
-SPACING.xl; // 20
-SPACING.xxl; // 24
-
-// Semantic
-SPACING.sectionGap; // 16
-SPACING.containerPaddingHorizontal; // 16
-SPACING.modalPadding; // 20
-```
-
-### Dimensions
-
-```typescript
-import { DIMENSIONS } from "../constants/theme";
-
-// Border radii
-DIMENSIONS.borderRadius; // 12 (default)
-DIMENSIONS.borderRadiusSmall; // 8
-DIMENSIONS.borderRadiusLarge; // 16
-
-// Border widths
-DIMENSIONS.borderWidthThin; // 1
-DIMENSIONS.borderWidth; // 2
-DIMENSIONS.borderWidthThick; // 3
-
-// Icon sizes
-DIMENSIONS.iconSize.xs; // 14
-DIMENSIONS.iconSize.sm; // 18
-DIMENSIONS.iconSize.md; // 24
-DIMENSIONS.iconSize.lg; // 28
-DIMENSIONS.iconSize.xl; // 32
-```
-
-### Animation Constants
-
-```typescript
-import { ANIMATION } from "../constants/theme";
-
-// Durations
-ANIMATION.duration.fast; // 75ms
-ANIMATION.duration.normal; // 100ms
-ANIMATION.duration.slow; // 200ms
-
-// Counting animation (ScoreRow)
-ANIMATION.counting.initialDelay; // 640ms
-ANIMATION.counting.perDieDelay; // 560ms
-ANIMATION.counting.handScoreDisplay; // 1000ms
-ANIMATION.counting.totalScoreDisplay; // 1600ms
-
-// Spring configs (for reanimated)
-ANIMATION.springs.button; // { damping: 20, stiffness: 400 }
-ANIMATION.springs.modal; // { damping: 25, stiffness: 400, mass: 0.8 }
-ANIMATION.springs.trophyPop; // { damping: 12, stiffness: 400 } - Bouncy trophy entrance
-ANIMATION.springs.rowLand; // { damping: 18, stiffness: 350 } - Row landing tick
-ANIMATION.springs.celebration; // { damping: 15, stiffness: 450 } - Celebratory bounce
-
-// Phase transitions (PhaseDeck sliding panels)
-ANIMATION.phase.springConfig; // { damping: 22, stiffness: 180 }
-ANIMATION.phase.parallax.scoreRow; // 0.6 (60% of screen width)
-ANIMATION.phase.parallax.scoringGrid; // 0.75
-ANIMATION.phase.parallax.footer; // 0.9
-
-// Cashout rewards panel
-ANIMATION.cashout.heroPayoutDelay; // 120ms - After panel settles
-ANIMATION.cashout.countUpDuration; // 750ms - Payout count-up
-ANIMATION.cashout.rowStartDelay; // 120ms - After payout begins
-ANIMATION.cashout.rowStagger; // 90ms - Between rows
-ANIMATION.cashout.rowAnimDuration; // 200ms - Per-row animation
-ANIMATION.cashout.sparkleCount; // 4 - Number of sparkle particles
-
-// Shop panel
-ANIMATION.shop.headerDelay; // 120ms
-ANIMATION.shop.gridStagger; // 60ms - Between grid items
-ANIMATION.shop.itemAnimDuration; // 210ms - Per-item animation
-ANIMATION.shop.purchaseFlashDuration; // 180ms - Mint outline flash
-ANIMATION.shop.shimmerInterval; // 4000ms - "SOON" shimmer interval
-
-// Dice editor (enhancement selection modal)
-ANIMATION.diceEditor.panelSlideIn; // { damping: 22, stiffness: 280 } - Modal entrance
-ANIMATION.diceEditor.dieStagger; // 70ms - Between dice tile entrances
-ANIMATION.diceEditor.dieEntrance; // 180ms - Individual die entrance
-ANIMATION.diceEditor.selectionPulse; // 200ms - Die selection pulse
-ANIMATION.diceEditor.screenTransition; // 250ms - A→B screen transition
-ANIMATION.diceEditor.pipPopScale; // 1.15 - Pip upgrade pop scale
-ANIMATION.diceEditor.successDelay; // 550ms - Hold after upgrade before close
-
-// Transition timing
-ANIMATION.transition.incomingDelay; // 40ms - Delay before incoming panel
-ANIMATION.transition.ctaSwapProgress; // 0.6 - When to swap CTA (60% progress)
-ANIMATION.transition.ctaGlowPulseDuration; // 400ms - Glow pulse behind new CTA
-```
-
-### Physics Constants
-
-```typescript
-import { PHYSICS } from "../constants/theme";
-
-PHYSICS.die.size; // 0.8
-PHYSICS.reveal.positionLerpSpeed; // 8
-PHYSICS.settle.speedThreshold; // 0.05
-```
+For complete reference, see `constants/theme.ts`.
 
 ### Bevel Pattern (3D Button Effect)
 
@@ -1169,37 +986,7 @@ All triggers are organized into families with precise timing:
 
 ### Trigger Context
 
-When a trigger fires, handlers receive a `TriggerContext` with:
-
-```typescript
-interface TriggerContext {
-  // Phase and level info
-  phase: GamePhase;
-  currentLevelIndex: number;
-  money: number;
-
-  // Level progress
-  levelScore: number;
-  levelGoal: number;
-  handsRemaining: number;
-
-  // Hand state
-  rollsRemaining: number;
-  hasRolledThisHand: boolean;
-
-  // Dice state
-  diceValues: number[]; // [5] current face values
-  lockedMask: boolean[]; // [5] which dice are locked
-  selectedHandId: string | null;
-  enhancements: DieEnhancement[];
-
-  // Event-specific (optional)
-  breakdown?: ScoringBreakdown; // For scoring events
-  currentDieIndex?: number; // For SCORE_PER_DIE
-  moneyDelta?: number; // For economy events
-  toggledDieIndex?: number; // For DIE_LOCK_TOGGLED
-}
-```
+When triggers fire, handlers receive context with game state. See `TriggerContext` interface in `utils/itemTriggers.ts` for available fields (phase, dice values, locked mask, money, level progress, etc.).
 
 ### Effect Categories
 
@@ -1261,39 +1048,18 @@ registerItem(createRegisteredItem(myItem));
 
 ### Effect Factories
 
-Common effect builders in `itemEffects.ts`:
+See `utils/itemEffects.ts` for factory functions:
+- Scoring: `addBonusPoints()`, `addBonusMult()`, `multiplyMult()`
+- Scaling: `addPointsPerLockedDie()`, `addMultPerDieValue()`, `addInterest()`
+- Roll/Lock: `grantExtraRolls()`, `refundRoll()`, `lockDie()`, `unlockDie()`
+- Economy: `addMoney()`, `applyDiscount()`
 
-```typescript
-// Scoring
-addBonusPoints(amount); // +Punkte
-addBonusMult(amount); // +Mult
-multiplyMult(factor); // ×Mult
+### Limiters
 
-// Scaling effects
-addPointsPerLockedDie(pointsPerDie);
-addMultPerDieValue(targetValue, multPerDie);
-addInterest(rate, cap);
-
-// Roll/Lock manipulation
-grantExtraRolls(count);
-refundRoll();
-lockDie(index);
-unlockDie(index);
-
-// Economy
-addMoney(amount);
-applyDiscount(itemId, amount);
-```
-
-### Limiter Types
-
-Control how often items can trigger:
-
-- `{ type: "perHand", count: N }` — N× pro Hand
-- `{ type: "perLevel", count: N }` — N× pro Level
-- `{ type: "perShop", count: N }` — N× pro Shop
-- `{ type: "charges", count: N }` — N Ladungen total
-- `{ type: "cooldown", hands: N }` — Abklingzeit: N Hände
+Control trigger frequency. See `LimiterType` in `utils/itemDefinitions.ts`:
+- `perHand`, `perLevel`, `perShop` - Usage count resets
+- `charges` - Total uses across run
+- `cooldown` - Hands between triggers
 
 ### Trigger Emission Points
 
@@ -1402,19 +1168,9 @@ const ITEM_ICONS: Record<string, any> = {
 4. **Display**: Owned items appear in `SpecialSection` (top of scoring grid)
 5. **Info Modal**: Tapping owned item shows detail modal (without purchase CTA)
 
-### EffectContext Fields for Items
+### EffectContext Fields
 
-Items can modify these fields in their handlers:
-
-```typescript
-effects.bonusPoints += N; // +Punkte
-effects.bonusMult += N; // +Mult
-effects.extraRolls += N; // Extra rolls
-effects.handsToRemove = N; // Remove hands (Fokus)
-effects.moneyChange += N; // +/- money
-effects.diceModifications.push({ index, newValue, bump });
-effects.lockChanges.push({ index, shouldLock });
-```
+Items modify effect fields in handlers. See `EffectContext` in `utils/itemEffects.ts` for available fields (bonusPoints, bonusMult, extraRolls, handsToRemove, moneyChange, diceModifications, lockChanges).
 
 ### ItemDetailModal Features
 
