@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Pressable, Image } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -9,7 +9,7 @@ import Animated, {
   Easing,
   interpolateColor,
 } from "react-native-reanimated";
-import { COLORS, SPACING, FONT_FAMILY } from "../../constants/theme";
+import { COLORS, SPACING, DIMENSIONS } from "../../constants/theme";
 import { InsetSlot, Chip } from "../ui-kit";
 import { GameText } from "../shared";
 import { useGameStore } from "../../store/gameStore";
@@ -19,23 +19,33 @@ import {
   triggerSelectionHaptic,
   triggerLightImpact,
 } from "../../utils/haptics";
+import { getShopItemById } from "../../items";
+
+// Maximum number of item slots
+const MAX_ITEM_SLOTS = 5;
+
+// Icon mapping for items
+const ITEM_ICONS: Record<string, any> = {
+  fokus: require("../../assets/items/skull.png"),
+};
 
 /**
- * ScoreLip - Integrated score readout strip (not a standalone card)
+ * ScorePanel - Integrated score and items display
  *
  * Used inside PlayConsole as the bottom section.
- * Shows: hand name + level, and score/formula in fixed-width display.
- * Now includes enhancement bonuses in the formula display.
+ * Row 1: Hand name + level, and score/formula in fixed-width display.
+ * Row 2: "Gegenstände" label + 5 item slots.
  *
  * No outer panel wrapper - that's provided by PlayConsole.
  */
-export const ScoreLip = () => {
+export const ScorePanel = () => {
   const selectedHandId = useGameStore((s) => s.selectedHandId);
   const handLevels = useGameStore((s) => s.handLevels);
   const revealState = useGameStore((s) => s.revealState);
-  const diceValues = useGameStore((s) => s.diceValues);
   const finalizeHand = useGameStore((s) => s.finalizeHand);
   const updateRevealAnimation = useGameStore((s) => s.updateRevealAnimation);
+  const ownedItems = useGameStore((s) => s.ownedItems);
+  const openItemModal = useGameStore((s) => s.openItemModal);
 
   // Animation values
   const pointsScale = useSharedValue(1);
@@ -158,6 +168,7 @@ export const ScoreLip = () => {
       }
 
       const actualDieIndex = contributingIndices[dieIdx];
+      const currentDiceValues = useGameStore.getState().diceValues;
       const pipValue = currentDiceValues[actualDieIndex];
       accumulatedPips += pipValue;
 
@@ -235,87 +246,156 @@ export const ScoreLip = () => {
       ? revealState.displayTotal
       : levelScore;
 
+  // Handle item tap
+  const handleItemPress = (itemId: string) => {
+    triggerSelectionHaptic();
+    openItemModal(itemId, false); // false = no purchase CTA (already owned)
+  };
+
+  // Create array of 5 slots, filled with owned items or null for empty
+  const slots: (string | null)[] = Array.from(
+    { length: MAX_ITEM_SLOTS },
+    (_, i) => (i < ownedItems.length ? ownedItems[i] : null)
+  );
+
   return (
     <View style={styles.container}>
-      {/* Left: Hand Info */}
-      <View style={styles.leftSection}>
-        {selectedHandId ? (
-          <>
-            <GameText
-              variant="displaySmall"
-              color={COLORS.text}
-              numberOfLines={1}
-            >
-              {handName}
+      {/* Row 1: Score Row */}
+      <View style={styles.row}>
+        {/* Left: Hand Info */}
+        <View style={styles.leftSection}>
+          {selectedHandId ? (
+            <>
+              <GameText
+                variant="displaySmall"
+                color={COLORS.text}
+                numberOfLines={1}
+              >
+                {handName}
+              </GameText>
+              <Chip label={`LV ${handLevel}`} color="cyan" size="sm" />
+            </>
+          ) : (
+            <GameText variant="displaySmall" color={COLORS.text}>
+              Punkte
             </GameText>
-            <Chip label={`LV ${handLevel}`} color="cyan" size="sm" />
-          </>
-        ) : (
-          <GameText variant="displaySmall" color={COLORS.text}>
-            Punkte
-          </GameText>
-        )}
+          )}
+        </View>
+
+        {/* Right: Score Display (inside InsetSlot for consistent styling) */}
+        <InsetSlot style={styles.scoreSlot}>
+          {!selectedHandId ? (
+            <GameText variant="scoreboardMedium" color={COLORS.text}>
+              {levelScore}
+            </GameText>
+          ) : revealState?.active && revealState.animationPhase === "total" ? (
+            <Animated.View style={totalScoreAnimatedStyle}>
+              <GameText variant="scoreboardMedium" color={COLORS.gold}>
+                {displayTotal}
+              </GameText>
+            </Animated.View>
+          ) : revealState?.active && revealState.animationPhase === "final" ? (
+            <Animated.View style={finalScoreAnimatedStyle}>
+              <GameText variant="scoreboardMedium" color={COLORS.text}>
+                {revealState.breakdown?.finalScore}
+              </GameText>
+            </Animated.View>
+          ) : (
+            <View style={styles.scoreFormula}>
+              <Animated.View style={pointsAnimatedStyle}>
+                <View style={styles.pointsContainer}>
+                  <GameText variant="scoreboardMedium" color={COLORS.text}>
+                    {currentPoints}
+                  </GameText>
+                  {bonusPoints > 0 && revealState?.active && (
+                    <GameText variant="bodySmall" color={COLORS.upgradePoints}>
+                      (+{bonusPoints})
+                    </GameText>
+                  )}
+                </View>
+              </Animated.View>
+              <GameText variant="bodyLarge" color={COLORS.textMuted}>
+                {" × "}
+              </GameText>
+              <Animated.View style={multAnimatedStyle}>
+                <View style={styles.multContainer}>
+                  <GameText
+                    variant="scoreboardMedium"
+                    color={bonusMult > 0 ? COLORS.upgradeMult : COLORS.cyan}
+                  >
+                    {displayMult}
+                  </GameText>
+                  {bonusMult > 0 && revealState?.active && (
+                    <GameText variant="bodySmall" color={COLORS.upgradeMult}>
+                      (+{bonusMult})
+                    </GameText>
+                  )}
+                </View>
+              </Animated.View>
+            </View>
+          )}
+        </InsetSlot>
       </View>
 
-      {/* Right: Score Display (inside InsetSlot for consistent styling) */}
-      <InsetSlot style={styles.scoreSlot}>
-        {!selectedHandId ? (
-          <GameText variant="scoreboardMedium" color={COLORS.text}>
-            {levelScore}
+      {/* Hairline Divider */}
+      <View style={styles.divider} />
+
+      {/* Row 2: Items Row */}
+      <View style={styles.row}>
+        {/* Left: Label */}
+        <View style={styles.leftSection}>
+          <GameText variant="displaySmall" color={COLORS.text}>
+            Inventar
           </GameText>
-        ) : revealState?.active && revealState.animationPhase === "total" ? (
-          <Animated.View style={totalScoreAnimatedStyle}>
-            <GameText variant="scoreboardMedium" color={COLORS.gold}>
-              {displayTotal}
-            </GameText>
-          </Animated.View>
-        ) : revealState?.active && revealState.animationPhase === "final" ? (
-          <Animated.View style={finalScoreAnimatedStyle}>
-            <GameText variant="scoreboardMedium" color={COLORS.text}>
-              {revealState.breakdown?.finalScore}
-            </GameText>
-          </Animated.View>
-        ) : (
-          <View style={styles.scoreFormula}>
-            <Animated.View style={pointsAnimatedStyle}>
-              <View style={styles.pointsContainer}>
-                <GameText variant="scoreboardMedium" color={COLORS.text}>
-                  {currentPoints}
-                </GameText>
-                {bonusPoints > 0 && revealState?.active && (
-                  <GameText variant="bodySmall" color={COLORS.upgradePoints}>
-                    (+{bonusPoints})
-                  </GameText>
+        </View>
+
+        {/* Right: 5 Item Slots */}
+        <View style={styles.itemSlotsContainer}>
+          {slots.map((itemId, index) => {
+            const itemDef = itemId ? getShopItemById(itemId) : null;
+            const isEmpty = !itemId;
+
+            return (
+              <View key={itemId || `empty-${index}`} style={styles.itemSlot}>
+                {isEmpty ? (
+                  <InsetSlot padding="none" style={styles.itemSlotInset}>
+                    {/* Empty slot placeholder */}
+                  </InsetSlot>
+                ) : (
+                  <Pressable
+                    onPress={() => handleItemPress(itemId)}
+                    style={styles.itemPressable}
+                  >
+                    <InsetSlot padding="none" style={styles.itemSlotInset}>
+                      <Image
+                        source={ITEM_ICONS[itemId] || ITEM_ICONS.fokus}
+                        style={styles.itemIcon}
+                      />
+                    </InsetSlot>
+                  </Pressable>
                 )}
-              </View>
-            </Animated.View>
-            <GameText variant="bodyLarge" color={COLORS.textMuted}>
-              {" × "}
-            </GameText>
-            <Animated.View style={multAnimatedStyle}>
-              <View style={styles.multContainer}>
                 <GameText
-                  variant="scoreboardMedium"
-                  color={bonusMult > 0 ? COLORS.upgradeMult : COLORS.cyan}
+                  variant="labelSmall"
+                  color={isEmpty ? COLORS.textMuted : COLORS.text}
+                  style={styles.itemLabel}
+                  numberOfLines={1}
                 >
-                  {displayMult}
+                  {isEmpty ? "leer" : itemDef?.name || itemId}
                 </GameText>
-                {bonusMult > 0 && revealState?.active && (
-                  <GameText variant="bodySmall" color={COLORS.upgradeMult}>
-                    (+{bonusMult})
-                  </GameText>
-                )}
               </View>
-            </Animated.View>
-          </View>
-        )}
-      </InsetSlot>
+            );
+          })}
+        </View>
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
+    // Vertical layout for two rows
+  },
+  row: {
     flexDirection: "row",
     alignItems: "center",
     gap: SPACING.sm,
@@ -324,7 +404,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    flex: 1,
+    width: "45%", // Fixed percentage ensures consistent width across both rows
   },
   scoreSlot: {
     flex: 1,
@@ -347,5 +427,39 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "baseline",
     gap: 2,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: COLORS.overlays.whiteSubtle,
+    marginVertical: SPACING.xs,
+    width: "40%",
+  },
+  itemSlotsContainer: {
+    flex: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  itemSlot: {
+    alignItems: "center",
+    gap: 2,
+  },
+  itemPressable: {
+    borderRadius: DIMENSIONS.borderRadiusSmall,
+  },
+  itemSlotInset: {
+    width: 28,
+    height: 28,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  itemIcon: {
+    width: 14,
+    height: 14,
+    resizeMode: "contain",
+  },
+  itemLabel: {
+    textAlign: "center",
+    maxWidth: 36,
   },
 });

@@ -35,8 +35,8 @@ import {
 interface PlayConsoleProps {
   /** The DiceTray component (3D scene) */
   diceTray: React.ReactNode;
-  /** ScoreLip content (score display) */
-  scoreLip: React.ReactNode;
+  /** ScorePanel content (score + items display) */
+  scorePanel: React.ReactNode;
   /** Optional overlay content for tray area (cashout, shop, etc.) */
   trayOverlay?: React.ReactNode;
   /** Additional style */
@@ -46,16 +46,16 @@ interface PlayConsoleProps {
 /**
  * PlayConsole - Unified play area container
  *
- * Combines Header + DiceTray + ScoreRow into one cohesive "physical object":
+ * Combines Header + DiceTray + ScorePanel into one cohesive "physical object":
  * - HUDHeader: 3-row stack (Status, Objective)
  * - TrayWindow: Dice felt area as inset cutout
- * - ScoreLip: Integrated score readout strip
+ * - ScorePanel: Score + items display (2 rows)
  *
  * Uses Surface variant="panel" as outer shell with internal insets/seams.
  */
 export const PlayConsole: React.FC<PlayConsoleProps> = ({
   diceTray,
-  scoreLip,
+  scorePanel,
   trayOverlay,
   style,
 }) => {
@@ -482,14 +482,14 @@ export const PlayConsole: React.FC<PlayConsoleProps> = ({
         </View>
       </View>
 
-      {/* === Seam Divider (Tray to ScoreLip) === */}
+      {/* === Seam Divider (Tray to ScorePanel) === */}
       <View style={styles.seamDivider}>
         <View style={styles.seamHighlight} />
         <View style={styles.seamShadow} />
       </View>
 
-      {/* === ScoreLip Section (Score Readout) === */}
-      <View style={styles.scoreLip}>{scoreLip}</View>
+      {/* === ScorePanel Section (Score + Items) === */}
+      <View style={styles.scorePanel}>{scorePanel}</View>
     </Surface>
   );
 };
@@ -635,9 +635,10 @@ const styles = StyleSheet.create({
     width: "15%",
   },
 
-  // === ScoreLip ===
-  scoreLip: {
-    paddingHorizontal: SPACING.md,
+  // === ScorePanel ===
+  scorePanel: {
+    paddingRight: SPACING.sm,
+    paddingLeft: SPACING.md,
     paddingVertical: SPACING.sm,
   },
 

@@ -6,7 +6,7 @@ import { useGameStore } from "../../../store/gameStore";
 
 // Import components
 import { PlayConsole } from "../../ui/PlayConsole";
-import { ScoreLip } from "../../ui/ScoreLip";
+import { ScorePanel } from "../../ui/ScorePanel";
 import { BottomPanel } from "../../ui/BottomPanel";
 import { FooterControls } from "../../ui/FooterControls";
 import { CashoutTrayOverlay } from "../../ui/CashoutTrayOverlay";
@@ -24,7 +24,7 @@ interface PhaseDeckProps {
  * PhaseDeck - Simplified game layout orchestrator
  *
  * Architecture:
- * 1. PlayConsole: Always visible - HUDHeader + TrayWindow + ScoreLip
+ * 1. PlayConsole: Always visible - HUDHeader + TrayWindow + ScorePanel
  *    - TrayWindow shows diceTray or phase-specific overlay
  * 2. BottomPanel: Switches content based on phase (ScoringGrid, Shop, etc.)
  * 3. Footer: CTA buttons (phase-aware)
@@ -40,7 +40,7 @@ export const PhaseDeck: React.FC<PhaseDeckProps> = ({ diceTray }) => {
   const layout = useLayout();
   const phase = useGameStore((s) => s.phase);
 
-  // Calculate PlayConsole height: header + tray + scoreLip
+  // Calculate PlayConsole height: header + tray + scorePanel
   const playConsoleHeight =
     layout.diceTrayHeight + layout.scoreRowHeight + layout.headerHeight;
 
@@ -72,7 +72,7 @@ export const PhaseDeck: React.FC<PhaseDeckProps> = ({ diceTray }) => {
         <PlayConsole
           diceTray={<View style={styles.diceTrayWrapper}>{diceTray}</View>}
           trayOverlay={trayOverlay}
-          scoreLip={<ScoreLip />}
+          scorePanel={<ScorePanel />}
         />
       </View>
 

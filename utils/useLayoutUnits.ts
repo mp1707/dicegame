@@ -20,8 +20,7 @@ export interface LayoutUnits {
   scoringGridHeight: number;
   footerHeight: number;
 
-  // Slot heights within scoring grid (3 equal rows)
-  specialSlotHeight: number;
+  // Slot heights within scoring grid (2 rows: Upper, Lower)
   upperSlotHeight: number;
   lowerSlotHeight: number;
   sectionLabelHeight: number;
@@ -69,14 +68,12 @@ export const useLayoutUnits = (): LayoutUnits => {
   const footerHeight = unit * weights.footer;
 
   // Calculate slot heights within scoring grid
-  // 3 equal rows: Special, Upper (6 slots), Lower (7 slots)
-  const specialSectionHeight = scoringGridHeight * scoring.specialRatio;
+  // 2 rows: Upper (6 slots), Lower (6 slots) - items moved to ScorePanel
   const upperSectionHeight = scoringGridHeight * scoring.upperRatio;
   const lowerSectionHeight = scoringGridHeight * scoring.lowerRatio;
-  const sectionLabelHeight = (scoringGridHeight * scoring.labelsRatio) / 3; // Divided by 3 for each label
+  const sectionLabelHeight = (scoringGridHeight * scoring.labelsRatio) / 2; // Divided by 2 for each label
 
   // Each row height = its section height (single row per section)
-  const specialSlotHeight = specialSectionHeight;
   const upperSlotHeight = upperSectionHeight;
   const lowerSlotHeight = lowerSectionHeight;
 
@@ -90,8 +87,7 @@ export const useLayoutUnits = (): LayoutUnits => {
       scoringGridHeight,
       footerHeight,
 
-      // Slot heights (3 equal rows)
-      specialSlotHeight,
+      // Slot heights (2 rows: Upper, Lower)
       upperSlotHeight,
       lowerSlotHeight,
       sectionLabelHeight,
@@ -118,7 +114,6 @@ export const useLayoutUnits = (): LayoutUnits => {
       scoreRowHeight,
       scoringGridHeight,
       footerHeight,
-      specialSlotHeight,
       upperSlotHeight,
       lowerSlotHeight,
       sectionLabelHeight,

@@ -1,6 +1,5 @@
 import React, { useMemo } from "react";
 import { View, StyleSheet, ImageSourcePropType } from "react-native";
-import { SpecialSection } from "./SpecialSection";
 import { TileButton, TileButtonState, GameText } from "../shared";
 import { COLORS, SPACING } from "../../constants/theme";
 import { useGameStore, useValidHands, HandId } from "../../store/gameStore";
@@ -194,17 +193,6 @@ export const ScoringGrid = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.section}>
-        <GameText
-          variant="labelSmall"
-          color={COLORS.textMuted}
-          style={styles.header}
-        >
-          Gegenstände
-        </GameText>
-        <SpecialSection style={{ flex: 1 }} />
-      </View>
-
       {/* Upper Section */}
       <View style={styles.section}>
         <GameText
@@ -226,7 +214,6 @@ export const ScoringGrid = () => {
           ))}
         </View>
       </View>
-
       {/* Lower Section */}
       <View style={styles.section}>
         <GameText
@@ -249,6 +236,7 @@ export const ScoringGrid = () => {
           ))}
         </View>
       </View>
+      <View style={{ flex: 0.5 }} />
     </View>
   );
 };

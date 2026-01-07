@@ -18,7 +18,7 @@ import { getShopItemById } from "./items";
 import { COLORS, SPACING } from "./constants/theme";
 import { LayoutProvider, useLayout } from "./utils/LayoutContext";
 
-// Icon mapping for items (shared with ShopContent/SpecialSection)
+// Icon mapping for items (shared with ShopContent/ScorePanel)
 const ITEM_ICONS: Record<string, any> = {
   fokus: require("./assets/items/skull.png"),
 };
