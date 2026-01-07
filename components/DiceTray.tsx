@@ -16,6 +16,7 @@ import {
 } from "@react-three/drei";
 import * as THREE from "three";
 import { Die } from "./Die";
+import { D20Die } from "./D20Die";
 import { useGameStore } from "../store/gameStore";
 import { COLORS } from "../constants/theme";
 import { triggerLightImpact, triggerSelectionHaptic } from "../utils/haptics";
@@ -182,6 +183,25 @@ export const DiceTray = ({
   const revealState = useGameStore((state) => state.revealState);
   const isWinAnimating = useGameStore((state) => state.isWinAnimating);
   const diceEnhancements = useGameStore((state) => state.diceEnhancements);
+
+  // Artifact die state
+  const artifactDieUnlocked = useGameStore(
+    (state) => state.artifactDieUnlocked
+  );
+  const artifactValue = useGameStore((state) => state.artifactValue);
+  const artifactEnhancement = useGameStore(
+    (state) => state.artifactEnhancement
+  );
+
+  // Track D20 roll trigger - it should roll when artifactValue changes from null to a number
+  const prevArtifactValueRef = useRef(artifactValue);
+  const d20RollTriggerRef = useRef(0);
+
+  // Detect when artifact die should roll (value went from null to a number)
+  if (artifactValue !== null && prevArtifactValueRef.current === null) {
+    d20RollTriggerRef.current += 1;
+  }
+  prevArtifactValueRef.current = artifactValue;
 
   // Determine contributing indices
   const contributingIndices =
@@ -417,6 +437,26 @@ export const DiceTray = ({
                 dieEnhancement={diceEnhancements[i]}
               />
             ))}
+
+            {/* D20 Artifact Die - positioned to the right, only when unlocked */}
+            {artifactDieUnlocked && (
+              <D20Die
+                position={[3.2 * diceSpacing, diceSpawnY, 0]}
+                arrangedPosition={[3 * arrangedSpacing, arrangedY, 0]}
+                isVisible={diceVisible && artifactValue !== null}
+                rollTrigger={d20RollTriggerRef.current}
+                onSettle={(value) => {
+                  // D20 value is set by gameStore during triggerRoll, not by physics
+                  // This callback is just for animation completion
+                }}
+                onWake={() => {}}
+                isHighlighted={false}
+                isRevealActive={!!revealState?.active}
+                isWinAnimating={isWinAnimating}
+                artifactEnhancement={artifactEnhancement}
+                presetValue={artifactValue}
+              />
+            )}
           </Physics>
 
           <ContactShadows opacity={0.6} blur={2.5} />

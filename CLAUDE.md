@@ -89,6 +89,7 @@ dice-game/
 ├── store/gameStore.ts       # Zustand state (run/level/hand/dice model)
 ├── components/
 │   ├── Die.tsx              # 3D die with tap-to-lock + colored pips
+│   ├── D20Die.tsx           # 3D icosahedron artifact die (D20)
 │   ├── DiceTray.tsx         # 3D scene with physics
 │   ├── ui/
 │   │   ├── PlayConsole.tsx  # Unified container: HUDHeader + TrayWindow + ScoreLip
@@ -98,7 +99,9 @@ dice-game/
 │   │   ├── ShopContent.tsx  # Shop grid with upgrade items
 │   │   ├── DieEditorContent.tsx # Die selection panel (DICE_EDITOR_DIE phase)
 │   │   ├── FaceEditorContent.tsx # Face selection panel (DICE_EDITOR_FACE phase)
-│   │   └── DiePreview3D.tsx # 3D die viewer for face selection
+│   │   ├── DiePreview3D.tsx # 3D die viewer for face selection
+│   │   ├── ArtifactEditorContent.tsx # Face selection for D20 (ARTIFACT_EDITOR phase)
+│   │   └── ArtifactEditorTrayOverlay.tsx # Tray overlay for artifact editor
 │   ├── ui-kit/              # Material layer system
 │   │   ├── Surface.tsx      # Base container (panel, inset, chip, overlay)
 │   │   ├── HUDCard.tsx      # Panel wrapper with optional header
@@ -121,7 +124,8 @@ dice-game/
 │   │   ├── UpgradePickerScreen.tsx # (exports UpgradePickerPanel)
 │   │   └── EndScreen.tsx    # Win/Lose screens (exports EndPanel)
 │   └── modals/
-│       └── OverviewModal.tsx # Hand levels + formulas
+│       ├── OverviewModal.tsx # Hand levels + formulas
+│       └── ArtifactUnlockModal.tsx # D20 artifact unlock announcement
 ```
 
 ### Game State (`store/gameStore.ts`)
@@ -237,6 +241,93 @@ getScoringBreakdown(handId, level, dice, enhancements); // includes bonusPoints,
 - During scoring reveal, displays bonus indicators: blue `(+10)` for points, red `(+1)` for mult
 - Mult number turns red when enhanced (uses `COLORS.upgradeMult`)
 - Mult bonus triggers pulse animation before showing final score
+
+### Artifact Die System
+
+A special D20 die that unlocks after beating Level 1, providing +1 mult bonuses when enhanced faces are rolled.
+
+**Unlock Flow**:
+
+1. Player beats Level 1 and enters shop
+2. `ArtifactUnlockModal` appears with purple theme and "WEITER" CTA
+3. `artifactDieUnlocked = true` persists for rest of run
+
+**Data Model** (`utils/gameCore.ts`):
+
+```typescript
+interface ArtifactDieEnhancement {
+  faces: boolean[]; // 20 faces, each can have +1 mult enhancement
+}
+
+const ARTIFACT_UPGRADE_CONFIG = {
+  cost: 10, // $10 per enhancement
+  multPerEnhancement: 1, // +1 mult
+};
+```
+
+**Roll Behavior**:
+
+- Artifact die rolls ONLY on the first roll of each hand (cannot be rerolled)
+- Value (1-20) is stored in `artifactValue` state
+- Resets to `null` when hand is finalized
+- HUD shows "D20" label with current value in left column during LEVEL_PLAY
+
+**Shop Integration**:
+
+- "ARTEFAKT VERBESSERN" tile appears after unlock (purple sparkles icon)
+- $10 cost per enhancement
+- Opens `ARTIFACT_EDITOR` phase when tapped
+
+**Artifact Editor** (`ARTIFACT_EDITOR` phase):
+
+- **Bottom Panel** (`ArtifactEditorContent.tsx`): 4×5 grid of TileButtons for 20 faces
+- **Tray Overlay** (`ArtifactEditorTrayOverlay.tsx`): "Seite wählen" title with purple accent
+- **HUD Center**: "ARTEFAKT VERBESSERN" with purple "+1 Mult" pill
+- **Footer CTAs**: ZURÜCK (back to shop) + VERBESSERN (apply upgrade)
+- Enhanced faces show +1 mult chip badge, state is "used"
+
+**Scoring Integration**:
+
+When a hand is scored, if the artifact die's rolled face has an enhancement:
+
+```
+finalScore = (basePoints + pips + bonusPoints) × (mult + bonusMult + artifactMult)
+```
+
+- `artifactMult` = 1 if rolled face is enhanced, 0 otherwise
+- Displayed with purple color when artifact contributes to mult
+
+**State** (`store/gameStore.ts`):
+
+```typescript
+artifactDieUnlocked: boolean; // Run persistence
+artifactEnhancement: ArtifactDieEnhancement; // 20 faces
+artifactValue: number | null; // Current roll (1-20)
+showArtifactUnlockModal: boolean; // UI trigger
+selectedArtifactFace: number | null; // Editor selection (1-20)
+previewArtifactFace: number | null; // Animation preview
+
+// Actions
+dismissArtifactUnlockModal();
+openArtifactEditor();
+closeArtifactEditor();
+selectArtifactFace(face);
+applyArtifactUpgrade();
+```
+
+**3D D20 Component** (`components/D20Die.tsx`):
+
+The artifact die is rendered as a 3D icosahedron in the dice tray:
+
+- **Geometry**: `IcosahedronGeometry` - 20 triangular faces
+- **Material**: Purple (`COLORS.artifact`) with emissive glow
+- **Physics**: Ball collider for natural rolling behavior
+- **Face Detection**: Calculates which face is up using icosahedron face normals
+- **Value Display**: Floating `<Text>` above die showing current value (1-20)
+- **Positioning**: Renders to the right of the 5 D6 dice
+- **Visibility**: Only visible when `artifactDieUnlocked && artifactValue !== null`
+
+Roll trigger: The D20 rolls when `artifactValue` transitions from `null` to a number (first roll of hand).
 
 ### Dice Locking Pattern
 

@@ -21,6 +21,12 @@ import {
   hasAnyEnhanceableDie,
   getNextEnhanceablePipIndex,
   DICE_UPGRADE_CONFIG,
+  // Artifact die imports
+  ArtifactDieEnhancement,
+  getInitialArtifactEnhancement,
+  applyArtifactEnhancement as applyArtifactEnhancementCore,
+  getArtifactUpgradeCost,
+  isArtifactFaceEnhanceable,
 } from "../utils/gameCore";
 import { CATEGORIES } from "../utils/yahtzeeScoring";
 
@@ -35,6 +41,7 @@ export type GamePhase =
   | "SHOP_PICK_UPGRADE" // Pick 1 of 3 hands to upgrade
   | "DICE_EDITOR_DIE" // Select which die to enhance
   | "DICE_EDITOR_FACE" // Select which face to enhance
+  | "ARTIFACT_EDITOR" // Select artifact die face to enhance
   | "WIN_SCREEN" // Beat level 8
   | "LOSE_SCREEN"; // Ran out of hands with score < goal
 
@@ -54,6 +61,8 @@ interface GameState {
   money: number;
   handLevels: Record<HandId, number>;
   diceEnhancements: DieEnhancement[]; // 5 dice with pip upgrades
+  artifactDieUnlocked: boolean; // Unlocks after beating level 1
+  artifactEnhancement: ArtifactDieEnhancement; // 20 faces enhancement state
 
   // Level state (resets each level)
   levelScore: number;
@@ -68,6 +77,7 @@ interface GameState {
   // Hand attempt state (resets each hand)
   rollsRemaining: number;
   hasRolledThisHand: boolean;
+  artifactValue: number | null; // Current artifact die roll (1-20), null if not rolled
 
   // Dice state
   diceValues: number[];
@@ -80,6 +90,7 @@ interface GameState {
   phase: GamePhase;
   selectedHandId: HandId | null;
   overviewVisible: boolean;
+  showArtifactUnlockModal: boolean; // Show unlock modal on shop enter
 
   // Score reveal animation state
   revealState: RevealState | null;
@@ -94,6 +105,10 @@ interface GameState {
   selectedEditorFace: number | null; // 1-6
   enhancedFace: number | null; // Face that was just enhanced (for animation)
   enhancedPipIndex: number | null; // Pip index that was just enhanced (for animation)
+
+  // Artifact editor state
+  selectedArtifactFace: number | null; // 1-20
+  previewArtifactFace: number | null; // Flashing preview for pending enhancement
 
   // Actions
   startNewRun: () => void;
@@ -130,6 +145,13 @@ interface GameState {
   selectEditorFace: (face: number) => void;
   applyDiceUpgrade: () => void;
 
+  // Artifact editor actions
+  dismissArtifactUnlockModal: () => void;
+  openArtifactEditor: () => void;
+  closeArtifactEditor: () => void;
+  selectArtifactFace: (face: number) => void;
+  applyArtifactUpgrade: () => void;
+
   // Utility
   toggleOverview: () => void;
   forceWin: () => void;
@@ -145,6 +167,8 @@ const getInitialRunState = () => ({
   money: 0,
   handLevels: getInitialHandLevels(),
   diceEnhancements: getInitialDiceEnhancements(),
+  artifactDieUnlocked: false,
+  artifactEnhancement: getInitialArtifactEnhancement(),
 });
 
 const getInitialLevelState = (levelIndex: number) => ({
@@ -161,6 +185,7 @@ const getInitialLevelState = (levelIndex: number) => ({
 const getInitialHandState = () => ({
   rollsRemaining: MAX_ROLLS_PER_HAND,
   hasRolledThisHand: false,
+  artifactValue: null as number | null,
 });
 
 const getInitialDiceState = () => ({
@@ -175,6 +200,7 @@ const getInitialUIState = () => ({
   phase: "LEVEL_PLAY" as GamePhase,
   selectedHandId: null as HandId | null,
   overviewVisible: false,
+  showArtifactUnlockModal: false,
   revealState: null as RevealState | null,
   upgradeOptions: [] as HandId[],
   shopDiceUpgradeType: null as DiceUpgradeType | null,
@@ -183,6 +209,8 @@ const getInitialUIState = () => ({
   selectedEditorFace: null as number | null,
   enhancedFace: null as number | null,
   enhancedPipIndex: null as number | null,
+  selectedArtifactFace: null as number | null,
+  previewArtifactFace: null as number | null,
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -232,7 +260,15 @@ export const useGameStore = create<GameState>((set, get) => ({
   // ───────────────────────────────────────────────────────────────────────────
 
   triggerRoll: () => {
-    const { rollsRemaining, phase, selectedHandId, isRolling } = get();
+    const {
+      rollsRemaining,
+      phase,
+      selectedHandId,
+      isRolling,
+      artifactDieUnlocked,
+      hasRolledThisHand,
+      artifactValue,
+    } = get();
 
     // Can only roll in LEVEL_PLAY phase, with rolls remaining, no hand selected
     if (
@@ -244,6 +280,12 @@ export const useGameStore = create<GameState>((set, get) => ({
       return;
     }
 
+    // Roll artifact die only on first roll of hand (if unlocked)
+    let newArtifactValue = artifactValue;
+    if (artifactDieUnlocked && !hasRolledThisHand) {
+      newArtifactValue = Math.floor(Math.random() * 20) + 1;
+    }
+
     set((state) => ({
       rollTrigger: state.rollTrigger + 1,
       isRolling: true,
@@ -251,6 +293,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       rollsUsedThisLevel: state.rollsUsedThisLevel + 1,
       hasRolledThisHand: true,
       diceVisible: true,
+      artifactValue: newArtifactValue,
     }));
   },
 
@@ -318,20 +361,29 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   acceptHand: () => {
-    const { selectedHandId, handLevels, diceValues, phase, diceEnhancements } =
-      get();
+    const {
+      selectedHandId,
+      handLevels,
+      diceValues,
+      phase,
+      diceEnhancements,
+      artifactValue,
+      artifactEnhancement,
+    } = get();
 
     if (phase !== "LEVEL_PLAY" || !selectedHandId) {
       return;
     }
 
-    // Get scoring breakdown for animation (including enhancement bonuses)
+    // Get scoring breakdown for animation (including enhancement bonuses + artifact)
     const level = handLevels[selectedHandId];
     const breakdown = getScoringBreakdown(
       selectedHandId,
       level,
       diceValues,
-      diceEnhancements
+      diceEnhancements,
+      artifactValue,
+      artifactEnhancement
     );
 
     // Start reveal animation and unlock all dice (locks no longer needed during scoring)
@@ -452,6 +504,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       handsRemaining,
       rollsUsedThisLevel,
       diceEnhancements,
+      currentLevelIndex,
+      artifactDieUnlocked,
     } = get();
 
     const rewards = calculateRewards({
@@ -470,10 +524,17 @@ export const useGameStore = create<GameState>((set, get) => ({
         Math.random() < DICE_UPGRADE_CONFIG.rarityPoints ? "points" : "mult";
     }
 
+    // Check if artifact die should be unlocked (after beating level 0, i.e., the first level)
+    // When we beat level 0 and enter shop, currentLevelIndex is still 0
+    // Show unlock modal if not yet unlocked
+    const shouldShowArtifactUnlock =
+      currentLevelIndex >= 0 && !artifactDieUnlocked;
+
     set({
       money: rewards.newMoney,
       phase: "SHOP_MAIN",
       shopDiceUpgradeType: shopDiceUpgrade,
+      showArtifactUnlockModal: shouldShowArtifactUnlock,
     });
   },
 
@@ -646,6 +707,79 @@ export const useGameStore = create<GameState>((set, get) => ({
       winShownYet: true, // Mark as shown so we don't re-trigger animation
       phase: "LEVEL_PLAY",
     });
+  },
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Artifact Editor Actions
+  // ───────────────────────────────────────────────────────────────────────────
+
+  dismissArtifactUnlockModal: () => {
+    set({
+      showArtifactUnlockModal: false,
+      artifactDieUnlocked: true,
+    });
+  },
+
+  openArtifactEditor: () => {
+    set({
+      phase: "ARTIFACT_EDITOR",
+      selectedArtifactFace: 1, // Default to face 1
+      previewArtifactFace: null,
+    });
+  },
+
+  closeArtifactEditor: () => {
+    set({
+      phase: "SHOP_MAIN",
+      selectedArtifactFace: null,
+      previewArtifactFace: null,
+    });
+  },
+
+  selectArtifactFace: (face: number) => {
+    set({ selectedArtifactFace: face });
+  },
+
+  applyArtifactUpgrade: () => {
+    const { money, selectedArtifactFace, artifactEnhancement } = get();
+
+    // Validate state
+    if (selectedArtifactFace === null) {
+      return;
+    }
+
+    // Check if face can be enhanced
+    if (!isArtifactFaceEnhanceable(selectedArtifactFace, artifactEnhancement)) {
+      return;
+    }
+
+    // Check affordability
+    const cost = getArtifactUpgradeCost();
+    if (money < cost) {
+      return;
+    }
+
+    // Apply the enhancement
+    const newEnhancement = applyArtifactEnhancementCore(
+      selectedArtifactFace,
+      artifactEnhancement
+    );
+
+    // Set state to show animation
+    set({
+      money: money - cost,
+      artifactEnhancement: newEnhancement,
+      previewArtifactFace: selectedArtifactFace,
+    });
+
+    // Delay transition to allow animation to play (600ms)
+    setTimeout(() => {
+      set({
+        phase: "SHOP_MAIN",
+        selectedArtifactFace: null,
+        previewArtifactFace: null,
+      });
+    }, 600);
   },
 }));
 

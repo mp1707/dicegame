@@ -11,6 +11,7 @@ import { useFonts } from "expo-font";
 import { DiceTray } from "./components/DiceTray";
 import { SingleDiePreview } from "./components/SingleDiePreview";
 import { OverviewModal } from "./components/modals/OverviewModal";
+import { ArtifactUnlockModal } from "./components/modals/ArtifactUnlockModal";
 import { PhaseDeck } from "./components/ui-kit/flow";
 import { useGameStore } from "./store/gameStore";
 import { COLORS, SPACING } from "./constants/theme";
@@ -62,6 +63,12 @@ const AppContent: React.FC = () => {
   const toggleOverview = useGameStore((s) => s.toggleOverview);
   const phase = useGameStore((s) => s.phase);
   const selectedEditorDie = useGameStore((s) => s.selectedEditorDie);
+  const showArtifactUnlockModal = useGameStore(
+    (s) => s.showArtifactUnlockModal
+  );
+  const dismissArtifactUnlockModal = useGameStore(
+    (s) => s.dismissArtifactUnlockModal
+  );
 
   // Check if we're in dice editor mode (show single die preview)
   const isInDiceEditor =
@@ -134,6 +141,10 @@ const AppContent: React.FC = () => {
 
           {/* Modals */}
           <OverviewModal visible={overviewVisible} onClose={toggleOverview} />
+          <ArtifactUnlockModal
+            visible={showArtifactUnlockModal}
+            onClose={dismissArtifactUnlockModal}
+          />
         </SafeAreaView>
       </View>
 

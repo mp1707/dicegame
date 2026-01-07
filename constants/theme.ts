@@ -31,6 +31,10 @@ export const COLORS = {
   upgradePoints: "#0062FF", // Deep vivid blue for +10 points pips (high contrast on white)
   upgradeMult: "#E02E4C", // Deep crisp red for +1 mult pips (high contrast on white)
 
+  // Artifact Die Colors (D20)
+  artifact: "#9B5CFF", // Purple for artifact die
+  artifactDark: "#7B3CD9", // Darker purple for depth
+
   // Specific usages
   feltGreen: "#2FB67A", // The "Table" felt color (if used)
   shadow: "#1A1528", // Deep purple shadow
@@ -82,6 +86,10 @@ export const COLORS = {
     // Dice enhancement overlays
     upgradePointsGlow: "rgba(59, 158, 255, 0.4)",
     upgradeMultGlow: "rgba(255, 77, 109, 0.4)",
+    // Artifact overlays
+    artifactSubtle: "rgba(155, 92, 255, 0.15)",
+    artifactMild: "rgba(155, 92, 255, 0.25)",
+    artifactGlow: "rgba(155, 92, 255, 0.4)",
     // Tile-specific overlays
     cyanGlowStrong: "rgba(77, 238, 234, 0.22)", // Active halo effect
     goldStamp: "rgba(255, 200, 87, 0.20)", // Used tile stamp overlay
@@ -98,6 +106,8 @@ export const COLORS = {
     // Dice enhancement shadows
     upgradePoints: "rgba(59, 158, 255, 0.5)",
     upgradeMult: "rgba(255, 77, 109, 0.5)",
+    // Artifact shadow
+    artifact: "rgba(155, 92, 255, 0.5)",
   },
 
   // Lock outline (screen-space stroke on locked dice)

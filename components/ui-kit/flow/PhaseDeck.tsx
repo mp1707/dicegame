@@ -13,6 +13,7 @@ import { CashoutTrayOverlay } from "../../ui/CashoutTrayOverlay";
 import { ShopTrayOverlay } from "../../ui/ShopTrayOverlay";
 import { UpgradeTrayOverlay } from "../../ui/UpgradeTrayOverlay";
 import { DiceEditorTrayOverlay } from "../../ui/DiceEditorTrayOverlay";
+import { ArtifactEditorTrayOverlay } from "../../ui/ArtifactEditorTrayOverlay";
 import { LoseTrayOverlay } from "../../ui/LoseTrayOverlay";
 
 interface PhaseDeckProps {
@@ -34,6 +35,7 @@ interface PhaseDeckProps {
  * - SHOP_MAIN: ShopTrayOverlay (title + subtitle)
  * - SHOP_PICK_UPGRADE: UpgradeTrayOverlay (title + subtitle)
  * - DICE_EDITOR_*: DiceEditorTrayOverlay (title + subtitle + optional die info)
+ * - ARTIFACT_EDITOR: ArtifactEditorTrayOverlay (title + subtitle)
  * - Other phases: diceTray (3D scene)
  */
 export const PhaseDeck: React.FC<PhaseDeckProps> = ({ diceTray }) => {
@@ -56,6 +58,8 @@ export const PhaseDeck: React.FC<PhaseDeckProps> = ({ diceTray }) => {
       case "DICE_EDITOR_DIE":
       case "DICE_EDITOR_FACE":
         return <DiceEditorTrayOverlay />;
+      case "ARTIFACT_EDITOR":
+        return <ArtifactEditorTrayOverlay />;
       case "LOSE_SCREEN":
         return <LoseTrayOverlay />;
       default:

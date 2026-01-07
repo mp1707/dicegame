@@ -36,6 +36,8 @@ export const ScoreLip = () => {
   const diceValues = useGameStore((s) => s.diceValues);
   const finalizeHand = useGameStore((s) => s.finalizeHand);
   const updateRevealAnimation = useGameStore((s) => s.updateRevealAnimation);
+  const artifactDieUnlocked = useGameStore((s) => s.artifactDieUnlocked);
+  const artifactValue = useGameStore((s) => s.artifactValue);
 
   // Animation values
   const pointsScale = useSharedValue(1);
@@ -63,6 +65,8 @@ export const ScoreLip = () => {
   // Get enhancement bonuses from breakdown
   const bonusPoints = revealState?.breakdown?.bonusPoints ?? 0;
   const bonusMult = revealState?.breakdown?.bonusMult ?? 0;
+  const artifactMult = revealState?.breakdown?.artifactMult ?? 0;
+  const totalBonusMult = bonusMult + artifactMult;
 
   // Snappy timing config
   const snapTiming = { duration: 100, easing: Easing.out(Easing.cubic) };
@@ -226,8 +230,8 @@ export const ScoreLip = () => {
         bonusPoints
       : basePoints;
 
-  // Total mult includes bonus mult
-  const displayMult = baseMult + bonusMult;
+  // Total mult includes bonus mult (dice enhancements + artifact)
+  const displayMult = baseMult + totalBonusMult;
 
   // Get display total
   const displayTotal =
@@ -296,13 +300,24 @@ export const ScoreLip = () => {
               <View style={styles.multContainer}>
                 <GameText
                   variant="scoreboardMedium"
-                  color={bonusMult > 0 ? COLORS.upgradeMult : COLORS.cyan}
+                  color={
+                    totalBonusMult > 0
+                      ? artifactMult > 0
+                        ? COLORS.artifact
+                        : COLORS.upgradeMult
+                      : COLORS.cyan
+                  }
                 >
                   {displayMult}
                 </GameText>
-                {bonusMult > 0 && revealState?.active && (
-                  <GameText variant="bodySmall" color={COLORS.upgradeMult}>
-                    (+{bonusMult})
+                {totalBonusMult > 0 && revealState?.active && (
+                  <GameText
+                    variant="bodySmall"
+                    color={
+                      artifactMult > 0 ? COLORS.artifact : COLORS.upgradeMult
+                    }
+                  >
+                    (+{totalBonusMult})
                   </GameText>
                 )}
               </View>

@@ -1,6 +1,10 @@
 import React, { useMemo } from "react";
 import { StyleSheet } from "react-native";
-import Animated, { SlideInLeft, SlideOutRight, Easing } from "react-native-reanimated";
+import Animated, {
+  SlideInLeft,
+  SlideOutRight,
+  Easing,
+} from "react-native-reanimated";
 import { useGameStore } from "../../store/gameStore";
 import { ANIMATION } from "../../constants/theme";
 
@@ -12,6 +16,7 @@ import { UpgradeContent } from "./UpgradeContent";
 import { EndContent } from "./EndContent";
 import { DieEditorContent } from "./DieEditorContent";
 import { FaceEditorContent } from "./FaceEditorContent";
+import { ArtifactEditorContent } from "./ArtifactEditorContent";
 
 // Snappy easing animation config
 const SLIDE_DURATION = 180;
@@ -47,6 +52,8 @@ export const BottomPanel: React.FC = () => {
         return <DieEditorContent />;
       case "DICE_EDITOR_FACE":
         return <FaceEditorContent />;
+      case "ARTIFACT_EDITOR":
+        return <ArtifactEditorContent />;
       case "WIN_SCREEN":
       case "LOSE_SCREEN":
         return <EndContent />;
@@ -57,17 +64,15 @@ export const BottomPanel: React.FC = () => {
 
   // P4.3: Memoize animation configs to avoid recreation on every render
   const enteringAnimation = useMemo(
-    () => SlideInLeft
-      .duration(SLIDE_DURATION)
-      .easing(Easing.out(Easing.quad))
-      .delay(incomingDelay),
+    () =>
+      SlideInLeft.duration(SLIDE_DURATION)
+        .easing(Easing.out(Easing.quad))
+        .delay(incomingDelay),
     []
   );
 
   const exitingAnimation = useMemo(
-    () => SlideOutRight
-      .duration(SLIDE_DURATION)
-      .easing(Easing.in(Easing.quad)),
+    () => SlideOutRight.duration(SLIDE_DURATION).easing(Easing.in(Easing.quad)),
     []
   );
 

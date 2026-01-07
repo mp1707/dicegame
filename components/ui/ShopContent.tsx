@@ -1,9 +1,12 @@
 import React from "react";
 import { View, StyleSheet, Image } from "react-native";
-import { ArrowUp } from "lucide-react-native";
+import { ArrowUp, Sparkles } from "lucide-react-native";
 import { COLORS, SPACING, DIMENSIONS, ANIMATION } from "../../constants/theme";
 import { useGameStore } from "../../store/gameStore";
-import { getDiceUpgradeCost } from "../../utils/gameCore";
+import {
+  getDiceUpgradeCost,
+  getArtifactUpgradeCost,
+} from "../../utils/gameCore";
 import { GameText, TileButton, TileButtonState } from "../shared";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import {
@@ -27,6 +30,8 @@ export const ShopContent: React.FC = () => {
   const selectUpgradeItem = useGameStore((s) => s.selectUpgradeItem);
   const shopDiceUpgradeType = useGameStore((s) => s.shopDiceUpgradeType);
   const openDiceEditor = useGameStore((s) => s.openDiceEditor);
+  const artifactDieUnlocked = useGameStore((s) => s.artifactDieUnlocked);
+  const openArtifactEditor = useGameStore((s) => s.openArtifactEditor);
 
   const handleUpgrade = () => {
     triggerImpactMedium();
@@ -38,6 +43,11 @@ export const ShopContent: React.FC = () => {
       triggerImpactMedium();
       openDiceEditor(shopDiceUpgradeType);
     }
+  };
+
+  const handleArtifactUpgrade = () => {
+    triggerImpactMedium();
+    openArtifactEditor();
   };
 
   // Calculate stagger delays for grid items
@@ -71,6 +81,13 @@ export const ShopContent: React.FC = () => {
   const diceState: TileButtonState = !diceUpgradeConfig
     ? "used" // "soon" / unavailable
     : canAffordDice
+    ? "active"
+    : "invalid";
+
+  // Artifact Upgrade Item
+  const artifactPrice = getArtifactUpgradeCost();
+  const canAffordArtifact = money >= artifactPrice;
+  const artifactState: TileButtonState = canAffordArtifact
     ? "active"
     : "invalid";
 
@@ -152,19 +169,44 @@ export const ShopContent: React.FC = () => {
           </ShopTileWrapper>
         </View>
 
-        {/* Row 2 - Placeholders */}
+        {/* Row 2 */}
         <View style={styles.row}>
-          {/* Jokers - Soon */}
+          {/* Artifact Enhancement - Only if unlocked */}
           <ShopTileWrapper delay={getItemDelay(1, 0)}>
-            <TileButton
-              iconSource={undefined} // No icon yet
-              labelLine1="JOKERS"
-              state="invalid" // dimmed
-              onPress={() => {}}
-              style={styles.tile}
-              showLevelBadge={false}
-            />
-            {renderSoonPill()}
+            {artifactDieUnlocked ? (
+              <>
+                <TileButton
+                  icon={
+                    <Sparkles
+                      size={28}
+                      color={
+                        canAffordArtifact ? COLORS.artifact : COLORS.textMuted
+                      }
+                      strokeWidth={2}
+                    />
+                  }
+                  labelLine1="ARTEFAKT"
+                  labelLine2="VERBESSERN"
+                  state={artifactState}
+                  onPress={handleArtifactUpgrade}
+                  style={styles.tile}
+                  showLevelBadge={false}
+                />
+                {renderCostPill(artifactPrice, canAffordArtifact)}
+              </>
+            ) : (
+              <>
+                <TileButton
+                  iconSource={undefined}
+                  labelLine1="JOKERS"
+                  state="invalid"
+                  onPress={() => {}}
+                  style={styles.tile}
+                  showLevelBadge={false}
+                />
+                {renderSoonPill()}
+              </>
+            )}
           </ShopTileWrapper>
 
           {/* Powers - Soon */}

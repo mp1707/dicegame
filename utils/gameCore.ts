@@ -215,6 +215,88 @@ export function getDiceUpgradeCost(type: DiceUpgradeType): number {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Artifact Die System (D20)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Enhancement state for the artifact die (20 faces, one pip each) */
+export interface ArtifactDieEnhancement {
+  /** Array of 20 faces (index 0 = face value 1, etc.) - true if has +1 mult */
+  faces: boolean[];
+}
+
+/** Config for artifact die upgrades */
+export const ARTIFACT_UPGRADE_CONFIG = {
+  cost: 10, // Cost per enhancement
+  multPerEnhancement: 1, // +1 mult per enhanced face
+} as const;
+
+/**
+ * Get initial empty artifact enhancement (all 20 faces unenhanced)
+ */
+export function getInitialArtifactEnhancement(): ArtifactDieEnhancement {
+  return {
+    faces: Array(20).fill(false),
+  };
+}
+
+/**
+ * Check if an artifact face is enhanced
+ */
+export function isArtifactFaceEnhanced(
+  faceValue: number,
+  enhancement: ArtifactDieEnhancement
+): boolean {
+  return enhancement.faces[faceValue - 1] ?? false;
+}
+
+/**
+ * Apply enhancement to an artifact face (immutable)
+ */
+export function applyArtifactEnhancement(
+  faceValue: number,
+  enhancement: ArtifactDieEnhancement
+): ArtifactDieEnhancement {
+  const newFaces = [...enhancement.faces];
+  newFaces[faceValue - 1] = true;
+  return { faces: newFaces };
+}
+
+/**
+ * Count total artifact enhancements
+ */
+export function countArtifactEnhancements(
+  enhancement: ArtifactDieEnhancement
+): number {
+  return enhancement.faces.filter(Boolean).length;
+}
+
+/**
+ * Check if artifact face can be enhanced (not already enhanced)
+ */
+export function isArtifactFaceEnhanceable(
+  faceValue: number,
+  enhancement: ArtifactDieEnhancement
+): boolean {
+  return !enhancement.faces[faceValue - 1];
+}
+
+/**
+ * Check if any artifact face can be enhanced
+ */
+export function hasAnyArtifactEnhanceableFace(
+  enhancement: ArtifactDieEnhancement
+): boolean {
+  return enhancement.faces.some((f) => !f);
+}
+
+/**
+ * Get artifact upgrade cost
+ */
+export function getArtifactUpgradeCost(): number {
+  return ARTIFACT_UPGRADE_CONFIG.cost;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Hand Scoring Configuration
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -345,6 +427,7 @@ export interface ScoringBreakdown {
   mult: number;
   bonusPoints: number; // From blue (points) pip enhancements
   bonusMult: number; // From red (mult) pip enhancements
+  artifactMult: number; // From artifact die enhancement
   finalScore: number;
   contributingIndices: number[];
 }
@@ -353,7 +436,9 @@ export function getScoringBreakdown(
   handId: HandId,
   level: number,
   dice: number[],
-  enhancements?: DieEnhancement[]
+  enhancements?: DieEnhancement[],
+  artifactValue?: number | null,
+  artifactEnhancement?: ArtifactDieEnhancement
 ): ScoringBreakdown {
   const category = CATEGORIES.find((c) => c.id === handId);
   const basePoints = getBasePoints(handId, level);
@@ -373,9 +458,17 @@ export function getScoringBreakdown(
     }
   }
 
-  // Enhanced scoring formula: (base + pips + bonusPoints) × (mult + bonusMult)
+  // Calculate artifact mult bonus
+  let artifactMult = 0;
+  if (artifactValue && artifactEnhancement) {
+    if (isArtifactFaceEnhanced(artifactValue, artifactEnhancement)) {
+      artifactMult = ARTIFACT_UPGRADE_CONFIG.multPerEnhancement;
+    }
+  }
+
+  // Enhanced scoring formula: (base + pips + bonusPoints) × (mult + bonusMult + artifactMult)
   const totalPoints = basePoints + pips + bonusPoints;
-  const totalMult = mult + bonusMult;
+  const totalMult = mult + bonusMult + artifactMult;
   const finalScore = totalPoints * totalMult;
 
   return {
@@ -386,6 +479,7 @@ export function getScoringBreakdown(
     mult,
     bonusPoints,
     bonusMult,
+    artifactMult,
     finalScore,
     contributingIndices,
   };

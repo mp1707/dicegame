@@ -72,6 +72,8 @@ export const PlayConsole: React.FC<PlayConsoleProps> = ({
     handsRemaining,
     phase,
     pendingUpgradeType,
+    artifactDieUnlocked,
+    artifactValue,
   } = useGameStore(
     useShallow((s) => ({
       currentLevelIndex: s.currentLevelIndex,
@@ -84,6 +86,8 @@ export const PlayConsole: React.FC<PlayConsoleProps> = ({
       handsRemaining: s.handsRemaining,
       phase: s.phase,
       pendingUpgradeType: s.pendingUpgradeType,
+      artifactDieUnlocked: s.artifactDieUnlocked,
+      artifactValue: s.artifactValue,
     }))
   );
 
@@ -259,6 +263,21 @@ export const PlayConsole: React.FC<PlayConsoleProps> = ({
                 {formatNumber(displayedMoney)}
               </GameText>
             </InsetSlot>
+
+            {/* Artifact Die Value - Only show during play when unlocked */}
+            {artifactDieUnlocked && phase === "LEVEL_PLAY" && (
+              <InsetSlot style={styles.statSlot}>
+                <GameText variant="label" color={COLORS.artifact}>
+                  D20
+                </GameText>
+                <GameText
+                  variant="scoreboardSmall"
+                  color={artifactValue ? COLORS.artifact : COLORS.textMuted}
+                >
+                  {artifactValue ?? "—"}
+                </GameText>
+              </InsetSlot>
+            )}
           </View>
 
           {/* Center Column: Goal */}
@@ -294,6 +313,25 @@ export const PlayConsole: React.FC<PlayConsoleProps> = ({
                           {pendingUpgradeType === "points"
                             ? "+10 Punkte"
                             : "+1 Mult"}
+                        </GameText>
+                      </View>
+                    </View>
+                  </View>
+                ) : phase === "ARTIFACT_EDITOR" ? (
+                  // Artifact Editor Phase Layout - Purple themed
+                  <View style={styles.diceEditorGoal}>
+                    <GameText variant="label" color={COLORS.text}>
+                      ARTEFAKT VERBESSERN
+                    </GameText>
+                    <View style={styles.upgradePillContainer}>
+                      <View
+                        style={[
+                          styles.upgradePill,
+                          { backgroundColor: COLORS.artifact },
+                        ]}
+                      >
+                        <GameText variant="label" color={COLORS.text}>
+                          +1 Mult
                         </GameText>
                       </View>
                     </View>
@@ -346,7 +384,8 @@ export const PlayConsole: React.FC<PlayConsoleProps> = ({
               {phase !== "SHOP_MAIN" &&
                 phase !== "SHOP_PICK_UPGRADE" &&
                 phase !== "DICE_EDITOR_DIE" &&
-                phase !== "DICE_EDITOR_FACE" && (
+                phase !== "DICE_EDITOR_FACE" &&
+                phase !== "ARTIFACT_EDITOR" && (
                   <Animated.View
                     style={[styles.progressBarTrack, barTrackStyle]}
                   >

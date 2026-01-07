@@ -8,7 +8,10 @@ import {
   triggerLightImpact,
   triggerSelectionHaptic,
 } from "../../utils/haptics";
-import { isFaceEnhanceable } from "../../utils/gameCore";
+import {
+  isFaceEnhanceable,
+  isArtifactFaceEnhanceable,
+} from "../../utils/gameCore";
 import { useLayout } from "../../utils/LayoutContext";
 import Animated, {
   useSharedValue,
@@ -49,6 +52,12 @@ export const FooterControls = () => {
   const advanceToFaceEditor = useGameStore((s) => s.advanceToFaceEditor);
   const backFromFaceEditor = useGameStore((s) => s.backFromFaceEditor);
   const applyDiceUpgrade = useGameStore((s) => s.applyDiceUpgrade);
+
+  // Artifact editor state
+  const selectedArtifactFace = useGameStore((s) => s.selectedArtifactFace);
+  const artifactEnhancement = useGameStore((s) => s.artifactEnhancement);
+  const closeArtifactEditor = useGameStore((s) => s.closeArtifactEditor);
+  const applyArtifactUpgrade = useGameStore((s) => s.applyArtifactUpgrade);
 
   const isLastLevel = currentLevelIndex >= 7;
 
@@ -168,6 +177,16 @@ export const FooterControls = () => {
     triggerSelectionHaptic();
   };
 
+  const handleCloseArtifactEditor = () => {
+    closeArtifactEditor();
+    triggerSelectionHaptic();
+  };
+
+  const handleApplyArtifactUpgrade = () => {
+    applyArtifactUpgrade();
+    triggerSelectionHaptic();
+  };
+
   const onPressRoll = () => {
     if (!canRoll) return;
     triggerRoll();
@@ -221,7 +240,11 @@ export const FooterControls = () => {
       const canEnhance =
         selectedEditorDie !== null &&
         selectedEditorFace !== null &&
-        isFaceEnhanceable(selectedEditorDie, selectedEditorFace, diceEnhancements);
+        isFaceEnhanceable(
+          selectedEditorDie,
+          selectedEditorFace,
+          diceEnhancements
+        );
       return (
         <View style={styles.dualButtonRow}>
           <PrimaryButton
@@ -235,6 +258,32 @@ export const FooterControls = () => {
             onPress={handleApplyDiceUpgrade}
             label="VERBESSERN"
             variant={pendingUpgradeType === "points" ? "cyan" : "coral"}
+            disabled={!canEnhance}
+            compact
+            style={[buttonStyle, styles.halfButton]}
+          />
+        </View>
+      );
+    }
+
+    // ARTIFACT_EDITOR phase - Dual buttons: ZURÜCK + VERBESSERN
+    if (phase === "ARTIFACT_EDITOR") {
+      const canEnhance =
+        selectedArtifactFace !== null &&
+        isArtifactFaceEnhanceable(selectedArtifactFace, artifactEnhancement);
+      return (
+        <View style={styles.dualButtonRow}>
+          <PrimaryButton
+            onPress={handleCloseArtifactEditor}
+            label="ZURÜCK"
+            variant="cyan"
+            compact
+            style={[buttonStyle, styles.halfButton]}
+          />
+          <PrimaryButton
+            onPress={handleApplyArtifactUpgrade}
+            label="VERBESSERN"
+            variant="coral"
             disabled={!canEnhance}
             compact
             style={[buttonStyle, styles.halfButton]}
