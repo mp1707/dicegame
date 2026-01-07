@@ -96,95 +96,98 @@ interface HandSlotProps {
 }
 
 // P3.2: Memoize HandSlot to prevent unnecessary re-renders (13 instances)
-const HandSlot = React.memo(({
-  handId,
-  labelLine1,
-  labelLine2,
-  iconSource,
-}: Omit<HandSlotProps, "slotHeight">) => {
-  // P3.2: Batch Zustand selectors to reduce subscription overhead
-  const {
-    handLevel,
-    usedHandsThisLevel,
-    selectedHandId,
-    phase,
-    hasRolledThisHand,
-    isRolling,
-  } = useGameStore(
-    useShallow((s) => ({
-      handLevel: s.handLevels[handId],
-      usedHandsThisLevel: s.usedHandsThisLevel,
-      selectedHandId: s.selectedHandId,
-      phase: s.phase,
-      hasRolledThisHand: s.hasRolledThisHand,
-      isRolling: s.isRolling,
-    }))
-  );
+const HandSlot = React.memo(
+  ({
+    handId,
+    labelLine1,
+    labelLine2,
+    iconSource,
+  }: Omit<HandSlotProps, "slotHeight">) => {
+    // P3.2: Batch Zustand selectors to reduce subscription overhead
+    const {
+      handLevel,
+      usedHandsThisLevel,
+      selectedHandId,
+      phase,
+      hasRolledThisHand,
+      isRolling,
+    } = useGameStore(
+      useShallow((s) => ({
+        handLevel: s.handLevels[handId],
+        usedHandsThisLevel: s.usedHandsThisLevel,
+        selectedHandId: s.selectedHandId,
+        phase: s.phase,
+        hasRolledThisHand: s.hasRolledThisHand,
+        isRolling: s.isRolling,
+      }))
+    );
 
-  // Actions still need separate selectors (stable function references)
-  const selectHand = useGameStore((s) => s.selectHand);
-  const deselectHand = useGameStore((s) => s.deselectHand);
-  const toggleOverview = useGameStore((s) => s.toggleOverview);
-  const validHands = useValidHands();
+    // Actions still need separate selectors (stable function references)
+    const selectHand = useGameStore((s) => s.selectHand);
+    const deselectHand = useGameStore((s) => s.deselectHand);
+    const toggleOverview = useGameStore((s) => s.toggleOverview);
+    const validHands = useValidHands();
 
-  // Determine states
-  const isUsed = usedHandsThisLevel.includes(handId);
-  const canInteract = phase === "LEVEL_PLAY" && hasRolledThisHand && !isRolling;
-  const isValid = canInteract && !isUsed && validHands.includes(handId);
-  const isSelected = selectedHandId === handId;
+    // Determine states
+    const isUsed = usedHandsThisLevel.includes(handId);
+    const canInteract =
+      phase === "LEVEL_PLAY" && hasRolledThisHand && !isRolling;
+    const isValid = canInteract && !isUsed && validHands.includes(handId);
+    const isSelected = selectedHandId === handId;
 
-  const getTileState = (): TileButtonState => {
-    if (isUsed) return "used";
-    if (!canInteract || !isValid) return "invalid";
-    if (isSelected) return "selected";
-    return "active";
-  };
+    const getTileState = (): TileButtonState => {
+      if (isUsed) return "used";
+      if (!canInteract || !isValid) return "invalid";
+      if (isSelected) return "selected";
+      return "active";
+    };
 
-  const tileState = getTileState();
+    const tileState = getTileState();
 
-  // Icon color based on state (Only relevant if we fallback to vector icons, but we have images now)
-  const iconColor =
-    tileState === "selected"
-      ? COLORS.cyan
-      : tileState === "active"
-      ? COLORS.text
-      : tileState === "used"
-      ? COLORS.goldDark
-      : COLORS.tileTextMuted;
+    // Icon color based on state (Only relevant if we fallback to vector icons, but we have images now)
+    const iconColor =
+      tileState === "selected"
+        ? COLORS.cyan
+        : tileState === "active"
+        ? COLORS.text
+        : tileState === "used"
+        ? COLORS.goldDark
+        : COLORS.tileTextMuted;
 
-  const handlePress = () => {
-    if (isSelected) {
-      deselectHand();
-    } else {
-      selectHand(handId);
-    }
-  };
-
-  const handleLongPress = () => {
-    toggleOverview();
-  };
-
-  return (
-    <TileButton
-      icon={
-        <CategoryIcon
-          categoryId={handId}
-          size={16}
-          strokeWidth={2.5}
-          color={iconColor}
-        />
+    const handlePress = () => {
+      if (isSelected) {
+        deselectHand();
+      } else {
+        selectHand(handId);
       }
-      iconSource={iconSource}
-      labelLine1={labelLine1}
-      labelLine2={labelLine2}
-      level={handLevel}
-      state={tileState}
-      onPress={handlePress}
-      onLongPress={handleLongPress}
-      style={{ flex: 1 }}
-    />
-  );
-});
+    };
+
+    const handleLongPress = () => {
+      toggleOverview();
+    };
+
+    return (
+      <TileButton
+        icon={
+          <CategoryIcon
+            categoryId={handId}
+            size={16}
+            strokeWidth={2.5}
+            color={iconColor}
+          />
+        }
+        iconSource={iconSource}
+        labelLine1={labelLine1}
+        labelLine2={labelLine2}
+        level={handLevel}
+        state={tileState}
+        onPress={handlePress}
+        onLongPress={handleLongPress}
+        style={{ flex: 1 }}
+      />
+    );
+  }
+);
 
 export const ScoringGrid = () => {
   const layout = useLayout();
@@ -197,7 +200,7 @@ export const ScoringGrid = () => {
           color={COLORS.textMuted}
           style={styles.header}
         >
-          SPEZIAL
+          Gegenstände
         </GameText>
         <SpecialSection style={{ flex: 1 }} />
       </View>

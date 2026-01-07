@@ -1,10 +1,11 @@
 /**
- * SpecialSection - Displays owned items/relics in the scoring grid
+ * SpecialSection - Displays 5 dedicated item slots in the scoring grid
  *
  * Features:
- * - Shows purchased items in InsetSlot containers
+ * - Always shows 5 InsetSlot containers (inventory capacity)
+ * - Empty slots display "leer" label
+ * - Filled slots show item icon and name
  * - Tapping an item opens global ItemDetailModal with description
- * - Shows placeholder when no items owned
  *
  * Note: ItemDetailModal is rendered globally in App.tsx
  */
@@ -25,6 +26,9 @@ import { useGameStore } from "../../store/gameStore";
 import { getShopItemById } from "../../items";
 import { triggerSelectionHaptic } from "../../utils/haptics";
 
+// Maximum number of item slots
+const MAX_ITEM_SLOTS = 5;
+
 // Icon mapping for items
 const ITEM_ICONS: Record<string, any> = {
   fokus: require("../../assets/items/skull.png"),
@@ -43,37 +47,46 @@ export const SpecialSection = ({ style }: SpecialSectionProps) => {
     openItemModal(itemId, false); // false = no purchase CTA (already owned)
   };
 
-  // No items owned - show placeholder
-  if (ownedItems.length === 0) {
-    return (
-      <Surface variant="panel" style={[styles.container, style]}>
-        <GameText variant="bodyMedium" color={COLORS.textMuted}>
-          Keine Items
-        </GameText>
-      </Surface>
-    );
-  }
+  // Create array of 5 slots, filled with owned items or null for empty
+  const slots: (string | null)[] = Array.from(
+    { length: MAX_ITEM_SLOTS },
+    (_, i) => (i < ownedItems.length ? ownedItems[i] : null)
+  );
 
   return (
     <Surface variant="panel" style={[styles.container, style]}>
       <View style={styles.itemsRow}>
-        {ownedItems.map((itemId) => {
-          const itemDef = getShopItemById(itemId);
-          if (!itemDef) return null;
+        {slots.map((itemId, index) => {
+          const itemDef = itemId ? getShopItemById(itemId) : null;
+          const isEmpty = !itemId;
 
           return (
-            <Pressable
-              key={itemId}
-              onPress={() => handleItemPress(itemId)}
-              style={styles.itemPressable}
-            >
-              <InsetSlot padding="sm" style={styles.itemSlot}>
-                <Image
-                  source={ITEM_ICONS[itemId] || ITEM_ICONS.fokus}
-                  style={styles.itemIcon}
-                />
-              </InsetSlot>
-            </Pressable>
+            <View key={itemId || `empty-${index}`} style={styles.slotContainer}>
+              {isEmpty ? (
+                <InsetSlot padding="sm" style={styles.itemSlot}>
+                  {/* Empty slot */}
+                </InsetSlot>
+              ) : (
+                <Pressable
+                  onPress={() => handleItemPress(itemId)}
+                  style={styles.itemPressable}
+                >
+                  <InsetSlot padding="sm" style={styles.itemSlot}>
+                    <Image
+                      source={ITEM_ICONS[itemId] || ITEM_ICONS.fokus}
+                      style={styles.itemIcon}
+                    />
+                  </InsetSlot>
+                </Pressable>
+              )}
+              <GameText
+                variant="labelSmall"
+                color={isEmpty ? COLORS.textMuted : COLORS.text}
+                style={styles.slotLabel}
+              >
+                {isEmpty ? "leer" : itemDef?.name || itemId}
+              </GameText>
+            </View>
           );
         })}
       </View>
@@ -91,9 +104,13 @@ const styles = StyleSheet.create({
   },
   itemsRow: {
     flexDirection: "row",
-    gap: SPACING.sm,
+    alignItems: "flex-start",
+    justifyContent: "space-evenly",
+    width: "100%",
+  },
+  slotContainer: {
     alignItems: "center",
-    justifyContent: "center",
+    gap: SPACING.xs,
   },
   itemPressable: {
     borderRadius: DIMENSIONS.borderRadiusSmall,
@@ -108,5 +125,9 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     resizeMode: "contain",
+  },
+  slotLabel: {
+    textAlign: "center",
+    maxWidth: 50,
   },
 });
