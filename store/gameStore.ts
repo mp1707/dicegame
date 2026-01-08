@@ -55,6 +55,9 @@ export type GamePhase =
   | "WIN_SCREEN" // Beat level 8
   | "LOSE_SCREEN"; // Ran out of hands with score < goal
 
+// Shop offer types for selection-based shop UI
+export type ShopOfferType = "upgrade" | "dice" | "item";
+
 export interface RevealState {
   active: boolean;
   breakdown: ScoringBreakdown | null;
@@ -106,6 +109,7 @@ interface GameState {
   upgradeOptions: HandId[];
   shopDiceUpgradeType: DiceUpgradeType | null; // Which dice upgrade is available in shop
   shopItemId: string | null; // Which purchasable item is available in shop (null if none/purchased)
+  selectedShopOffer: ShopOfferType | null; // Currently selected shop offer for preview
 
   // Item modal state (global, rendered in App.tsx)
   itemModalId: string | null; // Item ID to show in modal (null = closed)
@@ -144,6 +148,8 @@ interface GameState {
   pickUpgradeHand: (handId: HandId) => void;
   closeShopNextLevel: () => void;
   purchaseItem: (itemId: string) => void;
+  selectShopOffer: (offer: ShopOfferType | null) => void;
+  purchaseSelectedOffer: () => void;
 
   // Dice editor actions
   openDiceEditor: (type: DiceUpgradeType) => void;
@@ -208,6 +214,7 @@ const getInitialUIState = () => ({
   upgradeOptions: [] as HandId[],
   shopDiceUpgradeType: null as DiceUpgradeType | null,
   shopItemId: null as string | null,
+  selectedShopOffer: null as ShopOfferType | null,
   itemModalId: null as string | null,
   itemModalShowPurchase: false,
   pendingUpgradeType: null as DiceUpgradeType | null,
@@ -646,6 +653,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       phase: "SHOP_MAIN",
       shopDiceUpgradeType: shopDiceUpgrade,
       shopItemId: shopItem,
+      selectedShopOffer: null, // Clear selection when entering shop
     });
 
     // Reset shop usage counters
@@ -755,6 +763,38 @@ export const useGameStore = create<GameState>((set, get) => ({
         moneyDelta: -itemDef.cost,
       })
     );
+  },
+
+  selectShopOffer: (offer: ShopOfferType | null) => {
+    set({ selectedShopOffer: offer });
+  },
+
+  purchaseSelectedOffer: () => {
+    const { selectedShopOffer, shopDiceUpgradeType, shopItemId } = get();
+
+    if (!selectedShopOffer) return;
+
+    switch (selectedShopOffer) {
+      case "upgrade":
+        // Transition to upgrade picker
+        get().selectUpgradeItem();
+        break;
+      case "dice":
+        // Open dice editor if available
+        if (shopDiceUpgradeType) {
+          get().openDiceEditor(shopDiceUpgradeType);
+        }
+        break;
+      case "item":
+        // Purchase the item if available
+        if (shopItemId) {
+          get().purchaseItem(shopItemId);
+        }
+        break;
+    }
+
+    // Clear selection after purchase/transition
+    set({ selectedShopOffer: null });
   },
 
   // ───────────────────────────────────────────────────────────────────────────

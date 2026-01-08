@@ -10,7 +10,7 @@ import { ScorePanel } from "../../ui/ScorePanel";
 import { BottomPanel } from "../../ui/BottomPanel";
 import { FooterControls } from "../../ui/FooterControls";
 import { CashoutTrayOverlay } from "../../ui/CashoutTrayOverlay";
-import { ShopTrayOverlay } from "../../ui/ShopTrayOverlay";
+import { ShopItemPreviewOverlay } from "../../ui/ShopItemPreviewOverlay";
 import { UpgradeTrayOverlay } from "../../ui/UpgradeTrayOverlay";
 import { DiceEditorTrayOverlay } from "../../ui/DiceEditorTrayOverlay";
 import { LoseTrayOverlay } from "../../ui/LoseTrayOverlay";
@@ -31,7 +31,7 @@ interface PhaseDeckProps {
  *
  * Phase-specific tray overlays:
  * - LEVEL_RESULT: CashoutTrayOverlay (title + sum card)
- * - SHOP_MAIN: ShopTrayOverlay (title + subtitle)
+ * - SHOP_MAIN: ShopItemPreviewOverlay (selected offer preview)
  * - SHOP_PICK_UPGRADE: UpgradeTrayOverlay (title + subtitle)
  * - DICE_EDITOR_*: DiceEditorTrayOverlay (title + subtitle + optional die info)
  * - Other phases: diceTray (3D scene)
@@ -50,7 +50,7 @@ export const PhaseDeck: React.FC<PhaseDeckProps> = ({ diceTray }) => {
       case "LEVEL_RESULT":
         return <CashoutTrayOverlay />;
       case "SHOP_MAIN":
-        return <ShopTrayOverlay />;
+        return <ShopItemPreviewOverlay />;
       case "SHOP_PICK_UPGRADE":
         return <UpgradeTrayOverlay />;
       case "DICE_EDITOR_DIE":

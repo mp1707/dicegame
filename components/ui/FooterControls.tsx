@@ -1,14 +1,16 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useMemo } from "react";
 import { View, StyleSheet, Image } from "react-native";
 import { PrimaryButton, GameText } from "../shared";
 // InsetSlot and Surface removed
 import { COLORS, SPACING, DIMENSIONS, ANIMATION } from "../../constants/theme";
-import { useGameStore, GamePhase } from "../../store/gameStore";
+import { useGameStore, GamePhase, ShopOfferType } from "../../store/gameStore";
 import {
   triggerLightImpact,
   triggerSelectionHaptic,
+  triggerImpactMedium,
 } from "../../utils/haptics";
-import { isFaceEnhanceable } from "../../utils/gameCore";
+import { isFaceEnhanceable, getDiceUpgradeCost, getUpgradeCost } from "../../utils/gameCore";
+import { getShopItemById } from "../../items";
 import { useLayout } from "../../utils/LayoutContext";
 import Animated, {
   useSharedValue,
@@ -50,7 +52,44 @@ export const FooterControls = () => {
   const backFromFaceEditor = useGameStore((s) => s.backFromFaceEditor);
   const applyDiceUpgrade = useGameStore((s) => s.applyDiceUpgrade);
 
+  // Shop selection state
+  const selectedShopOffer = useGameStore((s) => s.selectedShopOffer);
+  const shopDiceUpgradeType = useGameStore((s) => s.shopDiceUpgradeType);
+  const shopItemId = useGameStore((s) => s.shopItemId);
+  const money = useGameStore((s) => s.money);
+  const handLevels = useGameStore((s) => s.handLevels);
+  const purchaseSelectedOffer = useGameStore((s) => s.purchaseSelectedOffer);
+
   const isLastLevel = currentLevelIndex >= 7;
+
+  // Calculate selected offer price and affordability
+  const selectedOfferInfo = useMemo(() => {
+    if (!selectedShopOffer) return null;
+
+    switch (selectedShopOffer) {
+      case "upgrade": {
+        const avgLevel = Math.floor(
+          Object.values(handLevels).reduce((a, b) => a + b, 0) /
+            Object.keys(handLevels).length
+        );
+        const price = getUpgradeCost(avgLevel);
+        return { price, canAfford: money >= price };
+      }
+      case "dice": {
+        if (!shopDiceUpgradeType) return null;
+        const price = getDiceUpgradeCost(shopDiceUpgradeType);
+        return { price, canAfford: money >= price };
+      }
+      case "item": {
+        if (!shopItemId) return null;
+        const itemDef = getShopItemById(shopItemId);
+        if (!itemDef) return null;
+        return { price: itemDef.cost, canAfford: money >= itemDef.cost };
+      }
+      default:
+        return null;
+    }
+  }, [selectedShopOffer, shopDiceUpgradeType, shopItemId, money, handLevels]);
 
   // Animation shared values
   const ctaTranslateY = useSharedValue(0);
@@ -141,6 +180,11 @@ export const FooterControls = () => {
   const handleNextLevel = () => {
     closeShopNextLevel();
     triggerSelectionHaptic();
+  };
+
+  const handlePurchaseOffer = () => {
+    triggerImpactMedium();
+    purchaseSelectedOffer();
   };
 
   const handleNewRun = () => {
@@ -243,8 +287,34 @@ export const FooterControls = () => {
       );
     }
 
-    // SHOP_MAIN phase - Next Level button
+    // SHOP_MAIN phase - Purchase CTA or Next Level button
     if (phase === "SHOP_MAIN") {
+      // Show purchase CTA if offer is selected and affordable
+      if (selectedShopOffer && selectedOfferInfo?.canAfford) {
+        return (
+          <PrimaryButton
+            onPress={handlePurchaseOffer}
+            label={`Kaufen – ${selectedOfferInfo.price} Münzen`}
+            variant="mint"
+            compact
+            style={buttonStyle}
+          />
+        );
+      }
+      // Show disabled purchase CTA if offer selected but not affordable
+      if (selectedShopOffer && selectedOfferInfo && !selectedOfferInfo.canAfford) {
+        return (
+          <PrimaryButton
+            onPress={() => {}}
+            label={`Kaufen – ${selectedOfferInfo.price} Münzen`}
+            variant="coral"
+            disabled
+            compact
+            style={buttonStyle}
+          />
+        );
+      }
+      // Default: Next Level button
       return (
         <PrimaryButton
           onPress={handleNextLevel}

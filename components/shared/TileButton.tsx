@@ -7,6 +7,9 @@ import {
   Image,
   ImageSourcePropType,
 } from "react-native";
+
+// Coin icon for price display
+const coinIcon = require("../../assets/icons/coin.png");
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -42,6 +45,12 @@ export interface TileButtonProps {
   enhancePoints?: number;
   /** Optional: Mult enhancement sum (shows red pill in bottom-right) */
   enhanceMult?: number;
+  /** Optional: Price value (shows coin + number at bottom) */
+  priceValue?: number;
+  /** Optional: Shows "GEKAUFT" badge instead of price */
+  pricePurchased?: boolean;
+  /** Optional: Controls price opacity (default true) */
+  priceAffordable?: boolean;
 }
 
 const DEPTH = 4;
@@ -92,6 +101,9 @@ export const TileButton = React.memo(
     showLevelBadge = true,
     enhancePoints,
     enhanceMult,
+    priceValue,
+    pricePurchased,
+    priceAffordable = true,
   }: TileButtonProps) => {
     const pressable = isPressableState(state);
     const prevState = useRef(state);
@@ -300,6 +312,37 @@ export const TileButton = React.memo(
                 </GameText>
               )}
             </View>
+
+            {/* Price row (for shop tiles) */}
+            {priceValue !== undefined && !pricePurchased && (
+              <View
+                style={[
+                  styles.priceRow,
+                  !priceAffordable && styles.priceRowMuted,
+                ]}
+              >
+                <Image
+                  source={coinIcon}
+                  style={styles.priceCoinIcon}
+                  resizeMode="contain"
+                />
+                <GameText
+                  variant="bodySmall"
+                  color={priceAffordable ? COLORS.gold : COLORS.textMuted}
+                >
+                  {priceValue}
+                </GameText>
+              </View>
+            )}
+
+            {/* Purchased badge */}
+            {pricePurchased && (
+              <View style={styles.purchasedBadge}>
+                <GameText variant="caption" color={COLORS.mint}>
+                  GEKAUFT
+                </GameText>
+              </View>
+            )}
           </View>
         </Pressable3DBase>
       </View>
@@ -389,5 +432,25 @@ const styles = StyleSheet.create({
   enhancePillText: {
     fontSize: 7,
     letterSpacing: 0.2,
+  },
+  priceRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    marginTop: SPACING.xxs,
+  },
+  priceRowMuted: {
+    opacity: 0.5,
+  },
+  priceCoinIcon: {
+    width: 12,
+    height: 12,
+  },
+  purchasedBadge: {
+    marginTop: SPACING.xxs,
+    paddingHorizontal: SPACING.xs,
+    paddingVertical: 1,
+    borderRadius: 4,
+    backgroundColor: COLORS.overlays.whiteMild,
   },
 });

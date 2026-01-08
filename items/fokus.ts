@@ -27,7 +27,7 @@ export const FOKUS_ITEM: ItemDefinition = {
   id: "fokus",
   name: "Fokus",
   description:
-    "Beim Start des Levels: Alle zusätzlichen Hände werden in Würfe umgewandelt. Du hast nur eine Hand aber mehr Würfe.",
+    "Beim Start des Levels werden alle zusätzlichen Hände in Würfe umgewandelt.",
   rarity: "rare",
   cost: 7,
   icon: "skull.png",
