@@ -47,30 +47,39 @@ export const EndContent: React.FC = () => {
 
       {/* Stats section - New Layout with Insets */}
       <HUDCard style={styles.statsCard}>
-        <View style={styles.statRow}>
-          <GameText variant="bodyMedium" color={COLORS.textMuted}>
-            Final Money
-          </GameText>
-          <InsetSlot style={styles.valueInset}>
-            <Image
-              source={require("../../assets/icons/coin.png")}
-              style={styles.iconSm}
-            />
-            <GameText variant="scoreboardSmall" color={COLORS.gold}>
-              {formatNumber(money)}
-            </GameText>
-          </InsetSlot>
-        </View>
+        <View style={styles.cardContent}>
+          {/* Top aligned stats */}
+          <View style={styles.topStats}>
+            <View style={styles.statRow}>
+              <GameText variant="bodyMedium" color={COLORS.textMuted}>
+                Levels Completed
+              </GameText>
+              <InsetSlot style={styles.valueInset}>
+                <GameText variant="scoreboardSmall" color={COLORS.text}>
+                  {isWin ? 8 : currentLevelIndex} / 8
+                </GameText>
+              </InsetSlot>
+            </View>
+          </View>
 
-        <View style={styles.statRow}>
-          <GameText variant="bodyMedium" color={COLORS.textMuted}>
-            Levels Completed
-          </GameText>
-          <InsetSlot style={styles.valueInset}>
-            <GameText variant="scoreboardSmall" color={COLORS.text}>
-              {isWin ? 8 : currentLevelIndex} / 8
-            </GameText>
-          </InsetSlot>
+          {/* Bottom aligned cashout */}
+          <View style={styles.bottomStats}>
+            <View style={styles.separator} />
+            <View style={styles.statRow}>
+              <GameText variant="bodyMedium" color={COLORS.textMuted}>
+                Final Money
+              </GameText>
+              <InsetSlot style={styles.valueInset}>
+                <Image
+                  source={require("../../assets/icons/coin.png")}
+                  style={styles.iconSm}
+                />
+                <GameText variant="scoreboardSmall" color={COLORS.gold}>
+                  {formatNumber(money)}
+                </GameText>
+              </InsetSlot>
+            </View>
+          </View>
         </View>
       </HUDCard>
     </View>
@@ -81,12 +90,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: SPACING.screenPadding,
-    justifyContent: "center",
+    paddingBottom: SPACING.md, // Add bottom padding for better spacing
     gap: SPACING.lg,
   },
   hero: {
     alignItems: "center",
     gap: SPACING.sm,
+    marginTop: SPACING.sm, // Add some top margin
   },
   iconContainer: {
     width: 64,
@@ -112,28 +122,46 @@ const styles = StyleSheet.create({
     textShadowRadius: 12,
   },
   statsCard: {
+    flex: 1, // Fill available space
     alignSelf: "center",
     width: "100%",
-    maxWidth: 260,
+    maxWidth: 320, // Slightly wider
+  },
+  // Inset styling inside HUDCard
+  cardContent: {
+    flex: 1,
+    justifyContent: "space-between", // Push content apart
+  },
+  topStats: {
+    gap: SPACING.sm,
+  },
+  bottomStats: {
+    gap: SPACING.sm,
   },
   statRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: SPACING.xs,
-    height: 36, // Fixed height for alignment
+    height: 44, // Taller rows
+  },
+  separator: {
+    height: 2,
+    backgroundColor: COLORS.border,
+    borderRadius: 1,
+    opacity: 0.3,
   },
   valueInset: {
-    width: "33%", // Take a third of the row
+    minWidth: 100, // wider inset
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: SPACING.xs,
-    paddingVertical: SPACING.xs,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
   },
   iconSm: {
-    width: DIMENSIONS.iconSize.xs, // Slightly smaller than header
-    height: DIMENSIONS.iconSize.xs,
+    width: DIMENSIONS.iconSize.sm,
+    height: DIMENSIONS.iconSize.sm,
     resizeMode: "contain",
   },
 });

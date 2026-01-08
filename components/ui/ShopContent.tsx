@@ -1,14 +1,21 @@
-import React from "react";
-import { View, StyleSheet } from "react-native";
-import { ArrowUp, Lock } from "lucide-react-native";
-import { COLORS, SPACING, ANIMATION } from "../../constants/theme";
+import React, { useMemo } from "react";
+import { View, StyleSheet, Image, Pressable } from "react-native";
+import { ArrowUp, Lock, Sparkles } from "lucide-react-native";
+import { COLORS, SPACING, ANIMATION, DIMENSIONS } from "../../constants/theme";
 import { useGameStore, ShopOfferType } from "../../store/gameStore";
 import { getDiceUpgradeCost, getUpgradeCost } from "../../utils/gameCore";
 import { getShopItemById } from "../../items";
-import { TileButton, TileButtonState } from "../shared";
-import { Surface } from "../ui-kit";
-import Animated, { FadeInDown } from "react-native-reanimated";
-import { triggerSelectionHaptic } from "../../utils/haptics";
+import { GameText, TileButtonState } from "../shared";
+import { Surface, InsetSlot } from "../ui-kit";
+import Animated, {
+  FadeInRight,
+  ZoomIn,
+  FadeInDown,
+} from "react-native-reanimated";
+import {
+  triggerSelectionHaptic,
+  triggerImpactMedium,
+} from "../../utils/haptics";
 import { ShopHeader } from "./ShopHeader";
 
 // Icon mapping for shop items
@@ -16,17 +23,123 @@ const ITEM_ICONS: Record<string, any> = {
   fokus: require("../../assets/items/skull.png"),
 };
 
-/**
- * ShopContent - Unified 2×2 offer shop with selection-based interaction
- *
- * Structure:
- * - ShopHeader: Title + currency capsule
- * - OfferGrid: 2×2 grid of TileButtons
- *
- * Interaction:
- * - Tap to select → updates tray preview
- * - Purchase via footer CTA
- */
+interface ShopCardProps {
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+  price?: number;
+  state: TileButtonState;
+  onPress: () => void;
+  delay: number;
+}
+
+const ShopCard: React.FC<ShopCardProps> = ({
+  icon,
+  title,
+  subtitle,
+  price,
+  state,
+  onPress,
+  delay,
+}) => {
+  const isSelected = state === "selected";
+  const isActive = state === "active";
+  const isUsed = state === "used";
+  const isInvalid = state === "invalid";
+
+  const handlePress = () => {
+    if (isInvalid || isUsed) return;
+    triggerSelectionHaptic();
+    onPress();
+  };
+
+  const containerStyle = [
+    styles.cardContainer,
+    isSelected && styles.cardSelected,
+    (isInvalid || isUsed) && styles.cardDisabled,
+  ];
+
+  const borderStyle = isSelected
+    ? { borderColor: COLORS.cyan, borderWidth: 2 }
+    : { borderColor: COLORS.overlays.whiteMild, borderWidth: 1 };
+
+  return (
+    <Animated.View
+      entering={FadeInDown.delay(delay).duration(400).springify()}
+      style={styles.cardWrapper}
+    >
+      <Pressable
+        onPress={handlePress}
+        style={({ pressed }) => [
+          styles.pressableArea,
+          pressed && isActive && { transform: [{ scale: 0.96 }] },
+        ]}
+      >
+        <Surface variant="panel" style={[containerStyle, borderStyle]}>
+          {/* Top Right: Price Badge */}
+          {!isUsed && !isInvalid && price !== undefined && (
+            <View style={styles.priceBadge}>
+              <Image
+                source={require("../../assets/icons/coin.png")}
+                style={[
+                  styles.coinIcon,
+                  { opacity: isActive || isSelected ? 1 : 0.5 },
+                ]}
+              />
+              <GameText
+                variant="scoreboardSmall" // Smaller font as requested
+                color={isActive || isSelected ? COLORS.gold : COLORS.textMuted}
+              >
+                {price}
+              </GameText>
+            </View>
+          )}
+
+          {/* Left: Icon in Inset */}
+          <InsetSlot style={styles.iconInset} padding="sm">
+            {icon}
+          </InsetSlot>
+
+          {/* Right: Info Column */}
+          <View style={styles.cardInfoColumn}>
+            {/* Title Group */}
+            <View>
+              <GameText
+                variant="labelSmall"
+                color={isSelected ? COLORS.cyan : COLORS.textMuted}
+                style={styles.cardSubtitle}
+              >
+                {subtitle}
+              </GameText>
+              <GameText
+                variant="displaySmall"
+                color={isSelected ? COLORS.text : COLORS.text}
+                style={styles.cardTitle}
+                numberOfLines={1}
+              >
+                {title}
+              </GameText>
+            </View>
+
+            {/* Status Footer (only for sold/locked) */}
+            {(isUsed || (isInvalid && !price)) && (
+              <View style={styles.cardFooter}>
+                {isUsed ? (
+                  <GameText variant="bodySmall" color={COLORS.textMuted}>
+                    SOLD
+                  </GameText>
+                ) : (
+                  <Lock size={16} color={COLORS.textMuted} />
+                )}
+              </View>
+            )}
+          </View>
+        </Surface>
+      </Pressable>
+    </Animated.View>
+  );
+};
+
 export const ShopContent: React.FC = () => {
   const money = useGameStore((s) => s.money);
   const shopDiceUpgradeType = useGameStore((s) => s.shopDiceUpgradeType);
@@ -37,20 +150,11 @@ export const ShopContent: React.FC = () => {
 
   // Handle offer selection
   const handleSelectOffer = (offer: ShopOfferType) => {
-    triggerSelectionHaptic();
-    // Toggle selection if already selected
     if (selectedShopOffer === offer) {
       selectShopOffer(null);
     } else {
       selectShopOffer(offer);
     }
-  };
-
-  // Calculate stagger delays for grid items
-  const getItemDelay = (row: number, col: number) => {
-    const baseDelay = ANIMATION.shop.headerDelay + 60;
-    const index = row * 2 + col;
-    return baseDelay + index * ANIMATION.shop.gridStagger;
   };
 
   // Hand upgrade configuration
@@ -105,128 +209,77 @@ export const ShopContent: React.FC = () => {
   return (
     <View style={styles.container}>
       <Surface variant="panel" style={styles.panelContent}>
-        {/* Header with title and currency */}
         <ShopHeader />
 
-        {/* Shop Grid - 2×2 */}
+        {/* 2x2 Grid Layout */}
         <View style={styles.gridContainer}>
-        {/* Row 1 */}
-        <View style={styles.row}>
-          {/* Upgrade Hand */}
-          <ShopTileWrapper delay={getItemDelay(0, 0)}>
-            <TileButton
-              icon={
-                <ArrowUp
-                  size={32}
-                  color={
-                    selectedShopOffer === "upgrade" || canAffordUpgrade
-                      ? COLORS.mint
-                      : COLORS.textMuted
-                  }
-                  strokeWidth={3}
-                />
-              }
-              labelLine1="UPGRADE"
-              labelLine2="+5 BASE"
-              state={upgradeState}
-              onPress={() => handleSelectOffer("upgrade")}
-              style={styles.tile}
-              showLevelBadge={false}
-              priceValue={upgradePrice}
-              priceAffordable={canAffordUpgrade}
-            />
-          </ShopTileWrapper>
+          {/* 1. Hand Upgrade */}
+          <ShopCard
+            icon={<ArrowUp size={28} color={COLORS.mint} strokeWidth={2.5} />}
+            title="LEVEL UP"
+            subtitle="HAND"
+            price={upgradePrice}
+            state={upgradeState}
+            onPress={() => handleSelectOffer("upgrade")}
+            delay={100}
+          />
 
-          {/* Dice Enhancement */}
-          <ShopTileWrapper delay={getItemDelay(0, 1)}>
-            {diceUpgradeConfig ? (
-              <TileButton
-                iconSource={require("../../assets/icons/die.png")}
-                labelLine1={diceUpgradeConfig.name}
-                labelLine2={diceUpgradeConfig.label}
-                state={diceState}
-                onPress={() => handleSelectOffer("dice")}
-                style={styles.tile}
-                showLevelBadge={false}
-                priceValue={dicePrice}
-                priceAffordable={canAffordDice}
+          {/* 2. Dice Upgrade */}
+          <ShopCard
+            icon={
+              <Image
+                source={require("../../assets/icons/die.png")}
+                style={{
+                  width: 28,
+                  height: 28,
+                  tintColor: diceUpgradeConfig?.color,
+                }}
+                resizeMode="contain"
               />
-            ) : (
-              <TileButton
-                iconSource={require("../../assets/icons/die.png")}
-                labelLine1="WÜRFEL"
-                labelLine2="AUSVERKAUFT"
-                state="used"
-                onPress={() => {}}
-                style={styles.tile}
-                showLevelBadge={false}
-                pricePurchased={true}
-              />
-            )}
-          </ShopTileWrapper>
-        </View>
+            }
+            title={diceUpgradeConfig?.name || "WÜRFEL"}
+            subtitle={diceUpgradeConfig?.label || "UPGRADE"}
+            price={dicePrice}
+            state={diceState}
+            onPress={() => handleSelectOffer("dice")}
+            delay={160}
+          />
 
-        {/* Row 2 - Item + Placeholder */}
-        <View style={styles.row}>
-          {/* Purchasable Item */}
-          <ShopTileWrapper delay={getItemDelay(1, 0)}>
-            {shopItem ? (
-              <TileButton
-                iconSource={ITEM_ICONS[shopItem.id] || ITEM_ICONS.fokus}
-                labelLine1={shopItem.name.toUpperCase()}
-                state={itemState}
-                onPress={() => handleSelectOffer("item")}
-                style={styles.tile}
-                showLevelBadge={false}
-                priceValue={itemPrice}
-                priceAffordable={canAffordItem}
-              />
-            ) : (
-              <TileButton
-                icon={
-                  <Lock size={24} color={COLORS.textMuted} strokeWidth={2} />
+          {/* 3. Item */}
+          <ShopCard
+            icon={
+              <Image
+                source={
+                  shopItem
+                    ? ITEM_ICONS[shopItem.id] || ITEM_ICONS.fokus
+                    : require("../../assets/items/skull.png")
                 }
-                labelLine1="ITEMS"
-                state="invalid"
-                onPress={() => {}}
-                style={styles.tile}
-                showLevelBadge={false}
+                style={{ width: 28, height: 28 }}
+                resizeMode="contain"
               />
-            )}
-          </ShopTileWrapper>
+            }
+            title={shopItem?.name.toUpperCase() || "ITEMS"}
+            subtitle="CONSUMABLE"
+            price={itemPrice}
+            state={itemState}
+            onPress={() => handleSelectOffer("item")}
+            delay={220}
+          />
 
-          {/* Powers - Coming Soon */}
-          <ShopTileWrapper delay={getItemDelay(1, 1)}>
-            <TileButton
-              icon={
-                <Lock size={24} color={COLORS.textMuted} strokeWidth={2} />
-              }
-              labelLine1="POWERS"
-              labelLine2="BALD"
-              state="invalid"
-              onPress={() => {}}
-              style={styles.tile}
-              showLevelBadge={false}
-            />
-          </ShopTileWrapper>
-        </View>
+          {/* 4. Powers - Locked */}
+          <ShopCard
+            icon={<Lock size={24} color={COLORS.textMuted} />}
+            title="POWERS"
+            subtitle="BALD"
+            state="invalid"
+            onPress={() => {}}
+            delay={280}
+          />
         </View>
       </Surface>
     </View>
   );
 };
-
-const ShopTileWrapper: React.FC<{
-  children: React.ReactNode;
-  delay: number;
-}> = ({ children, delay }) => (
-  <Animated.View
-    entering={FadeInDown.delay(delay).duration(400).springify()}
-    style={styles.tileWrapper}
-  >
-    {children}
-  </Animated.View>
-);
 
 const styles = StyleSheet.create({
   container: {
@@ -236,24 +289,71 @@ const styles = StyleSheet.create({
   panelContent: {
     flex: 1,
     padding: SPACING.md,
+    gap: SPACING.sm, // reduced gap inside panel
   },
   gridContainer: {
     flex: 1,
-    gap: SPACING.sm,
-    justifyContent: "center",
-  },
-  row: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: SPACING.sm,
-    justifyContent: "center",
+    paddingBottom: SPACING.xs,
   },
-  tileWrapper: {
+  cardWrapper: {
+    width: "48%", // Allow gap
+    height: "47%", // Fit 2 rows
+    flexGrow: 1,
+  },
+  pressableArea: {
     flex: 1,
-    alignItems: "center",
-    maxWidth: 100,
   },
-  tile: {
-    width: "100%",
-    aspectRatio: 1,
+  cardContainer: {
+    flex: 1,
+    flexDirection: "row", // Horizontal layout
+    alignItems: "center",
+    justifyContent: "flex-start",
+    padding: SPACING.sm,
+    borderRadius: DIMENSIONS.borderRadius,
+    backgroundColor: COLORS.surface2,
+    position: "relative", // For badge positioning
+  },
+  cardSelected: {
+    backgroundColor: COLORS.surfaceHighlight,
+  },
+  cardDisabled: {
+    opacity: 0.5,
+  },
+  iconInset: {
+    width: 48,
+    height: 48,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: SPACING.md,
+  },
+  cardInfoColumn: {
+    flex: 1,
+    justifyContent: "center",
+    gap: 2,
+  },
+  cardSubtitle: {
+    letterSpacing: 1,
+    opacity: 0.8,
+  },
+  cardTitle: {
+    textAlign: "left",
+  },
+  cardFooter: {
+    marginTop: 4,
+  },
+  priceBadge: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  coinIcon: {
+    width: 12, // Smaller icon for badge
+    height: 12,
   },
 });

@@ -12,6 +12,7 @@ import { Surface, InsetSlot } from "../ui-kit";
 import { COLORS, SPACING, DIMENSIONS } from "../../constants/theme";
 import { useGameStore, ShopOfferType } from "../../store/gameStore";
 import { getDiceUpgradeCost, getUpgradeCost } from "../../utils/gameCore";
+import { TrayOverlayTitle } from "./TrayOverlayTitle";
 import { getShopItemById } from "../../items";
 
 // Icon mapping for shop items
@@ -126,19 +127,7 @@ export const ShopItemPreviewOverlay: React.FC = () => {
   if (!selectedShopOffer) {
     return (
       <View style={styles.container}>
-        <Animated.View
-          entering={FadeIn.duration(200)}
-          exiting={FadeOut.duration(150)}
-          style={styles.emptyState}
-        >
-          <GameText
-            variant="bodyLarge"
-            color={COLORS.textMuted}
-            style={styles.emptyText}
-          >
-            Tippe ein Angebot
-          </GameText>
-        </Animated.View>
+        <TrayOverlayTitle title="Wähle ein Item" />
       </View>
     );
   }
