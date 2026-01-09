@@ -15,6 +15,7 @@ import { LAYOUT } from "../constants/theme";
 export interface LayoutUnits {
   // Computed section heights (in points)
   headerHeight: number;
+  itemRowHeight: number;
   diceTrayHeight: number;
   scoreRowHeight: number;
   scoringGridHeight: number;
@@ -62,6 +63,7 @@ export const useLayoutUnits = (): LayoutUnits => {
   // Calculate section heights from weights
   const { weights, scoring } = LAYOUT;
   const headerHeight = unit * weights.header;
+  const itemRowHeight = unit * weights.itemRow; // Added
   const diceTrayHeight = unit * weights.diceTray;
   const scoreRowHeight = unit * weights.scoreRow;
   const scoringGridHeight = unit * weights.scoringGrid;
@@ -82,6 +84,7 @@ export const useLayoutUnits = (): LayoutUnits => {
     () => ({
       // Section heights
       headerHeight,
+      itemRowHeight,
       diceTrayHeight,
       scoreRowHeight,
       scoringGridHeight,
@@ -110,6 +113,7 @@ export const useLayoutUnits = (): LayoutUnits => {
     }),
     [
       headerHeight,
+      itemRowHeight,
       diceTrayHeight,
       scoreRowHeight,
       scoringGridHeight,

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useMemo } from "react";
 import { View, StyleSheet, Image } from "react-native";
 import { PrimaryButton, GameText } from "../shared";
-// InsetSlot and Surface removed
+import { Surface, InsetSlot } from "../ui-kit";
 import { COLORS, SPACING, DIMENSIONS, ANIMATION } from "../../constants/theme";
 import { useGameStore, GamePhase, ShopOfferType } from "../../store/gameStore";
 import {
@@ -9,7 +9,11 @@ import {
   triggerSelectionHaptic,
   triggerImpactMedium,
 } from "../../utils/haptics";
-import { isFaceEnhanceable, getDiceUpgradeCost, getUpgradeCost } from "../../utils/gameCore";
+import {
+  isFaceEnhanceable,
+  getDiceUpgradeCost,
+  getUpgradeCost,
+} from "../../utils/gameCore";
 import { getShopItemById } from "../../items";
 import { useLayout } from "../../utils/LayoutContext";
 import Animated, {
@@ -265,7 +269,11 @@ export const FooterControls = () => {
       const canEnhance =
         selectedEditorDie !== null &&
         selectedEditorFace !== null &&
-        isFaceEnhanceable(selectedEditorDie, selectedEditorFace, diceEnhancements);
+        isFaceEnhanceable(
+          selectedEditorDie,
+          selectedEditorFace,
+          diceEnhancements
+        );
       return (
         <View style={styles.dualButtonRow}>
           <PrimaryButton
@@ -302,7 +310,11 @@ export const FooterControls = () => {
         );
       }
       // Show disabled purchase CTA if offer selected but not affordable
-      if (selectedShopOffer && selectedOfferInfo && !selectedOfferInfo.canAfford) {
+      if (
+        selectedShopOffer &&
+        selectedOfferInfo &&
+        !selectedOfferInfo.canAfford
+      ) {
         return (
           <PrimaryButton
             onPress={() => {}}
@@ -441,9 +453,51 @@ export const FooterControls = () => {
           ]}
           pointerEvents="none"
         />
-        <Animated.View style={[styles.ctaArea, animatedStyle]}>
-          {renderCTA()}
-        </Animated.View>
+        <View style={styles.ctaRow}>
+          {/* Hands Display (Left) - Only show during gameplay phases */}
+          {(phase === "LEVEL_PLAY" || phase === "LEVEL_RESULT") && (
+            <Surface variant="inset" style={styles.statPill} padding="none">
+              <View style={styles.statContent}>
+                <Image
+                  source={require("../../assets/icons/Glove.png")}
+                  style={styles.iconSm}
+                />
+                <View>
+                  <GameText variant="labelSmall" color={COLORS.textMuted}>
+                    HÄNDE
+                  </GameText>
+                  <GameText variant="scoreboardSmall" color={COLORS.cyan}>
+                    {handsRemaining}
+                  </GameText>
+                </View>
+              </View>
+            </Surface>
+          )}
+
+          <Animated.View style={[styles.ctaArea, animatedStyle]}>
+            {renderCTA()}
+          </Animated.View>
+
+          {/* Rolls Display (Right) - Only show during gameplay phases */}
+          {(phase === "LEVEL_PLAY" || phase === "LEVEL_RESULT") && (
+            <Surface variant="inset" style={styles.statPill} padding="none">
+              <View style={styles.statContent}>
+                <Image
+                  source={require("../../assets/icons/die.png")}
+                  style={styles.iconSm}
+                />
+                <View>
+                  <GameText variant="labelSmall" color={COLORS.textMuted}>
+                    WÜRFE
+                  </GameText>
+                  <GameText variant="scoreboardSmall" color={COLORS.gold}>
+                    {rollsRemaining}
+                  </GameText>
+                </View>
+              </View>
+            </Surface>
+          )}
+        </View>
       </View>
     );
   };
@@ -460,22 +514,51 @@ const styles = StyleSheet.create({
   ctaWrapper: {
     flex: 1,
     position: "relative",
+    justifyContent: "center",
+  },
+  ctaRow: {
+    // NEW wrapper for 3-column footer layout
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACING.md,
+    justifyContent: "space-between",
   },
   glowPulse: {
     ...StyleSheet.absoluteFillObject,
     borderRadius: DIMENSIONS.borderRadiusLarge,
     transform: [{ scaleX: 1.1 }, { scaleY: 1.3 }],
+    left: "25%", // Center behind main button (approx)
+    width: "50%",
   },
   ctaButton: {
     flex: 1,
     shadowOpacity: 0.6,
   },
   ctaArea: {
-    flex: 1,
+    flex: 2, // Main button takes 50% width (2/4)
     flexDirection: "row",
     gap: SPACING.sm,
-    // ensure full width/centered
     justifyContent: "center",
+  },
+  statPill: {
+    flex: 1, // Side stats take 25% width each (1/4)
+    height: "100%", // Match button height
+    maxHeight: 50,
+    justifyContent: "center",
+    backgroundColor: COLORS.bg, // Darker background for inset
+    borderRadius: DIMENSIONS.borderRadius,
+  },
+  statContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: SPACING.xs,
+    paddingHorizontal: SPACING.xs,
+  },
+  iconSm: {
+    width: 20,
+    height: 20,
+    resizeMode: "contain",
   },
   dualButtonRow: {
     flex: 1,

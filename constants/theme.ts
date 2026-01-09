@@ -280,13 +280,15 @@ export const LAYOUT = {
   },
 
   // Section weights (percentages of usable height, total = 100)
+  // Section weights (percentages of usable height, total = 100)
   weights: {
-    header: 8, // ~65pt on reference - Level + money pods
-    diceTray: 32, // ~262pt on reference - 3D scene with thermometer
-    scoreRow: 12, // ~98pt on reference - Score + items (2 rows)
-    scoringGrid: 32, // ~262pt on reference - 12 hand slots (Upper + Lower)
-    footer: 12, // ~98pt on reference - Stats + CTA button
-    // gaps: 4% implicit (100 - 96)
+    header: 8, // ~65pt on reference
+    itemRow: 9, // ~73pt - Added row
+    diceTray: 25, // ~204pt - Reduced from 32
+    scoreRow: 8, // ~65pt - Reduced from 12 (items moved out)
+    scoringGrid: 28, // ~229pt - Reduced from 32
+    footer: 10, // ~82pt - Reduced from 12
+    // Sum: 8+9+25+8+28+10 = 88. 12% gap.
   },
 
   // Scoring grid internal distribution (ratios within scoringGrid height)

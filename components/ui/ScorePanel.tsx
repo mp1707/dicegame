@@ -10,7 +10,7 @@ import Animated, {
   interpolateColor,
 } from "react-native-reanimated";
 import { COLORS, SPACING, DIMENSIONS } from "../../constants/theme";
-import { InsetSlot, Chip } from "../ui-kit";
+import { InsetSlot, Chip, Surface } from "../ui-kit";
 import { GameText } from "../shared";
 import { useGameStore } from "../../store/gameStore";
 import { CATEGORIES } from "../../utils/yahtzeeScoring";
@@ -24,17 +24,11 @@ import { getShopItemById } from "../../items";
 // Maximum number of item slots
 const MAX_ITEM_SLOTS = 5;
 
-// Icon mapping for items
-const ITEM_ICONS: Record<string, any> = {
-  fokus: require("../../assets/items/skull.png"),
-};
-
 /**
- * ScorePanel - Integrated score and items display
+ * ScorePanel - Integrated score display
  *
  * Used inside PlayConsole as the bottom section.
  * Row 1: Hand name + level, and score/formula in fixed-width display.
- * Row 2: "Gegenstände" label + 5 item slots.
  *
  * No outer panel wrapper - that's provided by PlayConsole.
  */
@@ -44,8 +38,7 @@ export const ScorePanel = () => {
   const revealState = useGameStore((s) => s.revealState);
   const finalizeHand = useGameStore((s) => s.finalizeHand);
   const updateRevealAnimation = useGameStore((s) => s.updateRevealAnimation);
-  const ownedItems = useGameStore((s) => s.ownedItems);
-  const openItemModal = useGameStore((s) => s.openItemModal);
+  // ownedItems and openItemModal removed (moved to ItemRow)
 
   // Animation values
   const pointsScale = useSharedValue(1);
@@ -246,20 +239,8 @@ export const ScorePanel = () => {
       ? revealState.displayTotal
       : levelScore;
 
-  // Handle item tap
-  const handleItemPress = (itemId: string) => {
-    triggerSelectionHaptic();
-    openItemModal(itemId, false); // false = no purchase CTA (already owned)
-  };
-
-  // Create array of 5 slots, filled with owned items or null for empty
-  const slots: (string | null)[] = Array.from(
-    { length: MAX_ITEM_SLOTS },
-    (_, i) => (i < ownedItems.length ? ownedItems[i] : null)
-  );
-
   return (
-    <View style={styles.container}>
+    <Surface variant="panel" padding="none" style={styles.container}>
       {/* Row 1: Score Row */}
       <View style={styles.row}>
         {/* Left: Hand Info */}
@@ -336,64 +317,16 @@ export const ScorePanel = () => {
           )}
         </InsetSlot>
       </View>
-
-      {/* Hairline Divider */}
-      <View style={styles.divider} />
-
-      {/* Row 2: Items Row */}
-      <View style={styles.row}>
-        {/* Left: Label */}
-        <View style={styles.leftSection}>
-          <GameText variant="displaySmall" color={COLORS.text}>
-            Inventar
-          </GameText>
-        </View>
-
-        {/* Right: 5 Item Slots */}
-        <View style={styles.itemSlotsContainer}>
-          {slots.map((itemId, index) => {
-            const itemDef = itemId ? getShopItemById(itemId) : null;
-            const isEmpty = !itemId;
-
-            return (
-              <View key={itemId || `empty-${index}`} style={styles.itemSlot}>
-                {isEmpty ? (
-                  <InsetSlot padding="none" style={styles.itemSlotInset}>
-                    {/* Empty slot placeholder */}
-                  </InsetSlot>
-                ) : (
-                  <Pressable
-                    onPress={() => handleItemPress(itemId)}
-                    style={styles.itemPressable}
-                  >
-                    <InsetSlot padding="none" style={styles.itemSlotInset}>
-                      <Image
-                        source={ITEM_ICONS[itemId] || ITEM_ICONS.fokus}
-                        style={styles.itemIcon}
-                      />
-                    </InsetSlot>
-                  </Pressable>
-                )}
-                <GameText
-                  variant="labelSmall"
-                  color={isEmpty ? COLORS.textMuted : COLORS.text}
-                  style={styles.itemLabel}
-                  numberOfLines={1}
-                >
-                  {isEmpty ? "leer" : itemDef?.name || itemId}
-                </GameText>
-              </View>
-            );
-          })}
-        </View>
-      </View>
-    </View>
+    </Surface>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    // Vertical layout for two rows
+    // Surface container
+    flex: 1,
+    paddingHorizontal: SPACING.md,
+    justifyContent: "center",
   },
   row: {
     flexDirection: "row",
@@ -404,7 +337,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    width: "45%", // Fixed percentage ensures consistent width across both rows
+    width: "45%", // Matches ItemRow for alignment
   },
   scoreSlot: {
     flex: 1,
@@ -427,39 +360,5 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "baseline",
     gap: 2,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: COLORS.overlays.whiteSubtle,
-    marginVertical: SPACING.xs,
-    width: "40%",
-  },
-  itemSlotsContainer: {
-    flex: 1,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  itemSlot: {
-    alignItems: "center",
-    gap: 2,
-  },
-  itemPressable: {
-    borderRadius: DIMENSIONS.borderRadiusSmall,
-  },
-  itemSlotInset: {
-    width: 28,
-    height: 28,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  itemIcon: {
-    width: 14,
-    height: 14,
-    resizeMode: "contain",
-  },
-  itemLabel: {
-    textAlign: "center",
-    maxWidth: 36,
   },
 });

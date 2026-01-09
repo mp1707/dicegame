@@ -29,38 +29,16 @@ import {
   triggerNotificationSuccess,
   triggerLightImpact,
 } from "../../utils/haptics";
+import { useLayout } from "../../utils/LayoutContext";
 
-// Animated components - Use Animated.View/Text directly from reanimated
-
-interface PlayConsoleProps {
-  /** The DiceTray component (3D scene) */
-  diceTray: React.ReactNode;
-  /** ScorePanel content (score + items display) */
-  scorePanel: React.ReactNode;
-  /** Optional overlay content for tray area (cashout, shop, etc.) */
-  trayOverlay?: React.ReactNode;
-  /** Additional style */
+interface HUDHeaderProps {
   style?: ViewStyle;
 }
 
-/**
- * PlayConsole - Unified play area container
- *
- * Combines Header + DiceTray + ScorePanel into one cohesive "physical object":
- * - HUDHeader: 3-row stack (Status, Objective)
- * - TrayWindow: Dice felt area as inset cutout
- * - ScorePanel: Score + items display (2 rows)
- *
- * Uses Surface variant="panel" as outer shell with internal insets/seams.
- */
-export const PlayConsole: React.FC<PlayConsoleProps> = ({
-  diceTray,
-  scorePanel,
-  trayOverlay,
-  style,
-}) => {
-  // P3.1: Batch Zustand selectors to reduce subscription overhead
-  // Using useShallow for object equality comparison
+export const HUDHeader: React.FC<HUDHeaderProps> = ({ style }) => {
+  const layout = useLayout();
+
+  // Selectors
   const {
     currentLevelIndex,
     money,
@@ -68,8 +46,6 @@ export const PlayConsole: React.FC<PlayConsoleProps> = ({
     levelScore,
     levelWon,
     isWinAnimating,
-    rollsRemaining,
-    handsRemaining,
     phase,
     pendingUpgradeType,
   } = useGameStore(
@@ -80,14 +56,10 @@ export const PlayConsole: React.FC<PlayConsoleProps> = ({
       levelScore: s.levelScore,
       levelWon: s.levelWon,
       isWinAnimating: s.isWinAnimating,
-      rollsRemaining: s.rollsRemaining,
-      handsRemaining: s.handsRemaining,
       phase: s.phase,
       pendingUpgradeType: s.pendingUpgradeType,
     }))
   );
-
-  // Action still needs separate selector (function reference is stable)
   const setIsWinAnimating = useGameStore((s) => s.setIsWinAnimating);
 
   const levelNumber = currentLevelIndex + 1;
@@ -217,7 +189,6 @@ export const PlayConsole: React.FC<PlayConsoleProps> = ({
   const barTrackStyle = useAnimatedStyle(() => ({
     height: 2 + barHeightPulse.value, // 2px -> 3px
     marginTop: -barHeightPulse.value, // Grow upward to keep baseline? Or simply grow.
-    // Spec: "Corner radius should adjust". At 2-3px height, radius is tiny.
   }));
 
   const goalNumberStyle = useAnimatedStyle(() => ({
@@ -234,22 +205,24 @@ export const PlayConsole: React.FC<PlayConsoleProps> = ({
     opacity: shineProgress.value < 0 ? 0 : 0.8,
   }));
 
+  // NEW: Calculate dynamic height based on layout (if needed, or rely on container)
+  // But HUDHeader is now a fixed visual block. We'll use Surface variant="panel" same as PlayConsole used to.
+
   return (
     <Surface variant="panel" padding="none" style={[styles.container, style]}>
-      {/* === HUDHeader Section === */}
       <View style={styles.hudHeader}>
-        {/* 3-column layout */}
+        {/* 2-column header layout */}
         <View style={styles.headerRow}>
           {/* Left Column: Level and Money */}
           <View style={styles.leftColumn}>
-            {/* Level - Standard Inset Style */}
+            {/* Level */}
             <InsetSlot style={styles.statSlot}>
               <GameText variant="scoreboardSmall" color={COLORS.text}>
                 LEVEL {levelNumber}
               </GameText>
             </InsetSlot>
 
-            {/* Money - with count-up animation */}
+            {/* Money */}
             <InsetSlot style={styles.statSlot}>
               <Image
                 source={require("../../assets/icons/coin.png")}
@@ -267,13 +240,11 @@ export const PlayConsole: React.FC<PlayConsoleProps> = ({
               <View style={styles.goalTextContainer}>
                 {/* Phase-aware content */}
                 {phase === "SHOP_MAIN" || phase === "SHOP_PICK_UPGRADE" ? (
-                  // Shop Phase Layout - Big "SHOP" text
                   <GameText variant="displayLarge" color={COLORS.text}>
                     SHOP
                   </GameText>
                 ) : phase === "DICE_EDITOR_DIE" ||
                   phase === "DICE_EDITOR_FACE" ? (
-                  // Dice Editor Phase Layout - Single line + pill
                   <View style={styles.diceEditorGoal}>
                     <GameText variant="label" color={COLORS.text}>
                       WÜRFEL VERBESSERN
@@ -299,7 +270,6 @@ export const PlayConsole: React.FC<PlayConsoleProps> = ({
                     </View>
                   </View>
                 ) : levelWon ? (
-                  // Win State Layout
                   <View style={styles.winTextWrapper}>
                     <GameText
                       variant="label"
@@ -317,11 +287,9 @@ export const PlayConsole: React.FC<PlayConsoleProps> = ({
                     >
                       {formatCompactNumber(levelGoal)}
                     </Animated.Text>
-                    {/* Placeholder for spacing stability */}
                     <View style={{ height: 10 }} />
                   </View>
                 ) : (
-                  // Normal State Layout
                   <>
                     <GameText variant="labelSmall" color={COLORS.textMuted}>
                       ERREICHE
@@ -342,7 +310,7 @@ export const PlayConsole: React.FC<PlayConsoleProps> = ({
                 )}
               </View>
 
-              {/* Hide progress bar for shop and dice editor phases */}
+              {/* Progress Bar */}
               {phase !== "SHOP_MAIN" &&
                 phase !== "SHOP_PICK_UPGRADE" &&
                 phase !== "DICE_EDITOR_DIE" &&
@@ -353,7 +321,6 @@ export const PlayConsole: React.FC<PlayConsoleProps> = ({
                     <Animated.View
                       style={[styles.progressBarFill, progressStyle]}
                     >
-                      {/* Shine Effect */}
                       <Animated.View
                         style={[
                           StyleSheet.absoluteFill,
@@ -388,173 +355,37 @@ export const PlayConsole: React.FC<PlayConsoleProps> = ({
               />
             )}
           </View>
-
-          {/* Right Column: Hands and Rolls */}
-          <View style={styles.rightColumn}>
-            {/* Hands */}
-            <InsetSlot style={styles.statSlot}>
-              <Image
-                source={require("../../assets/icons/Glove.png")}
-                style={styles.iconSm}
-              />
-              <GameText variant="label" color={COLORS.textMuted}>
-                HÄNDE
-              </GameText>
-              <GameText variant="scoreboardSmall" color={COLORS.cyan}>
-                {handsRemaining}
-              </GameText>
-            </InsetSlot>
-
-            {/* Rolls */}
-            <InsetSlot style={styles.statSlot}>
-              <Image
-                source={require("../../assets/icons/die.png")}
-                style={styles.iconSm}
-              />
-              <GameText variant="label" color={COLORS.textMuted}>
-                WÜRFE
-              </GameText>
-              <GameText variant="scoreboardSmall" color={COLORS.gold}>
-                {rollsRemaining}
-              </GameText>
-            </InsetSlot>
-          </View>
         </View>
       </View>
-
-      {/* === Win Banner (Toast) === */}
-      {/* === Win Overlay (in Tray) === */}
-      {isWinAnimating && (
-        <View style={styles.winOverlay} pointerEvents="none">
-          <Animated.Text
-            entering={require("react-native-reanimated").FadeIn.duration(300)}
-            exiting={require("react-native-reanimated").FadeOut.duration(400)}
-            style={styles.bigWinText}
-          >
-            Geschafft!
-          </Animated.Text>
-        </View>
-      )}
-
-      {/* === Seam Divider (Header to Tray) === */}
-      <View style={styles.seamDivider}>
-        <View style={styles.seamHighlight} />
-        <View style={styles.seamShadow} />
-      </View>
-
-      {/* === TrayWindow Section (Dice Felt Inset) === */}
-      <View style={styles.trayWindow}>
-        <View style={styles.trayInset}>
-          {/* Always render the dice tray (green felt) */}
-          <View style={styles.trayContent}>{diceTray}</View>
-
-          {/* Overlay content on top of dice when present */}
-          {trayOverlay && (
-            <View style={styles.trayOverlayContainer} pointerEvents="box-none">
-              {trayOverlay}
-            </View>
-          )}
-
-          {/* Depth overlay */}
-          <View style={styles.depthOverlay} pointerEvents="none">
-            <LinearGradient
-              colors={["rgba(0,0,0,0.12)", "rgba(0,0,0,0.04)", "transparent"]}
-              locations={[0, 0.15, 0.4]}
-              start={{ x: 0.5, y: 0 }}
-              end={{ x: 0.5, y: 1 }}
-              style={styles.topShadow}
-            />
-            <LinearGradient
-              colors={["rgba(0,0,0,0.08)", "rgba(0,0,0,0.02)", "transparent"]}
-              locations={[0, 0.12, 0.3]}
-              start={{ x: 0, y: 0.5 }}
-              end={{ x: 1, y: 0.5 }}
-              style={styles.leftShadow}
-            />
-            <LinearGradient
-              colors={["rgba(0,0,0,0.08)", "rgba(0,0,0,0.02)", "transparent"]}
-              locations={[0, 0.12, 0.3]}
-              start={{ x: 1, y: 0.5 }}
-              end={{ x: 0, y: 0.5 }}
-              style={styles.rightShadow}
-            />
-          </View>
-        </View>
-      </View>
-
-      {/* === Seam Divider (Tray to ScorePanel) === */}
-      <View style={styles.seamDivider}>
-        <View style={styles.seamHighlight} />
-        <View style={styles.seamShadow} />
-      </View>
-
-      {/* === ScorePanel Section (Score + Items) === */}
-      <View style={styles.scorePanel}>{scorePanel}</View>
     </Surface>
   );
 };
 
-const INNER_RADIUS = DIMENSIONS.borderRadius - 4;
-
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    overflow: "hidden",
+    // This will be laid out by parent
   },
-
-  // === HUDHeader ===
   hudHeader: {
     paddingHorizontal: SPACING.sm,
     paddingVertical: SPACING.sm,
     gap: SPACING.xs,
   },
-
-  // 3-column header layout
   headerRow: {
     flexDirection: "row",
     gap: SPACING.xs,
-    alignItems: "stretch", // Ensure all columns stretch to match height
+    alignItems: "stretch",
   },
-
-  // Left Column: Level + Money
   leftColumn: {
     flex: 1,
+    maxWidth: "30%",
     gap: SPACING.xs,
-    alignItems: "stretch", // Stretch children to fill width
+    alignItems: "stretch",
   },
-
-  // Center Column: Goal
   centerColumn: {
-    flex: 1, // Equal width
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
   },
-  goalSlot: {
-    // paddingHorizontal: SPACING.md, <- REMOVED (handled by internal containers)
-    // paddingVertical: SPACING.xs,   <- REMOVED
-    alignItems: "stretch", // Stretch to allow full width bars
-    justifyContent: "space-between", // Distribute text and bar
-    gap: 0,
-    width: "100%",
-    flex: 1,
-    overflow: "hidden",
-  },
-  goalTextContainer: {
-    paddingHorizontal: SPACING.md,
-    paddingTop: SPACING.xs, // Top padding only
-    flex: 1, // Take available space above bar
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  // Right Column: Hands + Rolls
-  rightColumn: {
-    flex: 1,
-    gap: SPACING.xs,
-    alignItems: "stretch", // Stretch children to fill width
-  },
-
-  // Generic slot styling for stats
   statSlot: {
     flexDirection: "row",
     alignItems: "center",
@@ -563,119 +394,35 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.xs,
     justifyContent: "center",
   },
-
   iconSm: {
     width: DIMENSIONS.iconSize.sm,
     height: DIMENSIONS.iconSize.sm,
     resizeMode: "contain",
   },
-
-  // === Seam Dividers ===
-  seamDivider: {
-    height: 3,
-    flexDirection: "row",
-  },
-  seamHighlight: {
-    flex: 1,
-    height: 1,
-    backgroundColor: COLORS.overlays.whiteSubtle,
-  },
-  seamShadow: {
-    position: "absolute",
-    top: 1,
-    left: 0,
-    right: 0,
-    height: 2,
-    backgroundColor: COLORS.overlays.blackMild,
-  },
-
-  // === TrayWindow ===
-  trayWindow: {
-    flex: 1,
-  },
-  trayInset: {
-    flex: 1,
-    backgroundColor: COLORS.bg,
-    overflow: "hidden",
-    // Inset appearance (top edge shadow only, no side borders)
-  },
-  trayContent: {
+  goalSlot: {
+    alignItems: "stretch",
+    justifyContent: "space-between",
+    gap: 0,
+    width: "100%",
     flex: 1,
     overflow: "hidden",
   },
-  trayOverlayContainer: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: "center",
+  goalTextContainer: {
+    paddingHorizontal: SPACING.md,
+    paddingTop: SPACING.xs,
+    flex: 1,
     alignItems: "center",
+    justifyContent: "center",
   },
-  depthOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    overflow: "hidden",
-    pointerEvents: "none",
-  },
-  topShadow: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: "30%",
-  },
-  leftShadow: {
-    position: "absolute",
-    top: 0,
-    bottom: 0,
-    left: 0,
-    width: "15%",
-  },
-  rightShadow: {
-    position: "absolute",
-    top: 0,
-    bottom: 0,
-    right: 0,
-    width: "15%",
-  },
-
-  // === ScorePanel ===
-  scorePanel: {
-    paddingRight: SPACING.sm,
-    paddingLeft: SPACING.md,
-    paddingVertical: SPACING.sm,
-  },
-
-  // === Progress Bar ===
   progressBarTrack: {
     width: "100%",
     height: 2,
     backgroundColor: COLORS.overlays.blackMild,
-    // marginTop: SPACING.xs, <- REMOVE margin to sit flush bottom if desired, or keep small spacing from text
   },
   progressBarFill: {
     height: "100%",
     backgroundColor: COLORS.gold,
-    overflow: "hidden", // Clip shine
-  },
-
-  // === Win Banner ===
-  winOverlay: {
-    position: "absolute",
-    top: 100, // Starts at felt top
-    left: 0,
-    right: 0,
-    // Remove bottom to let it sit at top
-    justifyContent: "flex-start",
-    paddingTop: 60, // Push down slightly into top 3rd
-    alignItems: "center",
-    zIndex: 200,
-  },
-  bigWinText: {
-    fontFamily: "M6x11-Regular",
-    fontSize: 64, // Larger for impact
-    color: "#FFFFFF",
-    textAlign: "center",
-    textShadowColor: "rgba(0,0,0,0.5)",
-    textShadowOffset: { width: 0, height: 4 },
-    textShadowRadius: 8,
-    transform: [{ rotate: "-6deg" }, { translateX: -10 }], // Off-center feel
+    overflow: "hidden",
   },
   winTextWrapper: {
     alignItems: "center",
