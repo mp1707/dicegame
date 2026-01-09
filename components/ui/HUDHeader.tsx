@@ -363,11 +363,14 @@ export const HUDHeader: React.FC<HUDHeaderProps> = ({ style }) => {
 
 const styles = StyleSheet.create({
   container: {
-    // This will be laid out by parent
+    flex: 1, // Fill allocated height from parent
+    overflow: "hidden", // Prevent content overflow
   },
   hudHeader: {
+    flex: 1, // Fill container
+    justifyContent: "center",
     paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.sm,
+    paddingVertical: SPACING.xs, // Reduced from sm
     gap: SPACING.xs,
   },
   headerRow: {

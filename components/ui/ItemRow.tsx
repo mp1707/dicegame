@@ -87,9 +87,11 @@ export const ItemRow: React.FC<ItemRowProps> = ({ style }) => {
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1, // Fill allocated height from parent
+    overflow: "hidden", // Prevent content overflow
     justifyContent: "center",
-    paddingHorizontal: SPACING.md, // Add internal padding
-    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xxs, // Reduced padding
   },
   row: {
     flexDirection: "row",

@@ -323,8 +323,8 @@ export const ScorePanel = () => {
 
 const styles = StyleSheet.create({
   container: {
-    // Surface container
-    flex: 1,
+    flex: 1, // Fill allocated height from parent
+    overflow: "hidden", // Prevent content overflow
     paddingHorizontal: SPACING.md,
     justifyContent: "center",
   },

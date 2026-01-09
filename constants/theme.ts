@@ -282,8 +282,8 @@ export const LAYOUT = {
   // Section weights (percentages of usable height, total = 100)
   // Section weights (percentages of usable height, total = 100)
   weights: {
-    header: 8, // ~65pt on reference
-    itemRow: 9, // ~73pt - Added row
+    header: 10, // ~65pt on reference
+    itemRow: 8, // ~73pt - Added row
     diceTray: 25, // ~204pt - Reduced from 32
     scoreRow: 8, // ~65pt - Reduced from 12 (items moved out)
     scoringGrid: 28, // ~229pt - Reduced from 32
