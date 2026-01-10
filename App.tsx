@@ -13,6 +13,7 @@ import { SingleDiePreview } from "./components/SingleDiePreview";
 import { OverviewModal } from "./components/modals/OverviewModal";
 import { ItemDetailModal } from "./components/modals/ItemDetailModal";
 import { PhaseDeck } from "./components/ui-kit/flow";
+import { AnimatedBackground } from "./components/ui/AnimatedBackground";
 import { useGameStore } from "./store/gameStore";
 import { getShopItemById } from "./items";
 import { COLORS, SPACING } from "./constants/theme";
@@ -51,7 +52,9 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <LayoutProvider>
-        <AppContent />
+        <AnimatedBackground>
+          <AppContent />
+        </AnimatedBackground>
       </LayoutProvider>
     </SafeAreaProvider>
   );
@@ -197,7 +200,7 @@ const AppContent: React.FC = () => {
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: COLORS.bg,
+    backgroundColor: "transparent", // Let AnimatedBackground show through
   },
   vignette: {
     ...StyleSheet.absoluteFillObject,
@@ -212,9 +215,11 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
+    backgroundColor: "transparent",
   },
   mainContent: {
     flex: 1,
+    backgroundColor: "transparent",
   },
   diceTrayInner: {
     flex: 1,
