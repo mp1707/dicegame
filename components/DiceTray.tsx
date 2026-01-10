@@ -361,13 +361,12 @@ export const DiceTray = ({
           />
           {/* Physics always runs - pausing causes first-roll collision JIT lag */}
           <Physics gravity={[0, -18, 0]} updateLoop="independent">
-            {/* Floor - scaled based on container height */}
+            {/* Floor - pure physics collider, no mesh render overhead */}
             <RigidBody type="fixed" restitution={0.05} friction={1}>
-              {/* Floor mesh with transparent material - physics still works */}
-              <mesh position={[0, 0, 0]}>
-                <boxGeometry args={[floorWidth, 0.5, floorDepth]} />
-                <meshBasicMaterial transparent opacity={0} />
-              </mesh>
+              <CuboidCollider
+                args={[floorWidth / 2, 0.25, floorDepth / 2]}
+                position={[0, 0, 0]}
+              />
             </RigidBody>
 
             {/* Walls (Invisible colliders) - scaled to match floor */}
@@ -416,7 +415,8 @@ export const DiceTray = ({
             ))}
           </Physics>
 
-          <ContactShadows opacity={0.6} blur={2.5} />
+          {/* Only show shadows when dice are visible */}
+          {diceVisible && <ContactShadows opacity={0.6} blur={2.5} />}
           <PreloadedEnvironment />
         </Suspense>
       </Canvas>
