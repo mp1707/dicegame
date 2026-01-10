@@ -284,9 +284,9 @@ export const LAYOUT = {
   weights: {
     header: 10, // ~65pt on reference
     itemRow: 8, // ~73pt - Added row
-    diceTray: 25, // ~204pt - Reduced from 32
+    diceTray: 34, // ~278pt - Increased from 25
     scoreRow: 8, // ~65pt - Reduced from 12 (items moved out)
-    scoringGrid: 28, // ~229pt - Reduced from 32
+    scoringGrid: 19, // ~155pt - Reduced from 28
     footer: 10, // ~82pt - Reduced from 12
     // Sum: 8+9+25+8+28+10 = 88. 12% gap.
   },

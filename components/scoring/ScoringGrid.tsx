@@ -232,6 +232,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.screenPadding,
     justifyContent: "flex-start",
     gap: SPACING.md,
+    paddingBottom: SPACING.xl,
   },
   section: {
     width: "100%",
