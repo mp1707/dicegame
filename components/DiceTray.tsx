@@ -363,13 +363,10 @@ export const DiceTray = ({
           <Physics gravity={[0, -18, 0]} updateLoop="independent">
             {/* Floor - scaled based on container height */}
             <RigidBody type="fixed" restitution={0.05} friction={1}>
-              <mesh position={[0, 0, 0]} receiveShadow>
+              {/* Floor mesh with transparent material - physics still works */}
+              <mesh position={[0, 0, 0]}>
                 <boxGeometry args={[floorWidth, 0.5, floorDepth]} />
-                <meshStandardMaterial
-                  color={COLORS.feltGreen}
-                  roughness={0.65}
-                  metalness={0.1}
-                />
+                <meshBasicMaterial transparent opacity={0} />
               </mesh>
             </RigidBody>
 

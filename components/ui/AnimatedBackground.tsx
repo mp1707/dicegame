@@ -25,17 +25,17 @@ import { COLORS } from "../../constants/theme";
 const CONFIG = {
   // Main layer animation (primary parallax)
   main: {
-    cycleDuration: 150000, // 150 seconds full cycle
-    translateY: 120, // pixels of vertical drift
-    translateX: 20, // pixels of horizontal drift
+    cycleDuration: 60000, // 60 seconds full cycle (faster)
+    translateY: 200, // pixels of vertical drift (increased)
+    translateX: 60, // pixels of horizontal drift (increased)
   },
   // Secondary layer (slower, for depth)
   secondary: {
     speedRatio: 0.35, // 35% of main layer speed
-    opacity: 0.2, // Low opacity for subtle depth
+    opacity: 0.35, // Higher opacity for more visible parallax
   },
   // Image scaling (larger than screen to allow movement)
-  scale: 1.3, // 130% of screen size
+  scale: 1.5, // 150% of screen size (increased for more movement room)
 };
 
 interface AnimatedBackgroundProps {
