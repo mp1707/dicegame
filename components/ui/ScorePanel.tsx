@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { View, StyleSheet, Pressable, Image } from "react-native";
+import { View, StyleSheet } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -9,8 +9,8 @@ import Animated, {
   Easing,
   interpolateColor,
 } from "react-native-reanimated";
-import { COLORS, SPACING, DIMENSIONS } from "../../constants/theme";
-import { InsetSlot, Chip, Surface } from "../ui-kit";
+import { COLORS, SPACING } from "../../constants/theme";
+import { Chip, GlassPanel } from "../ui-kit";
 import { GameText } from "../shared";
 import { useGameStore } from "../../store/gameStore";
 import { CATEGORIES } from "../../utils/yahtzeeScoring";
@@ -19,7 +19,6 @@ import {
   triggerSelectionHaptic,
   triggerLightImpact,
 } from "../../utils/haptics";
-import { getShopItemById } from "../../items";
 
 // Maximum number of item slots
 const MAX_ITEM_SLOTS = 5;
@@ -240,7 +239,7 @@ export const ScorePanel = () => {
       : levelScore;
 
   return (
-    <Surface variant="panel" padding="none" style={styles.container}>
+    <View style={styles.container}>
       {/* Row 1: Score Row */}
       <View style={styles.row}>
         {/* Left: Hand Info */}
@@ -263,8 +262,8 @@ export const ScorePanel = () => {
           )}
         </View>
 
-        {/* Right: Score Display (inside InsetSlot for consistent styling) */}
-        <InsetSlot style={styles.scoreSlot}>
+        {/* Right: Score Display (inside GlassPanel for consistent styling) */}
+        <GlassPanel style={styles.scoreSlot}>
           {!selectedHandId ? (
             <GameText variant="scoreboardMedium" color={COLORS.text}>
               {levelScore}
@@ -315,9 +314,9 @@ export const ScorePanel = () => {
               </Animated.View>
             </View>
           )}
-        </InsetSlot>
+        </GlassPanel>
       </View>
-    </Surface>
+    </View>
   );
 };
 

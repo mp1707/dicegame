@@ -193,7 +193,7 @@ export const ScoringGrid = () => {
 
   return (
     <View style={styles.container}>
-      <View style={{ flex: 0.5 }} />a{/* Upper Section */}
+      {/* Upper Section */}
       <View style={styles.section}>
         <View style={styles.row}>
           {UPPER_HANDS.map((hand) => (
@@ -222,7 +222,6 @@ export const ScoringGrid = () => {
           ))}
         </View>
       </View>
-      <View style={{ flex: 0.5 }} />
     </View>
   );
 };

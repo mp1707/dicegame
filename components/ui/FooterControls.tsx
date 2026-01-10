@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useMemo } from "react";
 import { View, StyleSheet, Image } from "react-native";
 import { PrimaryButton, GameText } from "../shared";
-import { Surface, InsetSlot } from "../ui-kit";
+import { Surface, InsetSlot, GlassPanel } from "../ui-kit";
 import { COLORS, SPACING, DIMENSIONS, ANIMATION } from "../../constants/theme";
 import { useGameStore, GamePhase, ShopOfferType } from "../../store/gameStore";
 import {
@@ -456,22 +456,22 @@ export const FooterControls = () => {
         <View style={styles.ctaRow}>
           {/* Hands Display (Left) - Only show during gameplay phases */}
           {(phase === "LEVEL_PLAY" || phase === "LEVEL_RESULT") && (
-            <Surface variant="inset" style={styles.statPill} padding="none">
+            <GlassPanel style={styles.statPill}>
               <View style={styles.statContent}>
-                <Image
-                  source={require("../../assets/icons/Glove.png")}
-                  style={styles.iconSm}
-                />
-                <View>
-                  <GameText variant="labelSmall" color={COLORS.textMuted}>
-                    HÄNDE
-                  </GameText>
+                <GameText variant="labelSmall" color={COLORS.textMuted}>
+                  HÄNDE
+                </GameText>
+                <View style={styles.statRow}>
+                  <Image
+                    source={require("../../assets/icons/Glove.png")}
+                    style={styles.iconSm}
+                  />
                   <GameText variant="scoreboardSmall" color={COLORS.cyan}>
                     {handsRemaining}
                   </GameText>
                 </View>
               </View>
-            </Surface>
+            </GlassPanel>
           )}
 
           <Animated.View style={[styles.ctaArea, animatedStyle]}>
@@ -480,22 +480,22 @@ export const FooterControls = () => {
 
           {/* Rolls Display (Right) - Only show during gameplay phases */}
           {(phase === "LEVEL_PLAY" || phase === "LEVEL_RESULT") && (
-            <Surface variant="inset" style={styles.statPill} padding="none">
+            <GlassPanel style={styles.statPill}>
               <View style={styles.statContent}>
-                <Image
-                  source={require("../../assets/icons/die.png")}
-                  style={styles.iconSm}
-                />
-                <View>
-                  <GameText variant="labelSmall" color={COLORS.textMuted}>
-                    WÜRFE
-                  </GameText>
+                <GameText variant="labelSmall" color={COLORS.textMuted}>
+                  WÜRFE
+                </GameText>
+                <View style={styles.statRow}>
+                  <Image
+                    source={require("../../assets/icons/die.png")}
+                    style={styles.iconSm}
+                  />
                   <GameText variant="scoreboardSmall" color={COLORS.gold}>
                     {rollsRemaining}
                   </GameText>
                 </View>
               </View>
-            </Surface>
+            </GlassPanel>
           )}
         </View>
       </View>
@@ -543,22 +543,26 @@ const styles = StyleSheet.create({
   statPill: {
     flex: 1, // Side stats take 25% width each (1/4)
     height: "100%", // Match button height
-    maxHeight: 50,
     justifyContent: "center",
-    backgroundColor: COLORS.bg, // Darker background for inset
     borderRadius: DIMENSIONS.borderRadius,
   },
   statContent: {
-    flexDirection: "row",
+    flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    gap: SPACING.xs,
+    gap: SPACING.xxs,
     paddingHorizontal: SPACING.xs,
+  },
+  statRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACING.xs,
   },
   iconSm: {
     width: 20,
     height: 20,
     resizeMode: "contain",
+    marginLeft: -SPACING.xs,
   },
   dualButtonRow: {
     flex: 1,

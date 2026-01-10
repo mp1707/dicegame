@@ -1,6 +1,6 @@
 import { View, StyleSheet, Pressable, Image, ViewStyle } from "react-native";
 import { COLORS, SPACING, DIMENSIONS } from "../../constants/theme";
-import { InsetSlot, Surface } from "../ui-kit";
+import { GlassPanel } from "../ui-kit";
 import { GameText } from "../shared";
 import { useGameStore } from "../../store/gameStore";
 import { triggerSelectionHaptic } from "../../utils/haptics";
@@ -42,7 +42,7 @@ export const ItemRow: React.FC<ItemRowProps> = ({ style }) => {
   );
 
   return (
-    <Surface variant="panel" padding="none" style={[styles.container, style]}>
+    <View style={[styles.container, style]}>
       <View style={styles.row}>
         {/* Left: Label */}
         <View style={styles.leftSection}>
@@ -60,20 +60,20 @@ export const ItemRow: React.FC<ItemRowProps> = ({ style }) => {
             return (
               <View key={itemId || `empty-${index}`} style={styles.itemSlot}>
                 {isEmpty ? (
-                  <InsetSlot padding="none" style={styles.itemSlotInset}>
+                  <GlassPanel style={styles.itemSlotInset}>
                     {/* Empty slot placeholder */}
-                  </InsetSlot>
+                  </GlassPanel>
                 ) : (
                   <Pressable
                     onPress={() => handleItemPress(itemId)}
                     style={styles.itemPressable}
                   >
-                    <InsetSlot padding="none" style={styles.itemSlotInset}>
+                    <GlassPanel style={styles.itemSlotInset}>
                       <Image
                         source={ITEM_ICONS[itemId] || ITEM_ICONS.fokus}
                         style={styles.itemIcon}
                       />
-                    </InsetSlot>
+                    </GlassPanel>
                   </Pressable>
                 )}
               </View>
@@ -81,7 +81,7 @@ export const ItemRow: React.FC<ItemRowProps> = ({ style }) => {
           })}
         </View>
       </View>
-    </Surface>
+    </View>
   );
 };
 
@@ -91,7 +91,6 @@ const styles = StyleSheet.create({
     overflow: "hidden", // Prevent content overflow
     justifyContent: "center",
     paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xxs, // Reduced padding
   },
   row: {
     flexDirection: "row",

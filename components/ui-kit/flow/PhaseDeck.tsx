@@ -35,11 +35,10 @@ interface PhaseDeckProps {
  *
  * New Layout (Vertical Stack with gap):
  * 1. HUDHeader (Fixed height - Always Visible)
- * 2. ItemRow (Fixed height - Always Visible)
- * 3. Content Area (flex:1 - Phase-dependent)
- *    - LEVEL_PLAY: TrayWindow + ScorePanel + BottomPanel (ScoringGrid)
- *    - Other phases: BottomPanel only (takes full space)
- * 4. Footer (Fixed height - Always Visible)
+ * 2. Content Area (flex:1 - Phase-dependent)
+ *    - LEVEL_PLAY: ScorePanel + TrayWindow + ItemRow + BottomPanel (ScoringGrid)
+ *    - Other phases: ItemRow + BottomPanel only
+ * 3. Footer (Fixed height - Always Visible)
  */
 export const PhaseDeck: React.FC<PhaseDeckProps> = ({ diceTray }) => {
   const layout = useLayout();
@@ -69,7 +68,7 @@ export const PhaseDeck: React.FC<PhaseDeckProps> = ({ diceTray }) => {
   // Determine what to render in the main content area
   const renderContent = () => {
     if (isFullPlayLayout(phase)) {
-      // Full gameplay layout: Tray + ScorePanel + ScoringGrid
+      // Full gameplay layout: ScorePanel + Tray + ItemRow + ScoringGrid
       return (
         <View style={styles.playLayout}>
           {/* Scoring Row */}
@@ -82,6 +81,13 @@ export const PhaseDeck: React.FC<PhaseDeckProps> = ({ diceTray }) => {
             <TrayWindow overlay={trayOverlay}>{diceTray}</TrayWindow>
           </View>
 
+          {/* ItemRow */}
+          <View
+            style={[styles.sectionWrapper, { height: layout.itemRowHeight }]}
+          >
+            <ItemRow />
+          </View>
+
           {/* Bottom Panel (ScoringGrid) */}
           <View style={styles.bottomPanelFlex}>
             <BottomPanel />
@@ -91,10 +97,13 @@ export const PhaseDeck: React.FC<PhaseDeckProps> = ({ diceTray }) => {
     }
 
     // Simplified layout for all other phases
-    // BottomPanel takes the full available space
-    // Tray/ScorePanel are hidden - content components handle their own UI
+    // ItemRow + BottomPanel which takes the remaining space
     return (
       <View style={styles.bottomPanelFlex}>
+        {/* ItemRow (Always Visible) */}
+        <View style={[styles.sectionWrapper, { height: layout.itemRowHeight }]}>
+          <ItemRow />
+        </View>
         <BottomPanel />
       </View>
     );
@@ -107,15 +116,10 @@ export const PhaseDeck: React.FC<PhaseDeckProps> = ({ diceTray }) => {
         <HUDHeader />
       </View>
 
-      {/* 2. ItemRow (Fixed height - Always Visible) */}
-      <View style={[styles.sectionWrapper, { height: layout.itemRowHeight }]}>
-        <ItemRow />
-      </View>
-
-      {/* 3. Content Area (flex:1 - Phase-dependent) */}
+      {/* 2. Content Area (flex:1 - Phase-dependent) */}
       <View style={styles.contentBlock}>{renderContent()}</View>
 
-      {/* 4. Footer (Fixed height - Always Visible) */}
+      {/* 3. Footer (Fixed height - Always Visible) */}
       <View style={[styles.sectionWrapper, { height: layout.footerHeight }]}>
         <FooterControls />
       </View>
