@@ -72,14 +72,14 @@ export const PhaseDeck: React.FC<PhaseDeckProps> = ({ diceTray }) => {
       // Full gameplay layout: Tray + ScorePanel + ScoringGrid
       return (
         <View style={styles.playLayout}>
-          {/* Tray */}
-          <View style={{ height: layout.diceTrayHeight }}>
-            <TrayWindow overlay={trayOverlay}>{diceTray}</TrayWindow>
-          </View>
-
           {/* Scoring Row */}
           <View style={{ height: layout.scoreRowHeight }}>
             <ScorePanel />
+          </View>
+
+          {/* Tray */}
+          <View style={{ height: layout.diceTrayHeight }}>
+            <TrayWindow overlay={trayOverlay}>{diceTray}</TrayWindow>
           </View>
 
           {/* Bottom Panel (ScoringGrid) */}

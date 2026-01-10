@@ -25,17 +25,23 @@ import { COLORS } from "../../constants/theme";
 const CONFIG = {
   // Main layer animation (primary parallax)
   main: {
-    cycleDuration: 10000, // 25 seconds full cycle (much faster)
-    translateY: 350, // pixels of vertical drift (significantly increased)
-    translateX: 100, // pixels of horizontal drift (increased)
+    // Independent durations for X/Y to create organic, non-repeating paths
+    durationX: 23000,
+    durationY: 19000,
+    translateY: 80, // Reduced from 350 - extremely subtle drift
+    translateX: 60, // Reduced from 150
   },
   // Secondary layer (slower, for depth)
   secondary: {
-    speedRatio: 0.4, // speed relative to main layer
-    opacity: 0.6, // Higher opacity for more visible parallax
+    speedRatio: 1.6,
+    opacity: 0.5,
   },
-  // Image scaling (larger than screen to allow movement)
-  scale: 2.2, // 220% of screen size (increased for more movement room)
+  // Breathing animation (slow scale pulse)
+  breathing: {
+    duration: 15000,
+    minScale: 1.8,
+    maxScale: 2.1,
+  },
 };
 
 interface AnimatedBackgroundProps {
@@ -55,117 +61,91 @@ export const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
   const secondaryTranslateY = useSharedValue(0);
   const secondaryTranslateX = useSharedValue(0);
 
+  // Shared value for breathing scale
+  const breatheScale = useSharedValue(CONFIG.breathing.minScale);
+
   // Start animations on mount
   React.useEffect(() => {
-    const { cycleDuration, translateY, translateX } = CONFIG.main;
-    const halfCycle = cycleDuration / 2;
+    const { durationX, durationY, translateY, translateX } = CONFIG.main;
 
-    // Main layer: vertical drift (0 → -translateY → 0)
-    mainTranslateY.value = withRepeat(
-      withSequence(
-        withTiming(-translateY, {
-          duration: halfCycle,
-          easing: Easing.inOut(Easing.sin),
-        }),
-        withTiming(0, {
-          duration: halfCycle,
-          easing: Easing.inOut(Easing.sin),
-        })
-      ),
-      -1, // Infinite repeat
-      false
-    );
-
-    // Main layer: horizontal drift (0 → translateX → -translateX → 0)
-    mainTranslateX.value = withRepeat(
-      withSequence(
-        withTiming(translateX, {
-          duration: cycleDuration / 4,
-          easing: Easing.inOut(Easing.sin),
-        }),
-        withTiming(-translateX, {
-          duration: cycleDuration / 2,
-          easing: Easing.inOut(Easing.sin),
-        }),
-        withTiming(0, {
-          duration: cycleDuration / 4,
-          easing: Easing.inOut(Easing.sin),
-        })
-      ),
+    // Breathing (Scale) Animation
+    breatheScale.value = withRepeat(
+      withTiming(CONFIG.breathing.maxScale, {
+        duration: CONFIG.breathing.duration,
+        easing: Easing.inOut(Easing.sin),
+      }),
       -1,
-      false
+      true
     );
 
-    // Secondary layer (slower) - offset timing for parallax effect
-    const secondaryCycle = cycleDuration / CONFIG.secondary.speedRatio;
-    const secondaryHalf = secondaryCycle / 2;
+    // Main layer: vertical drift
+    mainTranslateY.value = withRepeat(
+      withTiming(translateY, {
+        duration: durationY,
+        easing: Easing.inOut(Easing.sin),
+      }),
+      -1,
+      true
+    );
+
+    // Main layer: horizontal drift
+    mainTranslateX.value = -translateX;
+    mainTranslateX.value = withRepeat(
+      withTiming(translateX, {
+        duration: durationX,
+        easing: Easing.inOut(Easing.sin),
+      }),
+      -1,
+      true
+    );
+
+    // Secondary layer (slower)
+    const secDurX = durationX * CONFIG.secondary.speedRatio;
+    const secDurY = durationY * CONFIG.secondary.speedRatio;
 
     secondaryTranslateY.value = withRepeat(
-      withSequence(
-        withTiming(-translateY * 0.7, {
-          duration: secondaryHalf,
-          easing: Easing.inOut(Easing.sin),
-        }),
-        withTiming(0, {
-          duration: secondaryHalf,
-          easing: Easing.inOut(Easing.sin),
-        })
-      ),
+      withTiming(-translateY * 0.7, {
+        duration: secDurY,
+        easing: Easing.inOut(Easing.sin),
+      }),
       -1,
-      false
+      true
     );
 
     secondaryTranslateX.value = withRepeat(
-      withSequence(
-        withTiming(-translateX * 0.5, {
-          duration: secondaryCycle / 4,
-          easing: Easing.inOut(Easing.sin),
-        }),
-        withTiming(translateX * 0.5, {
-          duration: secondaryCycle / 2,
-          easing: Easing.inOut(Easing.sin),
-        }),
-        withTiming(0, {
-          duration: secondaryCycle / 4,
-          easing: Easing.inOut(Easing.sin),
-        })
-      ),
+      withTiming(translateX * 0.5, {
+        duration: secDurX,
+        easing: Easing.inOut(Easing.sin),
+      }),
       -1,
-      false
+      true
     );
   }, []);
 
   // Animated styles for main layer
   const mainLayerStyle = useAnimatedStyle(() => ({
+    width: screenWidth * breatheScale.value,
+    height: screenHeight * breatheScale.value,
     transform: [
       { translateX: mainTranslateX.value },
       { translateY: mainTranslateY.value },
     ],
+    // Center the scaling
+    left: -(screenWidth * breatheScale.value - screenWidth) / 2,
+    top: -(screenHeight * breatheScale.value - screenHeight) / 2,
   }));
 
   // Animated styles for secondary layer
   const secondaryLayerStyle = useAnimatedStyle(() => ({
+    width: screenWidth * breatheScale.value,
+    height: screenHeight * breatheScale.value,
     transform: [
       { translateX: secondaryTranslateX.value },
       { translateY: secondaryTranslateY.value },
     ],
+    left: -(screenWidth * breatheScale.value - screenWidth) / 2,
+    top: -(screenHeight * breatheScale.value - screenHeight) / 2,
   }));
-
-  // Calculate scaled image dimensions
-  const scaledWidth = screenWidth * CONFIG.scale;
-  const scaledHeight = screenHeight * CONFIG.scale;
-
-  // Center offset (to keep image centered despite scaling)
-  const offsetX = (scaledWidth - screenWidth) / 2;
-  const offsetY = (scaledHeight - screenHeight) / 2;
-
-  const imageStyle = {
-    width: scaledWidth,
-    height: scaledHeight,
-    position: "absolute" as const,
-    left: -offsetX,
-    top: -offsetY,
-  };
 
   return (
     <View style={styles.container}>
@@ -174,7 +154,7 @@ export const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
         {/* Main parallax layer */}
         <Animated.Image
           source={require("../../assets/purplegradient.png")}
-          style={[imageStyle, mainLayerStyle]}
+          style={[styles.absoluteImage, mainLayerStyle]}
           resizeMode="cover"
         />
 
@@ -182,71 +162,58 @@ export const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
         <Animated.Image
           source={require("../../assets/purplegradient.png")}
           style={[
-            imageStyle,
+            styles.absoluteImage,
             secondaryLayerStyle,
             { opacity: CONFIG.secondary.opacity },
           ]}
           resizeMode="cover"
         />
 
-        {/* Radial vignette overlay */}
+        {/* Vignette overlay - Deep Purple (Theme Background Dark) */}
+        {/* Using rgba(26, 21, 40, alpha) instead of black to avoid blue tint */}
         <View style={styles.vignetteContainer}>
-          {/* Top edge darkening */}
+          {/* Top edge - Subtle gradient down (35% height) */}
           <LinearGradient
-            colors={["rgba(0,0,0,0.)", "transparent"]}
+            colors={[
+              "rgba(26, 21, 40, 0.5)",
+              "rgba(26, 21, 40, 0.2)",
+              "transparent",
+            ]}
             style={styles.vignetteTop}
-            start={{ x: 0.5, y: 0 }}
-            end={{ x: 0.5, y: 1 }}
           />
 
-          {/* Bottom edge darkening */}
+          {/* Bottom edge - Subtle gradient up (35% height) */}
           <LinearGradient
-            colors={["transparent", "rgba(0,0,0,0.)"]}
+            colors={[
+              "transparent",
+              "rgba(26, 21, 40, 0.2)",
+              "rgba(26, 21, 40, 0.6)",
+            ]}
             style={styles.vignetteBottom}
-            start={{ x: 0.5, y: 0 }}
-            end={{ x: 0.5, y: 1 }}
           />
 
-          {/* Left edge darkening */}
+          {/* Left edge - Subtle gradient right (20% width) */}
           <LinearGradient
-            colors={["rgba(0,0,0,0.4)", "transparent"]}
+            colors={[
+              "rgba(26, 21, 40, 0.5)",
+              "rgba(26, 21, 40, 0.15)",
+              "transparent",
+            ]}
             style={styles.vignetteLeft}
             start={{ x: 0, y: 0.5 }}
             end={{ x: 1, y: 0.5 }}
           />
 
-          {/* Right edge darkening */}
+          {/* Right edge - Subtle gradient left (20% width) */}
           <LinearGradient
-            colors={["transparent", "rgba(0,0,0,0.4)"]}
+            colors={[
+              "transparent",
+              "rgba(26, 21, 40, 0.15)",
+              "rgba(26, 21, 40, 0.5)",
+            ]}
             style={styles.vignetteRight}
             start={{ x: 0, y: 0.5 }}
             end={{ x: 1, y: 0.5 }}
-          />
-
-          {/* Corner darkening overlays */}
-          <LinearGradient
-            colors={["rgba(0,0,0,0.35)", "transparent"]}
-            style={styles.cornerTopLeft}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          />
-          <LinearGradient
-            colors={["rgba(0,0,0,0.35)", "transparent"]}
-            style={styles.cornerTopRight}
-            start={{ x: 1, y: 0 }}
-            end={{ x: 0, y: 1 }}
-          />
-          <LinearGradient
-            colors={["rgba(0,0,0,0.35)", "transparent"]}
-            style={styles.cornerBottomLeft}
-            start={{ x: 0, y: 1 }}
-            end={{ x: 1, y: 0 }}
-          />
-          <LinearGradient
-            colors={["rgba(0,0,0,0.35)", "transparent"]}
-            style={styles.cornerBottomRight}
-            start={{ x: 1, y: 1 }}
-            end={{ x: 0, y: 0 }}
           />
         </View>
       </View>
@@ -260,11 +227,15 @@ export const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.bg, // Fallback color
+    backgroundColor: COLORS.bg,
   },
   backgroundContainer: {
     ...StyleSheet.absoluteFillObject,
     overflow: "hidden",
+  },
+  absoluteImage: {
+    position: "absolute",
+    // Width/Height/Top/Left handled by animated styles
   },
   childrenContainer: {
     ...StyleSheet.absoluteFillObject,
@@ -277,56 +248,28 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: "25%",
+    height: "35%", // Increased from 25% for smoother fade
   },
   vignetteBottom: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    height: "25%",
+    height: "35%",
   },
   vignetteLeft: {
     position: "absolute",
     top: 0,
     left: 0,
     bottom: 0,
-    width: "15%",
+    width: "20%",
   },
   vignetteRight: {
     position: "absolute",
     top: 0,
     right: 0,
     bottom: 0,
-    width: "15%",
-  },
-  cornerTopLeft: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: "50%",
-    height: "20%",
-  },
-  cornerTopRight: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    width: "50%",
-    height: "20%",
-  },
-  cornerBottomLeft: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    width: "50%",
-    height: "20%",
-  },
-  cornerBottomRight: {
-    position: "absolute",
-    bottom: 0,
-    right: 0,
-    width: "50%",
-    height: "20%",
+    width: "20%",
   },
 });
 

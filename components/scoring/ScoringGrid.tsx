@@ -193,15 +193,8 @@ export const ScoringGrid = () => {
 
   return (
     <View style={styles.container}>
-      {/* Upper Section */}
+      <View style={{ flex: 0.5 }} />a{/* Upper Section */}
       <View style={styles.section}>
-        <GameText
-          variant="labelSmall"
-          color={COLORS.textMuted}
-          style={styles.header}
-        >
-          OBEN
-        </GameText>
         <View style={styles.row}>
           {UPPER_HANDS.map((hand) => (
             <View key={hand.id} style={styles.slotWrapper}>
@@ -216,13 +209,6 @@ export const ScoringGrid = () => {
       </View>
       {/* Lower Section */}
       <View style={styles.section}>
-        <GameText
-          variant="labelSmall"
-          color={COLORS.textMuted}
-          style={styles.header}
-        >
-          UNTEN
-        </GameText>
         <View style={styles.row}>
           {LOWER_HANDS.map((hand) => (
             <View key={hand.id} style={styles.slotWrapper}>
