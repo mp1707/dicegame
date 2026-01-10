@@ -25,17 +25,17 @@ import { COLORS } from "../../constants/theme";
 const CONFIG = {
   // Main layer animation (primary parallax)
   main: {
-    cycleDuration: 60000, // 60 seconds full cycle (faster)
-    translateY: 200, // pixels of vertical drift (increased)
-    translateX: 60, // pixels of horizontal drift (increased)
+    cycleDuration: 10000, // 25 seconds full cycle (much faster)
+    translateY: 350, // pixels of vertical drift (significantly increased)
+    translateX: 100, // pixels of horizontal drift (increased)
   },
   // Secondary layer (slower, for depth)
   secondary: {
-    speedRatio: 0.35, // 35% of main layer speed
-    opacity: 0.35, // Higher opacity for more visible parallax
+    speedRatio: 0.4, // speed relative to main layer
+    opacity: 0.6, // Higher opacity for more visible parallax
   },
   // Image scaling (larger than screen to allow movement)
-  scale: 1.5, // 150% of screen size (increased for more movement room)
+  scale: 2.2, // 220% of screen size (increased for more movement room)
 };
 
 interface AnimatedBackgroundProps {
@@ -193,7 +193,7 @@ export const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
         <View style={styles.vignetteContainer}>
           {/* Top edge darkening */}
           <LinearGradient
-            colors={["rgba(0,0,0,0.5)", "transparent"]}
+            colors={["rgba(0,0,0,0.)", "transparent"]}
             style={styles.vignetteTop}
             start={{ x: 0.5, y: 0 }}
             end={{ x: 0.5, y: 1 }}
@@ -201,7 +201,7 @@ export const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
 
           {/* Bottom edge darkening */}
           <LinearGradient
-            colors={["transparent", "rgba(0,0,0,0.5)"]}
+            colors={["transparent", "rgba(0,0,0,0.)"]}
             style={styles.vignetteBottom}
             start={{ x: 0.5, y: 0 }}
             end={{ x: 0.5, y: 1 }}
@@ -304,28 +304,28 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 0,
     left: 0,
-    width: "55%",
+    width: "50%",
     height: "20%",
   },
   cornerTopRight: {
     position: "absolute",
     top: 0,
     right: 0,
-    width: "55%",
+    width: "50%",
     height: "20%",
   },
   cornerBottomLeft: {
     position: "absolute",
     bottom: 0,
     left: 0,
-    width: "30%",
+    width: "50%",
     height: "20%",
   },
   cornerBottomRight: {
     position: "absolute",
     bottom: 0,
     right: 0,
-    width: "30%",
+    width: "50%",
     height: "20%",
   },
 });
