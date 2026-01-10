@@ -268,6 +268,12 @@ export const SPACING = {
   iconGapSmall: 4,
   iconGapMedium: 6,
   iconGapLarge: 8,
+
+  // Strip-specific spacing (compact)
+  stripPaddingV: 6, // Tighter vertical padding for strip
+  stripPaddingH: 8, // Horizontal padding inside strip
+  stripElevatedGap: 6, // Gap between elevated panels inside strip
+  stripInsetGap: 4, // Gap between stripInset items
 } as const;
 
 // Layout System - Stable game-like proportions (like Balatro)
@@ -280,15 +286,15 @@ export const LAYOUT = {
   },
 
   // Section weights (percentages of usable height, total = 100)
-  // Section weights (percentages of usable height, total = 100)
+  // TopMenuStrip replaces header + scoreRow (both integrated)
   weights: {
-    header: 10, // ~65pt on reference
-    itemRow: 8, // ~73pt - Added row
-    diceTray: 34, // ~278pt - Increased from 25
-    scoreRow: 8, // ~65pt - Reduced from 12 (items moved out)
-    scoringGrid: 19, // ~155pt - Reduced from 28
-    footer: 10, // ~82pt - Reduced from 12
-    // Sum: 8+9+25+8+28+10 = 88. 12% gap.
+    topStrip: 14, // ~115pt - Increased for Level/Money/Punkte/Hände/Würfe/Goal
+    itemRow: 6, // ~49pt - Compact row for items + consumables
+    diceTray: 32, // ~262pt - Slightly reduced
+    // scoreRow removed - integrated into topStrip
+    scoringGrid: 19, // ~155pt - Unchanged
+    footer: 10, // ~82pt - Unchanged
+    // Sum: 14+6+32+19+10 = 81%. 19% gap for breathing room.
   },
 
   // Scoring grid internal distribution (ratios within scoringGrid height)

@@ -78,6 +78,20 @@ FACE_NORMALS.forEach(({ face, normal }) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Pre-allocated objects for useFrame (prevents GC pressure)
+// ─────────────────────────────────────────────────────────────────────────────
+const POOLED = {
+  // For detectFrontFace
+  cameraDir: new THREE.Vector3(0, 0, 1),
+  tempWorldNormal: new THREE.Vector3(),
+  // For rotation (handlePointerMove + auto-rotation)
+  rotateY: new THREE.Quaternion(),
+  rotateX: new THREE.Quaternion(),
+  axisY: new THREE.Vector3(0, 1, 0),
+  axisX: new THREE.Vector3(1, 0, 0),
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Pip Component with Color Support
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -99,6 +113,16 @@ const Pip: React.FC<PipProps> = ({
   const meshRef = useRef<THREE.Mesh>(null);
   const materialRef = useRef<THREE.MeshStandardMaterial>(null);
   const timeRef = useRef(0);
+
+  // Cache parsed RGB values to avoid string parsing every frame
+  const parsedPreviewColor = useMemo(() => {
+    if (!previewColor) return null;
+    return {
+      r: parseInt(previewColor.slice(1, 3), 16) / 255,
+      g: parseInt(previewColor.slice(3, 5), 16) / 255,
+      b: parseInt(previewColor.slice(5, 7), 16) / 255,
+    };
+  }, [previewColor]);
 
   // Reset animation time when enhancement triggers
   React.useEffect(() => {
@@ -146,12 +170,11 @@ const Pip: React.FC<PipProps> = ({
     if (!meshRef.current || !materialRef.current) return;
 
     // Preview pip: continuous color pulse
-    if (isPreview && previewColor) {
+    if (isPreview && parsedPreviewColor) {
       timeRef.current += delta;
       const pulse = (Math.sin(timeRef.current * 8) + 1) / 2; // 0 to 1
-      const r = parseInt(previewColor.slice(1, 3), 16) / 255;
-      const g = parseInt(previewColor.slice(3, 5), 16) / 255;
-      const b = parseInt(previewColor.slice(5, 7), 16) / 255;
+      // Use cached RGB values to avoid parsing every frame
+      const { r, g, b } = parsedPreviewColor;
       materialRef.current.color.setRGB(r * pulse, g * pulse, b * pulse);
       materialRef.current.emissive.setRGB(r * pulse, g * pulse, b * pulse);
       materialRef.current.emissiveIntensity = 0.6 * pulse;
@@ -313,12 +336,13 @@ const InteractiveDie = React.forwardRef<THREE.Group, InteractiveDieProps>(
     }, [selectedFace, isInteractive]);
 
     const detectFrontFace = (quaternion: THREE.Quaternion): number => {
-      const cameraDirection = new THREE.Vector3(0, 0, 1);
+      // Use pre-allocated objects to avoid GC pressure
       let bestDot = -1;
       let bestFace = 1;
       FACE_NORMALS.forEach(({ face, normal }) => {
-        const worldNormal = normal.clone().applyQuaternion(quaternion);
-        const dot = worldNormal.dot(cameraDirection);
+        // Reuse pooled vector instead of clone()
+        POOLED.tempWorldNormal.copy(normal).applyQuaternion(quaternion);
+        const dot = POOLED.tempWorldNormal.dot(POOLED.cameraDir);
         if (dot > bestDot) {
           bestDot = dot;
           bestFace = face;
@@ -343,17 +367,12 @@ const InteractiveDie = React.forwardRef<THREE.Group, InteractiveDieProps>(
       const deltaX = (e.point.x - previousPointer.current.x) * 3;
       const deltaY = (e.point.y - previousPointer.current.y) * 3;
 
-      const rotateY = new THREE.Quaternion().setFromAxisAngle(
-        new THREE.Vector3(0, 1, 0),
-        deltaX
-      );
-      const rotateX = new THREE.Quaternion().setFromAxisAngle(
-        new THREE.Vector3(1, 0, 0),
-        -deltaY
-      );
+      // Reuse pooled quaternions and vectors to avoid allocations
+      POOLED.rotateY.setFromAxisAngle(POOLED.axisY, deltaX);
+      POOLED.rotateX.setFromAxisAngle(POOLED.axisX, -deltaY);
 
-      localRef.current.quaternion.premultiply(rotateY);
-      localRef.current.quaternion.premultiply(rotateX);
+      localRef.current.quaternion.premultiply(POOLED.rotateY);
+      localRef.current.quaternion.premultiply(POOLED.rotateX);
 
       previousPointer.current = { x: e.point.x, y: e.point.y };
     };
@@ -396,19 +415,12 @@ const InteractiveDie = React.forwardRef<THREE.Group, InteractiveDieProps>(
         !isAutoRotating.current &&
         selectedFace === null
       ) {
-        // Multi-axis continuous rotation using quaternion
-        // Rotate around both Y and a tilted X axis for full face display
-        const rotY = new THREE.Quaternion().setFromAxisAngle(
-          new THREE.Vector3(0, 1, 0),
-          delta * 0.25 // Slow Y rotation
-        );
-        const rotX = new THREE.Quaternion().setFromAxisAngle(
-          new THREE.Vector3(1, 0, 0),
-          delta * 0.15 // Slower X rotation
-        );
+        // Reuse pooled quaternions and vectors to avoid GC pressure
+        POOLED.rotateY.setFromAxisAngle(POOLED.axisY, delta * 0.25);
+        POOLED.rotateX.setFromAxisAngle(POOLED.axisX, delta * 0.15);
         // Apply rotations
-        localRef.current.quaternion.premultiply(rotY);
-        localRef.current.quaternion.premultiply(rotX);
+        localRef.current.quaternion.premultiply(POOLED.rotateY);
+        localRef.current.quaternion.premultiply(POOLED.rotateX);
       }
 
       // Detect front face when snapping completes
@@ -604,6 +616,18 @@ const DiceScene: React.FC<DiceSceneProps> = ({
     const targetY = 0;
     const targetZ = 0.5;
     const targetScale = 1.3;
+
+    // Early exit if already at target (prevents unnecessary work when settled)
+    const positionSettled =
+      Math.abs(group.position.x - targetX) < 0.001 &&
+      Math.abs(group.position.y - targetY) < 0.001 &&
+      Math.abs(group.position.z - targetZ) < 0.001 &&
+      Math.abs(entranceY.current) < 0.001;
+    const scaleSettled = Math.abs(group.scale.x - targetScale) < 0.001;
+
+    if (positionSettled && scaleSettled && group.visible) {
+      return; // Already settled, skip lerping
+    }
 
     // Entrance animation (drop from above with bounce)
     const lerpSpeed = 5 * delta;

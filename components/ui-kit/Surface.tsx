@@ -2,7 +2,14 @@ import React from "react";
 import { View, ViewStyle, StyleSheet, StyleProp } from "react-native";
 import { COLORS, DIMENSIONS, SPACING } from "../../constants/theme";
 
-export type SurfaceVariant = "panel" | "inset" | "chip" | "overlay";
+export type SurfaceVariant =
+  | "panel"
+  | "inset"
+  | "chip"
+  | "overlay"
+  | "strip"
+  | "elevated"
+  | "stripInset";
 
 export type PaddingPreset = "none" | "sm" | "md" | "lg";
 
@@ -88,5 +95,38 @@ const VARIANT_STYLES = StyleSheet.create({
     borderRadius: DIMENSIONS.borderRadius,
     borderWidth: DIMENSIONS.borderWidthThin,
     borderColor: COLORS.overlays.whiteMild,
+  },
+  // Balatro-style strip: Full-bleed background, NO border radius, light seams
+  strip: {
+    backgroundColor: COLORS.bg,
+    borderRadius: 0, // Full bleed - no rounded corners
+    // Light seam lines (like Balatro's left data strip)
+    borderTopWidth: DIMENSIONS.borderWidthThin,
+    borderTopColor: COLORS.overlays.whiteMild,
+    borderBottomWidth: DIMENSIONS.borderWidthThin,
+    borderBottomColor: COLORS.overlays.blackMedium,
+    // No left/right borders
+    borderLeftWidth: 0,
+    borderRightWidth: 0,
+  },
+  // Elevated panel inside strip: Lighter color, rounded corners
+  elevated: {
+    backgroundColor: COLORS.surface,
+    borderRadius: DIMENSIONS.borderRadius,
+    borderWidth: DIMENSIONS.borderWidthThin,
+    borderColor: COLORS.overlays.whiteMild,
+    // Subtle top highlight
+    borderTopWidth: DIMENSIONS.borderWidthThin,
+    borderTopColor: COLORS.overlays.whiteMedium,
+    borderBottomWidth: DIMENSIONS.borderWidthThin,
+    borderBottomColor: COLORS.overlays.blackSubtle,
+  },
+  // Flat inset inside elevated: Same color as strip, NOT recessed
+  stripInset: {
+    backgroundColor: COLORS.bg,
+    borderRadius: DIMENSIONS.borderRadiusSmall,
+    borderWidth: DIMENSIONS.borderWidthThin,
+    borderColor: COLORS.overlays.blackSubtle,
+    // Flat appearance - no recessed shadow effect
   },
 });

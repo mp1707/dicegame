@@ -16,6 +16,7 @@ import Animated, {
   withRepeat,
   withTiming,
   Easing,
+  cancelAnimation,
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import { COLORS } from "../../constants/theme";
@@ -119,6 +120,15 @@ export const AnimatedBackground: React.FC<AnimatedBackgroundProps> = ({
       -1,
       true
     );
+
+    // Cleanup: Cancel all animations on unmount to prevent CPU drain
+    return () => {
+      cancelAnimation(breatheScale);
+      cancelAnimation(mainTranslateY);
+      cancelAnimation(mainTranslateX);
+      cancelAnimation(secondaryTranslateY);
+      cancelAnimation(secondaryTranslateX);
+    };
   }, []);
 
   // Animated styles for main layer

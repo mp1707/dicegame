@@ -5,10 +5,9 @@ import { SPACING } from "../../../constants/theme";
 import { useGameStore, GamePhase } from "../../../store/gameStore";
 
 // Import components
-import { HUDHeader } from "../../ui/HUDHeader";
+import { TopMenuStrip } from "../../ui/TopMenuStrip";
 import { ItemRow } from "../../ui/ItemRow";
 import { TrayWindow } from "../../ui/TrayWindow";
-import { ScorePanel } from "../../ui/ScorePanel";
 import { BottomPanel } from "../../ui/BottomPanel";
 import { FooterControls } from "../../ui/FooterControls";
 import { CashoutTrayOverlay } from "../../ui/CashoutTrayOverlay";
@@ -33,10 +32,10 @@ interface PhaseDeckProps {
 /**
  * PhaseDeck - Orchestrator for the game layout
  *
- * New Layout (Vertical Stack with gap):
- * 1. HUDHeader (Fixed height - Always Visible)
+ * Layout (Vertical Stack with gap):
+ * 1. TopMenuStrip (Fixed height - Always Visible) - Level/Money/Score/Hands/Rolls/Goal
  * 2. Content Area (flex:1 - Phase-dependent)
- *    - LEVEL_PLAY: ScorePanel + TrayWindow + ItemRow + BottomPanel (ScoringGrid)
+ *    - LEVEL_PLAY: TrayWindow + ItemRow + BottomPanel (ScoringGrid)
  *    - Other phases: ItemRow + BottomPanel only
  * 3. Footer (Fixed height - Always Visible)
  */
@@ -68,14 +67,9 @@ export const PhaseDeck: React.FC<PhaseDeckProps> = ({ diceTray }) => {
   // Determine what to render in the main content area
   const renderContent = () => {
     if (isFullPlayLayout(phase)) {
-      // Full gameplay layout: ScorePanel + Tray + ItemRow + ScoringGrid
+      // Full gameplay layout: Tray + ItemRow + ScoringGrid (ScorePanel is now in TopMenuStrip)
       return (
         <View style={styles.playLayout}>
-          {/* Scoring Row */}
-          <View style={{ height: layout.scoreRowHeight }}>
-            <ScorePanel />
-          </View>
-
           {/* Tray */}
           <View style={{ height: layout.diceTrayHeight }}>
             <TrayWindow overlay={trayOverlay}>{diceTray}</TrayWindow>
@@ -111,9 +105,9 @@ export const PhaseDeck: React.FC<PhaseDeckProps> = ({ diceTray }) => {
 
   return (
     <View style={styles.container}>
-      {/* 1. Header (Fixed height - Always Visible) */}
-      <View style={[styles.sectionWrapper, { height: layout.headerHeight }]}>
-        <HUDHeader />
+      {/* 1. TopMenuStrip (Fixed height - Always Visible) */}
+      <View style={[styles.sectionWrapper, { height: layout.topStripHeight }]}>
+        <TopMenuStrip />
       </View>
 
       {/* 2. Content Area (flex:1 - Phase-dependent) */}

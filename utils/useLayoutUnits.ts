@@ -14,10 +14,10 @@ import { LAYOUT } from "../constants/theme";
 
 export interface LayoutUnits {
   // Computed section heights (in points)
-  headerHeight: number;
+  topStripHeight: number; // Renamed from headerHeight - contains Level/Money/Score/Hands/Rolls/Goal
   itemRowHeight: number;
   diceTrayHeight: number;
-  scoreRowHeight: number;
+  // scoreRowHeight removed - integrated into topStrip
   scoringGridHeight: number;
   footerHeight: number;
 
@@ -62,10 +62,10 @@ export const useLayoutUnits = (): LayoutUnits => {
 
   // Calculate section heights from weights
   const { weights, scoring } = LAYOUT;
-  const headerHeight = unit * weights.header;
-  const itemRowHeight = unit * weights.itemRow; // Added
+  const topStripHeight = unit * weights.topStrip; // Renamed from headerHeight
+  const itemRowHeight = unit * weights.itemRow;
   const diceTrayHeight = unit * weights.diceTray;
-  const scoreRowHeight = unit * weights.scoreRow;
+  // scoreRowHeight removed - integrated into topStrip
   const scoringGridHeight = unit * weights.scoringGrid;
   const footerHeight = unit * weights.footer;
 
@@ -83,10 +83,10 @@ export const useLayoutUnits = (): LayoutUnits => {
   return useMemo(
     () => ({
       // Section heights
-      headerHeight,
+      topStripHeight, // Renamed from headerHeight
       itemRowHeight,
       diceTrayHeight,
-      scoreRowHeight,
+      // scoreRowHeight removed - integrated into topStrip
       scoringGridHeight,
       footerHeight,
 
@@ -112,10 +112,9 @@ export const useLayoutUnits = (): LayoutUnits => {
       },
     }),
     [
-      headerHeight,
+      topStripHeight,
       itemRowHeight,
       diceTrayHeight,
-      scoreRowHeight,
       scoringGridHeight,
       footerHeight,
       upperSlotHeight,
