@@ -17,6 +17,6 @@ export { TrayOverlay } from "./TrayOverlay";
 export { GlassPanel } from "./GlassPanel";
 
 export { PixelSurface } from "./PixelSurface";
-export type { PixelSurfaceColor, PixelSurfacePadding } from "./PixelSurface";
+export type { PixelSurfacePadding } from "./PixelSurface";
 
 // Flow components (PhaseDeck) - will be exported from ./flow

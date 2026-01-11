@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useMemo } from "react";
 import { View, StyleSheet, Image } from "react-native";
-import { PrimaryButton, GameText } from "../shared";
+import { GameText, Button } from "../shared";
+import { FooterButton } from "./FooterButton";
 import { Surface, InsetSlot, GlassPanel } from "../ui-kit";
 import { COLORS, SPACING, DIMENSIONS, ANIMATION } from "../../constants/theme";
 import { useGameStore, GamePhase, ShopOfferType } from "../../store/gameStore";
@@ -151,8 +152,8 @@ export const FooterControls = () => {
     }
   }, [phase]);
 
-  // Button height is ~55% of footer height (proportional to layout)
-  const buttonHeight = Math.max(44, layout.footerHeight * 0.55);
+  // Button height is ~65% of footer height (proportional to layout)
+  const buttonHeight = Math.max(44, layout.footerHeight * 0.65);
 
   const canRoll =
     rollsRemaining > 0 &&
@@ -230,12 +231,11 @@ export const FooterControls = () => {
     // WIN/LOSE screens - New Run button
     if (phase === "WIN_SCREEN" || phase === "LOSE_SCREEN") {
       return (
-        <PrimaryButton
+        <FooterButton
           onPress={handleNewRun}
-          label="NEUER RUN"
-          variant={phase === "WIN_SCREEN" ? "mint" : "coral"}
-          compact
+          activeColor={phase === "WIN_SCREEN" ? COLORS.mint : COLORS.coral}
           style={buttonStyle}
+          label="NEUER RUN"
         />
       );
     }
@@ -245,20 +245,20 @@ export const FooterControls = () => {
       const canAdvance = selectedEditorDie !== null;
       return (
         <View style={styles.dualButtonRow}>
-          <PrimaryButton
+          <FooterButton
             onPress={handleCloseDiceEditor}
+            activeColor={COLORS.cyan}
+            style={[buttonStyle, styles.halfButton]}
             label="ZURÜCK"
-            variant="cyan"
-            compact
-            style={[buttonStyle, styles.halfButton]}
           />
-          <PrimaryButton
+          <FooterButton
             onPress={handleAdvanceToFaceEditor}
-            label="WEITER"
-            variant={pendingUpgradeType === "points" ? "cyan" : "coral"}
+            activeColor={
+              pendingUpgradeType === "points" ? COLORS.cyan : COLORS.coral
+            }
             disabled={!canAdvance}
-            compact
             style={[buttonStyle, styles.halfButton]}
+            label="WEITER"
           />
         </View>
       );
@@ -276,21 +276,23 @@ export const FooterControls = () => {
         );
       return (
         <View style={styles.dualButtonRow}>
-          <PrimaryButton
-            onPress={handleBackFromFaceEditor}
-            label="ZURÜCK"
-            variant="cyan"
-            compact
-            style={[buttonStyle, styles.halfButton]}
-          />
-          <PrimaryButton
-            onPress={handleApplyDiceUpgrade}
-            label="VERBESSERN"
-            variant={pendingUpgradeType === "points" ? "cyan" : "coral"}
-            disabled={!canEnhance}
-            compact
-            style={[buttonStyle, styles.halfButton]}
-          />
+          <View style={styles.dualButtonRow}>
+            <FooterButton
+              onPress={handleBackFromFaceEditor}
+              activeColor={COLORS.cyan}
+              style={[buttonStyle, styles.halfButton]}
+              label="ZURÜCK"
+            />
+            <FooterButton
+              onPress={handleApplyDiceUpgrade}
+              activeColor={
+                pendingUpgradeType === "points" ? COLORS.cyan : COLORS.coral
+              }
+              disabled={!canEnhance}
+              style={[buttonStyle, styles.halfButton]}
+              label="VERBESSERN"
+            />
+          </View>
         </View>
       );
     }
@@ -300,12 +302,11 @@ export const FooterControls = () => {
       // Show purchase CTA if offer is selected and affordable
       if (selectedShopOffer && selectedOfferInfo?.canAfford) {
         return (
-          <PrimaryButton
+          <FooterButton
             onPress={handlePurchaseOffer}
-            label={`Kaufen – ${selectedOfferInfo.price} Münzen`}
-            variant="mint"
-            compact
+            activeColor={COLORS.mint}
             style={buttonStyle}
+            label={`Kaufen – ${selectedOfferInfo.price} Münzen`}
           />
         );
       }
@@ -316,24 +317,22 @@ export const FooterControls = () => {
         !selectedOfferInfo.canAfford
       ) {
         return (
-          <PrimaryButton
+          <FooterButton
             onPress={() => {}}
-            label={`Kaufen – ${selectedOfferInfo.price} Münzen`}
-            variant="coral"
+            activeColor={COLORS.coral}
             disabled
-            compact
             style={buttonStyle}
+            label={`Kaufen – ${selectedOfferInfo.price} Münzen`}
           />
         );
       }
       // Default: Next Level button
       return (
-        <PrimaryButton
+        <FooterButton
           onPress={handleNextLevel}
-          label={isLastLevel ? "FINISH RUN" : "NEXT LEVEL"}
-          variant="cyan"
-          compact
+          activeColor={COLORS.cyan}
           style={buttonStyle}
+          label={isLastLevel ? "FINISH RUN" : "NEXT LEVEL"}
         />
       );
     }
@@ -341,15 +340,14 @@ export const FooterControls = () => {
     // SHOP_PICK_UPGRADE phase - show BACK button
     if (phase === "SHOP_PICK_UPGRADE") {
       return (
-        <PrimaryButton
+        <FooterButton
           onPress={() => {
             useGameStore.setState({ phase: "SHOP_MAIN" });
             triggerSelectionHaptic();
           }}
-          label="ZURÜCK"
-          variant="cyan"
-          compact
+          activeColor={COLORS.cyan}
           style={buttonStyle}
+          label="ZURÜCK"
         />
       );
     }
@@ -357,12 +355,11 @@ export const FooterControls = () => {
     // LEVEL_RESULT phase - show SHOP button
     if (phase === "LEVEL_RESULT") {
       return (
-        <PrimaryButton
+        <FooterButton
           onPress={handleOpenShop}
-          label="SHOP"
-          variant="mint"
-          compact
+          activeColor={COLORS.mint}
           style={buttonStyle}
+          label="SHOP"
         />
       );
     }
@@ -371,12 +368,11 @@ export const FooterControls = () => {
     // Hide this during win animation so we render "Roll" (sliding out) instead
     if (levelWon && phase === "LEVEL_PLAY" && !isRevealing && !isWinAnimating) {
       return (
-        <PrimaryButton
+        <FooterButton
           onPress={handleCashOut}
-          label="CASH OUT"
-          variant="mint"
-          compact
+          activeColor={COLORS.mint}
           style={buttonStyle}
+          label="CASH OUT"
         />
       );
     }
@@ -384,13 +380,12 @@ export const FooterControls = () => {
     // Reveal animation in progress
     if (isRevealing) {
       return (
-        <PrimaryButton
+        <FooterButton
           onPress={() => {}}
-          label="Zähle..."
+          activeColor={COLORS.cyan}
           disabled={true}
-          variant="cyan"
-          compact
           style={buttonStyle}
+          label="Zähle..."
         />
       );
     }
@@ -398,12 +393,11 @@ export const FooterControls = () => {
     // Hand selected - Accept button
     if (isHandSelected) {
       return (
-        <PrimaryButton
+        <FooterButton
           onPress={handleAcceptHand}
-          label="Annehmen"
-          variant="cyan"
-          compact
+          activeColor={COLORS.cyan}
           style={buttonStyle}
+          label="Annehmen"
         />
       );
     }
@@ -412,13 +406,12 @@ export const FooterControls = () => {
     const label = isRolling ? "Würfeln..." : "Würfeln";
 
     return (
-      <PrimaryButton
+      <FooterButton
         onPress={onPressRoll}
-        label={label}
         disabled={!canRoll}
-        variant="cyan"
-        compact
+        activeColor={COLORS.cyan}
         style={buttonStyle}
+        label={label}
       />
     );
   };
@@ -552,5 +545,8 @@ const styles = StyleSheet.create({
   },
   halfButton: {
     flex: 1,
+  },
+  labelDisabled: {
+    color: COLORS.textMuted,
   },
 });
