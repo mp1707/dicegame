@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import {
   View,
   ViewStyle,
@@ -6,7 +6,14 @@ import {
   StyleProp,
   ColorValue,
 } from "react-native";
-import { Surface, Pressable, SurfacePadding } from "../pixel-ui-kit";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSequence,
+  withTiming,
+  Easing,
+} from "react-native-reanimated";
+import { Pressable, SurfacePadding } from "../pixel-ui-kit";
 import { COLORS } from "../../constants/theme";
 
 interface ButtonProps {
@@ -118,6 +125,25 @@ export const Button: React.FC<ButtonProps> = React.memo(
     style,
     contentStyle,
   }) => {
+    // Selection pulse animation
+    const scale = useSharedValue(1);
+    const prevSelectedRef = useRef(selected);
+
+    useEffect(() => {
+      if (selected && !prevSelectedRef.current) {
+        // Quick scale pulse on selection
+        scale.value = withSequence(
+          withTiming(1.08, { duration: 80 }),
+          withTiming(1, { duration: 120, easing: Easing.out(Easing.quad) })
+        );
+      }
+      prevSelectedRef.current = selected;
+    }, [selected]);
+
+    const animatedStyle = useAnimatedStyle(() => ({
+      transform: [{ scale: scale.value }],
+    }));
+
     // Determine which color to use based on state
     const currentColor = disabled
       ? disabledColor
@@ -130,19 +156,20 @@ export const Button: React.FC<ButtonProps> = React.memo(
 
     // Active or Selected state: render Pressable with elevation
     return (
-      <View style={[styles.container, style]}>
+      <Animated.View style={[styles.container, style, animatedStyle]}>
         <Pressable
           tintColor={currentColor}
           shadowColor={shadowColor}
           padding={padding}
           depth={depth}
           onPress={onPress}
+          disabled={disabled}
           contentStyle={[styles.content, contentStyle]}
           style={styles.pressable}
         >
           {children}
         </Pressable>
-      </View>
+      </Animated.View>
     );
   }
 );

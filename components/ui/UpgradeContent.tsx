@@ -8,8 +8,8 @@ import Animated, {
   withSpring,
   runOnJS,
 } from "react-native-reanimated";
-import { GameText, TileButton, TileButtonState } from "../shared";
-import { COLORS, SPACING, DIMENSIONS, ANIMATION } from "../../constants/theme";
+import { GameText, SquareTileButton } from "../shared";
+import { COLORS, SPACING, ANIMATION } from "../../constants/theme";
 import { useGameStore, HandId } from "../../store/gameStore";
 import { getUpgradeCost } from "../../utils/gameCore";
 import { CATEGORIES } from "../../utils/yahtzeeScoring";
@@ -104,21 +104,16 @@ const UpgradeTile: React.FC<UpgradeTileProps> = ({
     onPress();
   };
 
-  // Map internal state to TileButtonState
-  let tileState: TileButtonState = "default";
-  if (isSelected) tileState = "selected";
-  else if (canAfford) tileState = "active";
-  else tileState = "invalid";
-
   return (
     <Animated.View style={animatedStyle}>
-      <View style={{ flex: 1, alignItems: "center" }}>
-        {/* Reused TileButton */}
-        <TileButton
+      <View style={styles.tileContainer}>
+        {/* SquareTileButton with level badge */}
+        <SquareTileButton
           iconSource={iconSource}
-          labelLine1={label}
+          label={label}
           level={level + 1}
-          state={tileState}
+          isSelected={isSelected}
+          isDisabled={!canAfford}
           onPress={handlePress}
           style={styles.tileButton}
         />
@@ -223,24 +218,22 @@ const styles = StyleSheet.create({
     justifyContent: "center", // Vertically center the whole content
     paddingBottom: SPACING.xl, // Push up slightly
   },
-  header: {
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: SPACING.md,
-    height: 30,
-  },
   optionsContainer: {
     flexDirection: "row",
-    gap: SPACING.xxs, // Tighter gap to match shop
-    height: 120,
+    gap: SPACING.sm, // Consistent gap
     alignItems: "flex-start",
+    justifyContent: "center",
   },
 
   // UpgradeTile Styles
+  tileContainer: {
+    flex: 1,
+    alignItems: "center",
+    maxWidth: 90, // Larger tiles for upgrade picker
+  },
   tileButton: {
+    aspectRatio: 1, // Ensure square tiles
     width: "100%",
-    aspectRatio: 1,
-    maxHeight: 90,
   },
   costPill: {
     flexDirection: "row",

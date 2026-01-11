@@ -5,23 +5,25 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   withDelay,
-  withSequence,
   Easing,
 } from "react-native-reanimated";
-import { TileButton, TileButtonState } from "../shared";
-import { COLORS, SPACING, ANIMATION } from "../../constants/theme";
+import { SquareTileButton } from "../shared";
+import { SPACING, ANIMATION } from "../../constants/theme";
 import { useGameStore } from "../../store/gameStore";
 import { hasDieAnyEnhanceableFace } from "../../utils/gameCore";
+
+// Die icon
+const dieIcon = require("../../assets/icons/die.png");
 
 /**
  * DieEditorContent - Bottom panel content for die selection (DICE_EDITOR_DIE phase)
  *
  * Features:
- * - Header with upgrade type indicator
- * - Single row of 5 TileButtons for die selection
+ * - Single row of 5 pixel-style buttons for die selection
  * - Icons: die.png for all
  * - Labels: "Würfel 1", "Würfel 2", etc.
- * - States: selected (current die), invalid (maxed), active (available)
+ * - States: selected (cyan), active (purple), invalid/disabled (muted)
+ * - Enhancement pills showing accumulated points/mult
  * - Staggered entrance animations
  */
 export const DieEditorContent: React.FC = () => {
@@ -29,11 +31,9 @@ export const DieEditorContent: React.FC = () => {
   const diceEnhancements = useGameStore((s) => s.diceEnhancements);
   const selectEditorDie = useGameStore((s) => s.selectEditorDie);
 
-  // Get state for a die tile
-  const getDieState = (index: number): TileButtonState => {
-    if (selectedEditorDie === index) return "selected";
-    if (!hasDieAnyEnhanceableFace(index, diceEnhancements)) return "invalid";
-    return "active";
+  // Check if die is enhanceable (not maxed out)
+  const isDieEnhanceable = (index: number): boolean => {
+    return hasDieAnyEnhanceableFace(index, diceEnhancements);
   };
 
   // Get enhancement sums for a die (across all 6 faces)
@@ -59,11 +59,13 @@ export const DieEditorContent: React.FC = () => {
         <View style={styles.diceRow}>
           {[0, 1, 2].map((index) => {
             const sums = getDieEnhanceSums(index);
+            const isEnhanceable = isDieEnhanceable(index);
             return (
               <AnimatedDieTile
                 key={index}
                 index={index}
-                state={getDieState(index)}
+                isSelected={selectedEditorDie === index}
+                isDisabled={!isEnhanceable}
                 onPress={() => selectEditorDie(index)}
                 delay={
                   ANIMATION.shop.headerDelay +
@@ -80,11 +82,13 @@ export const DieEditorContent: React.FC = () => {
         <View style={styles.diceRow}>
           {[3, 4].map((index) => {
             const sums = getDieEnhanceSums(index);
+            const isEnhanceable = isDieEnhanceable(index);
             return (
               <AnimatedDieTile
                 key={index}
                 index={index}
-                state={getDieState(index)}
+                isSelected={selectedEditorDie === index}
+                isDisabled={!isEnhanceable}
                 onPress={() => selectEditorDie(index)}
                 delay={
                   ANIMATION.shop.headerDelay +
@@ -104,7 +108,8 @@ export const DieEditorContent: React.FC = () => {
 // Animated die tile wrapper
 interface AnimatedDieTileProps {
   index: number;
-  state: TileButtonState;
+  isSelected: boolean;
+  isDisabled: boolean;
   onPress: () => void;
   delay: number;
   enhancePoints?: number;
@@ -113,7 +118,8 @@ interface AnimatedDieTileProps {
 
 const AnimatedDieTile: React.FC<AnimatedDieTileProps> = ({
   index,
-  state,
+  isSelected,
+  isDisabled,
   onPress,
   delay,
   enhancePoints,
@@ -121,8 +127,6 @@ const AnimatedDieTile: React.FC<AnimatedDieTileProps> = ({
 }) => {
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(10);
-  const scale = useSharedValue(1);
-  const prevStateRef = React.useRef(state);
 
   // Entrance animation
   useEffect(() => {
@@ -139,36 +143,25 @@ const AnimatedDieTile: React.FC<AnimatedDieTileProps> = ({
     );
   }, []);
 
-  // Selection pulse animation
-  useEffect(() => {
-    if (state === "selected" && prevStateRef.current !== "selected") {
-      // Quick scale pulse on selection
-      scale.value = withSequence(
-        withTiming(1.08, { duration: 80 }),
-        withTiming(1, { duration: 120, easing: Easing.out(Easing.quad) })
-      );
-    }
-    prevStateRef.current = state;
-  }, [state]);
+  // Selection pulse animation is now built into Button component
 
   const animStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
-    transform: [{ translateY: translateY.value }, { scale: scale.value }],
+    transform: [{ translateY: translateY.value }],
   }));
 
   return (
     <Animated.View style={[styles.tileWrapper, animStyle]}>
-      <TileButton
-        iconSource={require("../../assets/icons/die.png")}
-        labelLine1="Würfel"
-        labelLine2={`${index + 1}`}
-        level={1}
-        state={state}
+      <SquareTileButton
+        iconSource={dieIcon}
+        label="Würfel"
+        sublabel={`${index + 1}`}
+        isSelected={isSelected}
+        isDisabled={isDisabled}
         onPress={onPress}
-        style={styles.tile}
-        showLevelBadge={false}
         enhancePoints={enhancePoints}
         enhanceMult={enhanceMult}
+        style={styles.tile}
       />
     </Animated.View>
   );
@@ -179,35 +172,24 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: SPACING.screenPadding,
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: SPACING.sm,
-    marginBottom: SPACING.xs,
-  },
-  chipContainer: {
-    alignItems: "center",
-    marginBottom: SPACING.md,
-  },
   rowsContainer: {
     flex: 1,
     justifyContent: "center",
-    gap: SPACING.lg, // Gap between rows
-    paddingTop: SPACING.md, // Nudge down slightly
+    gap: SPACING.lg,
+    paddingTop: SPACING.md,
   },
   diceRow: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    gap: SPACING.md, // Wider gap between dice
+    gap: SPACING.md,
     paddingHorizontal: SPACING.xs,
   },
   tileWrapper: {
     flex: 1,
-    maxWidth: 72,
+    maxWidth: 80,
   },
   tile: {
-    height: 80,
+    aspectRatio: 1, // Ensure square tiles
   },
 });

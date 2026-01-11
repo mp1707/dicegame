@@ -9,5 +9,8 @@ export type { PrimaryButtonProps, PrimaryButtonVariant } from "./PrimaryButton";
 
 export { Button } from "./Button";
 
+export { SquareTileButton } from "./SquareTileButton";
+export type { SquareTileButtonProps } from "./SquareTileButton";
+
 export { Modal } from "./Modal";
 export type { ModalProps, ModalVariant } from "./Modal";

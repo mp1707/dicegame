@@ -5,11 +5,10 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   withDelay,
-  withSequence,
   Easing,
 } from "react-native-reanimated";
-import { GameText, TileButton, TileButtonState } from "../shared";
-import { COLORS, SPACING, ANIMATION } from "../../constants/theme";
+import { SquareTileButton } from "../shared";
+import { SPACING, ANIMATION } from "../../constants/theme";
 import { useGameStore } from "../../store/gameStore";
 import { isFaceEnhanceable } from "../../utils/gameCore";
 
@@ -27,11 +26,11 @@ const FACE_ICONS: Record<number, ImageSourcePropType> = {
  * FaceEditorContent - Bottom panel content for face selection (DICE_EDITOR_FACE phase)
  *
  * Features:
- * - Header showing which die is selected
- * - Two rows of 3 TileButtons each (6 faces)
+ * - Two rows of 3 pixel-style buttons each (6 faces)
  * - Icons: 1die.png through 6die.png
  * - Labels: "Seite 1" through "Seite 6"
- * - States: selected (current face), invalid (maxed), active (enhanceable)
+ * - States: selected (cyan), active (purple), invalid/disabled (muted)
+ * - Enhancement pills showing accumulated points/mult per face
  * - Face buttons sync with 3D die rotation
  * - Staggered entrance animations
  */
@@ -41,16 +40,10 @@ export const FaceEditorContent: React.FC = () => {
   const selectEditorFace = useGameStore((s) => s.selectEditorFace);
   const diceEnhancements = useGameStore((s) => s.diceEnhancements);
 
-  // Get state for a face tile
-  const getFaceState = (face: number): TileButtonState => {
-    if (selectedEditorFace === face) return "selected";
-    if (
-      selectedEditorDie === null ||
-      !isFaceEnhanceable(selectedEditorDie, face, diceEnhancements)
-    ) {
-      return "invalid";
-    }
-    return "active";
+  // Check if face is enhanceable (not maxed out)
+  const isFaceEnhanceableForDie = (face: number): boolean => {
+    if (selectedEditorDie === null) return false;
+    return isFaceEnhanceable(selectedEditorDie, face, diceEnhancements);
   };
 
   // Get enhancement sums for a specific face of the selected die
@@ -84,11 +77,13 @@ export const FaceEditorContent: React.FC = () => {
         <View style={styles.row}>
           {[1, 2, 3].map((face, col) => {
             const sums = getFaceEnhanceSums(face);
+            const isEnhanceable = isFaceEnhanceableForDie(face);
             return (
               <AnimatedFaceTile
                 key={face}
                 face={face}
-                state={getFaceState(face)}
+                isSelected={selectedEditorFace === face}
+                isDisabled={!isEnhanceable}
                 onPress={() => selectEditorFace(face)}
                 delay={getItemDelay(0, col)}
                 enhancePoints={sums.points}
@@ -102,11 +97,13 @@ export const FaceEditorContent: React.FC = () => {
         <View style={styles.row}>
           {[4, 5, 6].map((face, col) => {
             const sums = getFaceEnhanceSums(face);
+            const isEnhanceable = isFaceEnhanceableForDie(face);
             return (
               <AnimatedFaceTile
                 key={face}
                 face={face}
-                state={getFaceState(face)}
+                isSelected={selectedEditorFace === face}
+                isDisabled={!isEnhanceable}
                 onPress={() => selectEditorFace(face)}
                 delay={getItemDelay(1, col)}
                 enhancePoints={sums.points}
@@ -123,7 +120,8 @@ export const FaceEditorContent: React.FC = () => {
 // Animated face tile wrapper
 interface AnimatedFaceTileProps {
   face: number;
-  state: TileButtonState;
+  isSelected: boolean;
+  isDisabled: boolean;
   onPress: () => void;
   delay: number;
   enhancePoints?: number;
@@ -132,7 +130,8 @@ interface AnimatedFaceTileProps {
 
 const AnimatedFaceTile: React.FC<AnimatedFaceTileProps> = ({
   face,
-  state,
+  isSelected,
+  isDisabled,
   onPress,
   delay,
   enhancePoints,
@@ -140,8 +139,6 @@ const AnimatedFaceTile: React.FC<AnimatedFaceTileProps> = ({
 }) => {
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(10);
-  const scale = useSharedValue(1);
-  const prevStateRef = React.useRef(state);
 
   // Entrance animation
   useEffect(() => {
@@ -158,36 +155,25 @@ const AnimatedFaceTile: React.FC<AnimatedFaceTileProps> = ({
     );
   }, []);
 
-  // Selection pulse animation
-  useEffect(() => {
-    if (state === "selected" && prevStateRef.current !== "selected") {
-      // Quick scale pulse on selection
-      scale.value = withSequence(
-        withTiming(1.08, { duration: 80 }),
-        withTiming(1, { duration: 120, easing: Easing.out(Easing.quad) })
-      );
-    }
-    prevStateRef.current = state;
-  }, [state]);
+  // Selection pulse animation is now built into Button component
 
   const animStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
-    transform: [{ translateY: translateY.value }, { scale: scale.value }],
+    transform: [{ translateY: translateY.value }],
   }));
 
   return (
     <Animated.View style={[styles.tileWrapper, animStyle]}>
-      <TileButton
+      <SquareTileButton
         iconSource={FACE_ICONS[face]}
-        labelLine1="Seite"
-        labelLine2={`${face}`}
-        level={1}
-        state={state}
+        label="Seite"
+        sublabel={`${face}`}
+        isSelected={isSelected}
+        isDisabled={isDisabled}
         onPress={onPress}
-        style={styles.tile}
-        showLevelBadge={false}
         enhancePoints={enhancePoints}
         enhanceMult={enhanceMult}
+        style={styles.tile}
       />
     </Animated.View>
   );
@@ -210,9 +196,9 @@ const styles = StyleSheet.create({
   },
   tileWrapper: {
     flex: 1,
-    maxWidth: 90,
+    maxWidth: 80, // Same as DieEditorContent
   },
   tile: {
-    height: 80,
+    aspectRatio: 1, // Ensure square tiles
   },
 });
