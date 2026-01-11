@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useMemo } from "react";
 import { View, StyleSheet, Image } from "react-native";
 import { GameText, Button } from "../shared";
 import { FooterButton } from "./FooterButton";
-import { Surface, InsetSlot, GlassPanel } from "../ui-kit";
+import { InsetSlot, GlassPanel } from "../ui-kit";
+import { Surface } from "../pixel-ui-kit/Surface";
 import { COLORS, SPACING, DIMENSIONS, ANIMATION } from "../../constants/theme";
 import { useGameStore, GamePhase, ShopOfferType } from "../../store/gameStore";
 import {
@@ -449,7 +450,12 @@ export const FooterControls = () => {
         <View style={styles.ctaRow}>
           {/* Hands + Würfe Display (Left) - Only show during gameplay phases */}
           {(phase === "LEVEL_PLAY" || phase === "LEVEL_RESULT") && (
-            <GlassPanel style={styles.statPanel}>
+            <Surface
+              tintColor="#000000"
+              opacity={0.3}
+              padding="xs"
+              style={styles.statPanel}
+            >
               {/* Hands Row */}
               <View style={styles.statRow}>
                 <GameText variant="labelSmall" color={COLORS.textMuted}>
@@ -476,7 +482,7 @@ export const FooterControls = () => {
                   {rollsRemaining}
                 </GameText>
               </View>
-            </GlassPanel>
+            </Surface>
           )}
 
           <Animated.View style={[styles.ctaArea, animatedStyle]}>
@@ -524,9 +530,7 @@ const styles = StyleSheet.create({
   statPanel: {
     justifyContent: "center",
     paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs,
     gap: SPACING.xxs,
-    borderRadius: DIMENSIONS.borderRadius,
   },
   statRow: {
     flexDirection: "row",

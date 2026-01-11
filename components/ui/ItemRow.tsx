@@ -1,6 +1,6 @@
 import { View, StyleSheet, Pressable, Image, ViewStyle } from "react-native";
-import { COLORS, SPACING, DIMENSIONS } from "../../constants/theme";
-import { GlassPanel } from "../ui-kit";
+import { COLORS, SPACING } from "../../constants/theme";
+import { Surface } from "../pixel-ui-kit/Surface";
 import { GameText } from "../shared";
 import { useGameStore } from "../../store/gameStore";
 import { triggerSelectionHaptic } from "../../utils/haptics";
@@ -61,18 +61,28 @@ export const ItemRow: React.FC<ItemRowProps> = ({ style }) => {
               return (
                 <View key={itemId || `item-${index}`} style={styles.slot}>
                   {isEmpty ? (
-                    <GlassPanel style={styles.slotInset} />
+                    <Surface
+                      tintColor="#000000"
+                      opacity={0.3}
+                      padding={0}
+                      style={styles.slotInset}
+                    />
                   ) : (
                     <Pressable
                       onPress={() => handleItemPress(itemId)}
                       style={styles.slotPressable}
                     >
-                      <GlassPanel style={styles.slotInset}>
+                      <Surface
+                        tintColor="#000000"
+                        opacity={0.3}
+                        padding={0}
+                        style={styles.slotInset}
+                      >
                         <Image
                           source={ITEM_ICONS[itemId] || ITEM_ICONS.fokus}
                           style={styles.slotIcon}
                         />
-                      </GlassPanel>
+                      </Surface>
                     </Pressable>
                   )}
                 </View>
@@ -94,7 +104,12 @@ export const ItemRow: React.FC<ItemRowProps> = ({ style }) => {
           <View style={styles.slotsSection}>
             {consumableSlots.map((_, index) => (
               <View key={`consumable-${index}`} style={styles.slot}>
-                <GlassPanel style={styles.slotInset} />
+                <Surface
+                  tintColor="#000000"
+                  opacity={0.3}
+                  padding={0}
+                  style={styles.slotInset}
+                />
               </View>
             ))}
           </View>
@@ -137,7 +152,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   slotPressable: {
-    borderRadius: DIMENSIONS.borderRadiusSmall,
+    // borderRadius removed as Surface handles corners
   },
   slotInset: {
     width: 40, // Increased from 28
