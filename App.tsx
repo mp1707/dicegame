@@ -13,7 +13,7 @@ import { SingleDiePreview } from "./components/SingleDiePreview";
 import { OverviewModal } from "./components/modals/OverviewModal";
 import { ItemDetailModal } from "./components/modals/ItemDetailModal";
 import { PhaseDeck } from "./components/ui-kit/flow";
-import { AnimatedBackground } from "./components/ui/AnimatedBackground";
+import { StaticBackground } from "./components/ui/StaticBackground";
 import { useGameStore } from "./store/gameStore";
 import { getShopItemById } from "./items";
 import { COLORS, SPACING } from "./constants/theme";
@@ -52,9 +52,9 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <LayoutProvider>
-        <AnimatedBackground>
+        <StaticBackground>
           <AppContent />
-        </AnimatedBackground>
+        </StaticBackground>
       </LayoutProvider>
     </SafeAreaProvider>
   );
