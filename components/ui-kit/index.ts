@@ -16,4 +16,7 @@ export { NumericCapsule } from "./NumericCapsule";
 export { TrayOverlay } from "./TrayOverlay";
 export { GlassPanel } from "./GlassPanel";
 
+export { PixelSurface } from "./PixelSurface";
+export type { PixelSurfaceColor, PixelSurfacePadding } from "./PixelSurface";
+
 // Flow components (PhaseDeck) - will be exported from ./flow

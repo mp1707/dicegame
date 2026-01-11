@@ -19,7 +19,7 @@ import {
   ANIMATION,
 } from "../../constants/theme";
 import { GameText } from "../shared";
-import { Surface } from "../ui-kit";
+import { Surface, PixelSurface } from "../ui-kit";
 import { Sparks } from "../ui-kit/Sparks";
 import { useGameStore } from "../../store/gameStore";
 import { useShallow } from "zustand/react/shallow";
@@ -580,7 +580,7 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
     phase !== "DICE_EDITOR_FACE";
 
   return (
-    <Surface variant="strip" padding="none" style={[styles.container, style]}>
+    <View style={[styles.container, style]}>
       <View style={styles.content}>
         {/* Left Panel: Info */}
         <Surface variant="elevated" padding="none" style={styles.leftPanel}>
@@ -620,13 +620,21 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
         </Surface>
 
         {/* Right Panel: Goal */}
-        <Surface variant="elevated" padding="none" style={styles.rightPanel}>
-          <Surface variant="stripInset" padding="none" style={styles.goalInset}>
+        <PixelSurface
+          tintColor={COLORS.surface2}
+          padding="none"
+          style={styles.rightPanel}
+        >
+          <PixelSurface
+            tintColor={COLORS.surface}
+            padding="none"
+            style={styles.goalInset}
+          >
             {renderGoalContent()}
-          </Surface>
+          </PixelSurface>
 
           {/* Progress Bar */}
-          {showProgressBar && (
+          {false && (
             <Animated.View style={[styles.progressBarTrack, barTrackStyle]}>
               <Animated.View style={[styles.progressBarFill, progressStyle]}>
                 <Animated.View
@@ -663,9 +671,9 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
               }}
             />
           )}
-        </Surface>
+        </PixelSurface>
       </View>
-    </Surface>
+    </View>
   );
 };
 
@@ -673,6 +681,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     overflow: "hidden",
+    backgroundColor: COLORS.surface,
   },
   content: {
     flex: 1,
