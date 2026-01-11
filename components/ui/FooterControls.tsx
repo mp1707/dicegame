@@ -153,7 +153,7 @@ export const FooterControls = () => {
   }, [phase]);
 
   // Button height is ~65% of footer height (proportional to layout)
-  const buttonHeight = Math.max(44, layout.footerHeight * 0.65);
+  const buttonHeight = Math.max(44, layout.footerHeight * 1);
 
   const canRoll =
     rollsRemaining > 0 &&
@@ -226,7 +226,7 @@ export const FooterControls = () => {
   // Render the CTA button based on current state
   const renderCTA = () => {
     // Common button style with proportional height
-    const buttonStyle = [styles.ctaButton, { height: buttonHeight }];
+    const buttonStyle = [styles.ctaButton];
 
     // WIN/LOSE screens - New Run button
     if (phase === "WIN_SCREEN" || phase === "LOSE_SCREEN") {
@@ -422,40 +422,23 @@ export const FooterControls = () => {
     opacity: 1 - Math.min(Math.max(ctaTranslateY.value / 50, 0), 1),
   }));
 
-  // Glow pulse style
-  const glowAnimStyle = useAnimatedStyle(() => ({
-    opacity: glowOpacity.value,
-  }));
-
-  // Determine glow color based on phase
-  const getGlowColor = () => {
-    if (phase === "LEVEL_RESULT") return COLORS.overlays.mintGlow;
-    if (phase === "SHOP_MAIN") return COLORS.overlays.cyanMild;
-    return COLORS.overlays.mintGlow;
-  };
-
   const renderCTAArea = () => {
     return (
-      <View style={styles.ctaWrapper}>
-        {/* Glow pulse behind CTA */}
-        <Animated.View
-          style={[
-            styles.glowPulse,
-            glowAnimStyle,
-            { backgroundColor: getGlowColor() },
-          ]}
-          pointerEvents="none"
-        />
-        <View style={styles.ctaRow}>
-          {/* Hands + Würfe Display (Left) - Only show during gameplay phases */}
-          {(phase === "LEVEL_PLAY" || phase === "LEVEL_RESULT") && (
+      <Surface
+        tintColor={COLORS.surface2}
+        padding="xs"
+        style={styles.ctaRow}
+        contentStyle={styles.ctaRowContent}
+      >
+        {/* Hands + Würfe Display (Left) - Only show during gameplay phases */}
+        {(phase === "LEVEL_PLAY" || phase === "LEVEL_RESULT") && (
+          <View style={styles.statsColumn}>
+            {/* Hands Panel */}
             <Surface
-              tintColor="#000000"
-              opacity={0.3}
+              tintColor={COLORS.surface}
               padding="xs"
-              style={styles.statPanel}
+              style={styles.singleStat}
             >
-              {/* Hands Row */}
               <View style={styles.statRow}>
                 <GameText variant="labelSmall" color={COLORS.textMuted}>
                   Hände
@@ -468,7 +451,14 @@ export const FooterControls = () => {
                   {handsRemaining}
                 </GameText>
               </View>
-              {/* Würfe Row */}
+            </Surface>
+
+            {/* Würfe Panel */}
+            <Surface
+              tintColor={COLORS.surface}
+              padding="xs"
+              style={styles.singleStat}
+            >
               <View style={styles.statRow}>
                 <GameText variant="labelSmall" color={COLORS.textMuted}>
                   Würfe
@@ -482,13 +472,13 @@ export const FooterControls = () => {
                 </GameText>
               </View>
             </Surface>
-          )}
+          </View>
+        )}
 
-          <Animated.View style={[styles.ctaArea, animatedStyle]}>
-            {renderCTA()}
-          </Animated.View>
-        </View>
-      </View>
+        <Animated.View style={[styles.ctaArea, animatedStyle]}>
+          {renderCTA()}
+        </Animated.View>
+      </Surface>
     );
   };
 
@@ -498,7 +488,7 @@ export const FooterControls = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: SPACING.lg,
+    paddingHorizontal: SPACING.stripPaddingH,
     justifyContent: "center",
   },
   ctaWrapper: {
@@ -507,6 +497,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   ctaRow: {
+    // Outer surface container
+  },
+  ctaRowContent: {
     flexDirection: "row",
     alignItems: "stretch",
     gap: SPACING.md,
@@ -526,7 +519,19 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
     justifyContent: "center",
   },
-  statPanel: {
+  statsColumn: {
+    justifyContent: "center",
+    gap: SPACING.xs,
+  },
+  singleStat: {
+    // Individual stat panels
+    justifyContent: "center",
+    paddingHorizontal: SPACING.md,
+  },
+  statOuter: {
+    justifyContent: "center",
+  },
+  statInner: {
     justifyContent: "center",
     paddingHorizontal: SPACING.md,
     gap: SPACING.xxs,

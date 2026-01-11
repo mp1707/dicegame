@@ -290,9 +290,9 @@ export const LAYOUT = {
   weights: {
     topStrip: 12,
     itemRow: 10,
-    diceTray: 35,
-    scoringGrid: 10,
-    footer: 10,
+    diceTray: 37,
+    scoringGrid: 15,
+    footer: 8,
     // Sum: 12+10+35+10+10 = 77%. 23% gap for breathing room.
   },
 

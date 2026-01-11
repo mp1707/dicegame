@@ -21,7 +21,7 @@ export const FooterButton = ({
   label,
   onPress,
   activeColor = COLORS.cyan,
-  disabledColor = COLORS.surface2,
+  disabledColor = COLORS.surface,
   disabled = false,
   style,
   fullWidth = false,
