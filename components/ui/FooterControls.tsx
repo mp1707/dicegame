@@ -497,9 +497,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   ctaRow: {
-    // Outer surface container
+    flex: 1,
   },
   ctaRowContent: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "stretch",
     gap: SPACING.md,

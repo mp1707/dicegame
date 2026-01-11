@@ -314,8 +314,7 @@ const styles = StyleSheet.create({
   },
   cardWrapper: {
     width: "48%", // Allow gap
-    height: "47%", // Fit 2 rows
-    flexGrow: 1,
+    aspectRatio: 2.2, // Wide cards (width:height ratio)
   },
   pressableArea: {
     flex: 1,
