@@ -2,8 +2,7 @@ import React, { useEffect, useRef, useMemo } from "react";
 import { View, StyleSheet, Image } from "react-native";
 import { GameText, Button } from "../shared";
 import { FooterButton } from "./FooterButton";
-import { InsetSlot, GlassPanel } from "../ui-kit";
-import { Surface } from "../pixel-ui-kit/Surface";
+import { Surface } from "../pixel-ui-kit";
 import { COLORS, SPACING, DIMENSIONS, ANIMATION } from "../../constants/theme";
 import { useGameStore, GamePhase, ShopOfferType } from "../../store/gameStore";
 import {

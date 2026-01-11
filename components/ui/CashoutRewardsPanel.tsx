@@ -9,7 +9,7 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 import { GameText } from "../shared";
-import { Surface, InsetSlot, Divider } from "../ui-kit";
+import { Surface, PixelDivider } from "../pixel-ui-kit";
 import { COLORS, SPACING, DIMENSIONS, ANIMATION } from "../../constants/theme";
 import { useRewardBreakdown } from "../../store/gameStore";
 import { triggerLightImpact } from "../../utils/haptics";
@@ -38,7 +38,11 @@ export const CashoutRewardsPanel: React.FC<CashoutRewardsPanelProps> = ({
 
   return (
     <View style={[styles.container, style]}>
-      <Surface variant="panel" style={styles.panelContent}>
+      <Surface
+        tintColor={COLORS.surface2}
+        padding="md"
+        style={styles.panelContent}
+      >
         <View style={styles.listContainer}>
           {/* Base Win */}
           <RewardRow label="Level Belohnung" value={rewards.baseReward} />
@@ -49,7 +53,7 @@ export const CashoutRewardsPanel: React.FC<CashoutRewardsPanelProps> = ({
             value={rewards.unusedHandsBonus}
           />
 
-          <Divider />
+          <PixelDivider spacing="sm" />
 
           {/* Total */}
           <RewardRow label="GESAMT" value={rewards.totalPayout} isTotal />
@@ -79,9 +83,11 @@ const RewardRow: React.FC<RewardRowProps> = ({
       {label}
     </GameText>
 
-    <InsetSlot
-      padding="sm" // Corrected from xs to sm
+    <Surface
+      tintColor={isTotal ? COLORS.surface : COLORS.overlays.blackMild}
+      padding="sm"
       style={[styles.valueInset, isTotal && styles.totalInset]}
+      contentStyle={styles.valueContent}
     >
       <Image
         source={require("../../assets/icons/coin.png")}
@@ -93,7 +99,7 @@ const RewardRow: React.FC<RewardRowProps> = ({
       >
         {value}
       </GameText>
-    </InsetSlot>
+    </Surface>
   </View>
 );
 
@@ -103,7 +109,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.screenPadding,
   },
   panelContent: {
-    padding: SPACING.md,
+    // Surface handles padding via prop
   },
   listContainer: {
     gap: SPACING.sm,
@@ -119,16 +125,16 @@ const styles = StyleSheet.create({
     paddingRight: SPACING.md,
   },
   valueInset: {
-    width: "33%", // Fixed width as requested
+    width: "33%",
+  },
+  valueContent: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "flex-end", // Align numbers to the right
+    justifyContent: "flex-end",
     gap: SPACING.xs,
-    paddingHorizontal: SPACING.sm,
   },
   totalInset: {
-    backgroundColor: COLORS.overlays.blackMedium, // Darker background for total
-    borderColor: COLORS.gold, // Gold accent for total
+    // totalInset uses different tintColor in Surface prop
   },
   coinIcon: {
     width: 14,

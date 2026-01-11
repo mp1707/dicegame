@@ -6,7 +6,7 @@ import { useGameStore, ShopOfferType } from "../../store/gameStore";
 import { getDiceUpgradeCost, getUpgradeCost } from "../../utils/gameCore";
 import { getShopItemById } from "../../items";
 import { GameText, TileButtonState } from "../shared";
-import { Surface, InsetSlot } from "../ui-kit";
+import { Surface } from "../pixel-ui-kit";
 import Animated, {
   FadeInRight,
   ZoomIn,
@@ -75,7 +75,12 @@ const ShopCard: React.FC<ShopCardProps> = ({
           pressed && isActive && { transform: [{ scale: 0.96 }] },
         ]}
       >
-        <Surface variant="panel" style={[containerStyle, borderStyle]}>
+        <Surface
+          tintColor={isSelected ? COLORS.surfaceHighlight : COLORS.surface2}
+          padding="sm"
+          style={containerStyle}
+          contentStyle={styles.cardContentStyle}
+        >
           {/* Top Right: Price Badge */}
           {!isUsed && !isInvalid && price !== undefined && (
             <View style={styles.priceBadge}>
@@ -96,9 +101,14 @@ const ShopCard: React.FC<ShopCardProps> = ({
           )}
 
           {/* Left: Icon in Inset */}
-          <InsetSlot style={styles.iconInset} padding="sm">
+          <Surface
+            tintColor={COLORS.overlays.blackMild}
+            padding="sm"
+            style={styles.iconInset}
+            contentStyle={styles.iconInsetContent}
+          >
             {icon}
-          </InsetSlot>
+          </Surface>
 
           {/* Right: Info Column */}
           <View style={styles.cardInfoColumn}>
@@ -208,7 +218,11 @@ export const ShopContent: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <Surface variant="panel" style={styles.panelContent}>
+      <Surface
+        tintColor={COLORS.surface}
+        padding="md"
+        style={styles.panelContent}
+      >
         <ShopHeader />
 
         {/* 2x2 Grid Layout */}
@@ -306,18 +320,21 @@ const styles = StyleSheet.create({
   pressableArea: {
     flex: 1,
   },
-  cardContainer: {
+  cardContentStyle: {
     flex: 1,
-    flexDirection: "row", // Horizontal layout
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "flex-start",
-    padding: SPACING.sm,
-    borderRadius: DIMENSIONS.borderRadius,
-    backgroundColor: COLORS.surface2,
-    position: "relative", // For badge positioning
+  },
+  cardContainer: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-start",
+    position: "relative",
   },
   cardSelected: {
-    backgroundColor: COLORS.surfaceHighlight,
+    // Surface tintColor handles highlight state
   },
   cardDisabled: {
     opacity: 0.5,
@@ -325,9 +342,12 @@ const styles = StyleSheet.create({
   iconInset: {
     width: 48,
     height: 48,
+    marginRight: SPACING.md,
+  },
+  iconInsetContent: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: SPACING.md,
   },
   cardInfoColumn: {
     flex: 1,

@@ -8,7 +8,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { Check, ArrowUp } from "lucide-react-native";
 import { GameText } from "../shared";
-import { Surface, InsetSlot } from "../ui-kit";
+import { Surface } from "../pixel-ui-kit";
 import { COLORS, SPACING, DIMENSIONS } from "../../constants/theme";
 import { useGameStore, ShopOfferType } from "../../store/gameStore";
 import { getDiceUpgradeCost, getUpgradeCost } from "../../utils/gameCore";
@@ -176,13 +176,18 @@ export const ShopItemPreviewOverlay: React.FC = () => {
         exiting={FadeOutDown.duration(150)}
         style={styles.cardWrapper}
       >
-        <Surface variant="panel" padding="md">
+        <Surface tintColor={COLORS.surface2} padding="md">
           <View style={styles.contentRow}>
             {/* Icon column */}
             <View style={styles.iconColumn}>
-              <InsetSlot padding="sm" style={styles.iconSlot}>
+              <Surface
+                tintColor={COLORS.overlays.blackMild}
+                padding="sm"
+                style={styles.iconSlot}
+                contentStyle={styles.iconSlotContent}
+              >
                 {offerInfo.icon}
-              </InsetSlot>
+              </Surface>
             </View>
 
             {/* Info column */}
@@ -288,6 +293,9 @@ const styles = StyleSheet.create({
   iconSlot: {
     width: 64,
     height: 64,
+  },
+  iconSlotContent: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },

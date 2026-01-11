@@ -2,7 +2,7 @@ import React from "react";
 import { View, StyleSheet, Image } from "react-native";
 import { Trophy } from "lucide-react-native";
 import { GameText } from "../shared";
-import { HUDCard, InsetSlot } from "../ui-kit";
+import { Surface } from "../pixel-ui-kit";
 import { COLORS, SPACING, DIMENSIONS } from "../../constants/theme";
 import { useGameStore } from "../../store/gameStore";
 import { formatNumber } from "../../utils/yahtzeeScoring";
@@ -46,7 +46,11 @@ export const EndContent: React.FC = () => {
       </View>
 
       {/* Stats section - New Layout with Insets */}
-      <HUDCard style={styles.statsCard}>
+      <Surface
+        tintColor={COLORS.surface2}
+        padding="md"
+        style={styles.statsCard}
+      >
         <View style={styles.cardContent}>
           {/* Top aligned stats */}
           <View style={styles.topStats}>
@@ -54,11 +58,16 @@ export const EndContent: React.FC = () => {
               <GameText variant="bodyMedium" color={COLORS.textMuted}>
                 Levels Completed
               </GameText>
-              <InsetSlot style={styles.valueInset}>
+              <Surface
+                tintColor={COLORS.overlays.blackMild}
+                padding="sm"
+                style={styles.valueInset}
+                contentStyle={styles.valueInsetContent}
+              >
                 <GameText variant="scoreboardSmall" color={COLORS.text}>
                   {isWin ? 8 : currentLevelIndex} / 8
                 </GameText>
-              </InsetSlot>
+              </Surface>
             </View>
           </View>
 
@@ -69,7 +78,12 @@ export const EndContent: React.FC = () => {
               <GameText variant="bodyMedium" color={COLORS.textMuted}>
                 Final Money
               </GameText>
-              <InsetSlot style={styles.valueInset}>
+              <Surface
+                tintColor={COLORS.overlays.blackMild}
+                padding="sm"
+                style={styles.valueInset}
+                contentStyle={styles.valueInsetContent}
+              >
                 <Image
                   source={require("../../assets/icons/coin.png")}
                   style={styles.iconSm}
@@ -77,11 +91,11 @@ export const EndContent: React.FC = () => {
                 <GameText variant="scoreboardSmall" color={COLORS.gold}>
                   {formatNumber(money)}
                 </GameText>
-              </InsetSlot>
+              </Surface>
             </View>
           </View>
         </View>
-      </HUDCard>
+      </Surface>
     </View>
   );
 };
@@ -151,13 +165,14 @@ const styles = StyleSheet.create({
     opacity: 0.3,
   },
   valueInset: {
-    minWidth: 100, // wider inset
+    minWidth: 100,
+  },
+  valueInsetContent: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: SPACING.xs,
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.md,
   },
   iconSm: {
     width: DIMENSIONS.iconSize.sm,

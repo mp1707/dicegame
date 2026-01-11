@@ -14,13 +14,20 @@ import Animated, {
 import { LinearGradient } from "expo-linear-gradient";
 import { Lock, Check } from "lucide-react-native";
 import { GameText } from "../shared";
-import { Chip } from "../ui-kit";
+import { PixelChip } from "../pixel-ui-kit";
 import { COLORS, SPACING, DIMENSIONS, ANIMATION } from "../../constants/theme";
-import { triggerSelectionHaptic, triggerImpactMedium } from "../../utils/haptics";
+import {
+  triggerSelectionHaptic,
+  triggerImpactMedium,
+} from "../../utils/haptics";
 import { SparkleEffect } from "./SparkleEffect";
 import { useGameStore } from "../../store/gameStore";
 
-export type ShopItemState = "affordable" | "unaffordable" | "purchased" | "soon";
+export type ShopItemState =
+  | "affordable"
+  | "unaffordable"
+  | "purchased"
+  | "soon";
 
 interface ShopItemCardProps {
   /** Item icon */
@@ -144,10 +151,7 @@ export const ShopItemCard: React.FC<ShopItemCardProps> = ({
   // Animated styles
   const containerAnimStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
-    transform: [
-      { translateY: translateY.value },
-      { scale: scale.value },
-    ],
+    transform: [{ translateY: translateY.value }, { scale: scale.value }],
   }));
 
   const shimmerAnimStyle = useAnimatedStyle(() => ({
@@ -218,7 +222,11 @@ export const ShopItemCard: React.FC<ShopItemCardProps> = ({
 
           {/* Effect line */}
           {effect && !isSoon && (
-            <GameText variant="bodySmall" color={COLORS.textMuted} style={styles.effect}>
+            <GameText
+              variant="bodySmall"
+              color={COLORS.textMuted}
+              style={styles.effect}
+            >
               {effect}
             </GameText>
           )}
@@ -228,22 +236,30 @@ export const ShopItemCard: React.FC<ShopItemCardProps> = ({
             {/* Tags */}
             <View style={styles.tagsContainer}>
               {isSoon ? (
-                <Chip label="BALD" color="muted" size="sm" />
+                <PixelChip label="BALD" color="muted" size="sm" />
               ) : isPurchased ? (
-                <Chip label="GEKAUFT" color="gold" size="sm" />
+                <PixelChip label="GEKAUFT" color="gold" size="sm" />
               ) : (
                 tags.map((tag, i) => (
-                  <Chip key={i} label={tag} color="cyan" size="sm" />
+                  <PixelChip key={i} label={tag} color="cyan" size="sm" />
                 ))
               )}
             </View>
 
             {/* Price capsule with coin icon */}
             {!isSoon && !isPurchased && price !== undefined && (
-              <View style={[styles.priceCapsule, isUnaffordable && styles.priceCapsuleMuted]}>
+              <View
+                style={[
+                  styles.priceCapsule,
+                  isUnaffordable && styles.priceCapsuleMuted,
+                ]}
+              >
                 <Image
                   source={require("../../assets/icons/coin.png")}
-                  style={[styles.coinIcon, isUnaffordable && styles.coinIconMuted]}
+                  style={[
+                    styles.coinIcon,
+                    isUnaffordable && styles.coinIconMuted,
+                  ]}
                 />
                 <GameText
                   variant="bodySmall"
@@ -257,7 +273,11 @@ export const ShopItemCard: React.FC<ShopItemCardProps> = ({
 
           {/* "Not enough" label for unaffordable */}
           {isUnaffordable && (
-            <GameText variant="caption" color={COLORS.coral} style={styles.notEnough}>
+            <GameText
+              variant="caption"
+              color={COLORS.coral}
+              style={styles.notEnough}
+            >
               NICHT GENUG
             </GameText>
           )}

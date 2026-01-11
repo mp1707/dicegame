@@ -12,7 +12,7 @@ import React from "react";
 import { View, StyleSheet, Image, ImageSourcePropType } from "react-native";
 import { COLORS, DIMENSIONS, SPACING } from "../../constants/theme";
 import { Modal, GameText, PrimaryButton } from "../shared";
-import { InsetSlot } from "../ui-kit";
+import { Surface } from "../pixel-ui-kit";
 
 interface ItemDetailModalProps {
   visible: boolean;
@@ -111,11 +111,16 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
   return (
     <Modal visible={visible} onClose={onClose} title={title}>
       <View style={styles.container}>
-        {/* Icon in InsetSlot */}
+        {/* Icon in pixel Surface */}
         <View style={styles.iconContainer}>
-          <InsetSlot padding="md" style={styles.iconSlot}>
+          <Surface
+            tintColor={COLORS.overlays.blackMild}
+            padding="md"
+            style={styles.iconSlot}
+            contentStyle={styles.iconSlotContent}
+          >
             <Image source={iconSource} style={styles.icon} />
-          </InsetSlot>
+          </Surface>
         </View>
 
         {/* Description */}
@@ -168,6 +173,9 @@ const styles = StyleSheet.create({
   iconSlot: {
     width: 56,
     height: 56,
+  },
+  iconSlotContent: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
   },

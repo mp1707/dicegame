@@ -151,6 +151,7 @@ const styles = StyleSheet.create({
     resizeMode: "stretch",
   },
   content: {
-    flex: 1, // Fill available space when parent has flex: 1
+    // No flex: 1 - sizes based on children like a normal View
+    // Parent uses flex via style prop, content sizes naturally
   },
 });

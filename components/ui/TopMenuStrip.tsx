@@ -19,7 +19,7 @@ import {
   ANIMATION,
 } from "../../constants/theme";
 import { GameText } from "../shared";
-import { PixelSurface } from "../ui-kit";
+import { Surface } from "../pixel-ui-kit";
 import { Sparks } from "../ui-kit/Sparks";
 import { useGameStore } from "../../store/gameStore";
 import { useShallow } from "zustand/react/shallow";
@@ -583,7 +583,7 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
     <View style={[styles.container, style]}>
       <View style={styles.content}>
         {/* Left Panel: Info */}
-        <PixelSurface
+        <Surface
           tintColor={COLORS.surface2}
           padding="none"
           style={styles.leftPanel}
@@ -591,7 +591,7 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
         >
           {/* Row 1: Level + Money */}
           <View style={styles.topRow}>
-            <PixelSurface
+            <Surface
               tintColor={COLORS.surface}
               padding="lg"
               style={styles.labelValueSlot}
@@ -603,8 +603,8 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
               <GameText variant="scoreboardSmall" color={COLORS.text}>
                 {levelNumber}
               </GameText>
-            </PixelSurface>
-            <PixelSurface
+            </Surface>
+            <Surface
               tintColor={COLORS.surface}
               padding="none"
               style={styles.moneySlot}
@@ -617,35 +617,35 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
               <GameText variant="scoreboardSmall" color={COLORS.gold}>
                 {formatNumber(displayedMoney)}
               </GameText>
-            </PixelSurface>
+            </Surface>
           </View>
 
           {/* Row 2: Score Display */}
-          <PixelSurface
+          <Surface
             tintColor={COLORS.surface}
             padding="none"
             style={styles.scoreSlot}
             contentStyle={styles.scoreSlotContent}
           >
             {renderScoreContent()}
-          </PixelSurface>
-        </PixelSurface>
+          </Surface>
+        </Surface>
 
         {/* Right Panel: Goal */}
-        <PixelSurface
+        <Surface
           tintColor={COLORS.surface2}
           padding="none"
           style={styles.rightPanel}
           contentStyle={styles.rightPanelContent}
         >
-          <PixelSurface
+          <Surface
             tintColor={COLORS.surface}
             padding="none"
             style={styles.goalInset}
             contentStyle={styles.goalInsetContent}
           >
             {renderGoalContent()}
-          </PixelSurface>
+          </Surface>
 
           {/* Progress Bar */}
           {false && (
@@ -685,7 +685,7 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
               }}
             />
           )}
-        </PixelSurface>
+        </Surface>
       </View>
     </View>
   );

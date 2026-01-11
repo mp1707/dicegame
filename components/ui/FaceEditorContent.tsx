@@ -9,7 +9,6 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 import { GameText, TileButton, TileButtonState } from "../shared";
-import { Chip } from "../ui-kit";
 import { COLORS, SPACING, ANIMATION } from "../../constants/theme";
 import { useGameStore } from "../../store/gameStore";
 import { isFaceEnhanceable } from "../../utils/gameCore";
