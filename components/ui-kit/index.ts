@@ -1,9 +1,6 @@
 // UI Kit - Material Layer Components
 // Use these for non-interactive container surfaces
 
-export { Surface } from "./Surface";
-export type { SurfaceVariant, PaddingPreset } from "./Surface";
-
 export { HUDCard } from "./HUDCard";
 export { InsetSlot } from "./InsetSlot";
 export { Chip } from "./Chip";
@@ -14,9 +11,5 @@ export { Divider } from "./Divider";
 
 export { NumericCapsule } from "./NumericCapsule";
 export { TrayOverlay } from "./TrayOverlay";
-export { GlassPanel } from "./GlassPanel";
-
-export { PixelSurface } from "./PixelSurface";
-export type { PixelSurfacePadding } from "./PixelSurface";
 
 // Flow components (PhaseDeck) - will be exported from ./flow

@@ -7,6 +7,7 @@ A roguelike dice game combining Yahtzee mechanics with progression systems. Buil
 See `package.json` for complete dependency list and versions.
 
 **Key libraries**:
+
 - **Expo** - React Native framework
 - **React Three Fiber + Drei + Rapier** - 3D physics simulation
 - **Zustand** - State management
@@ -132,16 +133,19 @@ dice-game/
 ### Documentation Map
 
 **UI Components**:
+
 - **`components/ui-kit/CLAUDE.md`** - Material layer system, UI guidelines, component catalog
 - **`components/ui-kit/flow/CLAUDE.md`** - PhaseDeck layout orchestration, phase transitions
 - **`components/ui/dice-editor/CLAUDE.md`** - Dice enhancement editor flow (DICE_EDITOR phases)
 - **`components/scoring/CLAUDE.md`** - Scoring reveal animation choreography
 
 **Game Systems**:
+
 - **`utils/item-system/CLAUDE.md`** - Item trigger system deep-dive, effect factories, grammar
 - **`items/CLAUDE.md`** - Creating purchasable items, shop integration guide
 
 **Performance & Theme**:
+
 - **`docs/PERFORMANCE.md`** - Optimization patterns, idle state rules, useFrame best practices
 - **`constants/theme.ts`** - All design tokens (COLORS, TYPOGRAPHY, SPACING, ANIMATION, PHYSICS, LAYOUT)
 
@@ -187,6 +191,7 @@ See `LEVEL_CONFIG` in `utils/gameCore.ts` for level goals (8 levels total).
 ### Reward System
 
 See `REWARD_CONFIG` in `utils/gameCore.ts` for:
+
 - Base win bonus per level
 - Per unused hand bonus
 - Hand upgrade cost formula
@@ -369,6 +374,7 @@ All visual and animation constants are centralized in `constants/theme.ts`. This
 ### Structure
 
 **Available constants**:
+
 - `COLORS.*` - Core palette, overlays, shadows, enhancement colors
 - `TYPOGRAPHY.*` - All text variants (use via `GameText` component)
 - `SPACING.*` - Base scale (xxs→xxl) + semantic spacing
@@ -405,6 +411,7 @@ import { GameText } from "../shared";
 **Single font**: M6x11 pixel font only. Use `GameText` component (wraps `Text` with font).
 
 **Color categories**:
+
 - Core: bg, surface, text (hierarchy)
 - Accents: cyan (selection), gold (progress), coral (danger), mint (success)
 - Overlays: Pre-mixed rgba values for borders/bevels (use `COLORS.overlays.*`)
@@ -416,6 +423,7 @@ import { GameText } from "../shared";
 **Animation timing**: See `ANIMATION.*` for all durations, springs, phase transitions. Use constants instead of hardcoding ms values.
 
 **Bevel pattern** (3D effect):
+
 ```typescript
 {
   borderTopWidth: DIMENSIONS.borderWidthThin,

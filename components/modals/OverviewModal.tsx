@@ -5,7 +5,7 @@ import { useGameStore } from "../../store/gameStore";
 import { CATEGORIES } from "../../utils/yahtzeeScoring";
 import { getBasePoints, HAND_BASE_CONFIG } from "../../utils/gameCore";
 import { CategoryIcon } from "../ui/CategoryIcon";
-import { Modal, PrimaryButton, GameText } from "../shared";
+import { Modal, Button, GameText } from "../shared";
 
 interface OverviewModalProps {
   visible: boolean;
@@ -83,12 +83,13 @@ export const OverviewModal = ({ visible, onClose }: OverviewModalProps) => {
           </ScrollView>
         </View>
 
-        <PrimaryButton
+        <Button
           onPress={onClose}
-          label="SCHLIESSEN"
-          variant="cyan"
+          activeColor={COLORS.cyan}
           style={styles.closeButton}
-        />
+        >
+          <GameText variant="buttonMedium">SCHLIESSEN</GameText>
+        </Button>
       </View>
     </Modal>
   );

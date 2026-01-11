@@ -11,7 +11,7 @@
 import React from "react";
 import { View, StyleSheet, Image, ImageSourcePropType } from "react-native";
 import { COLORS, DIMENSIONS, SPACING } from "../../constants/theme";
-import { Modal, GameText, PrimaryButton } from "../shared";
+import { Modal, Button, GameText } from "../shared";
 import { Surface } from "../pixel-ui-kit";
 
 interface ItemDetailModalProps {
@@ -131,12 +131,12 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
         {/* Purchase CTA (optional) */}
         {showPurchase && (
           <View style={styles.ctaContainer}>
-            <PrimaryButton
+            <Button
               onPress={onPurchase}
-              label={`KAUFEN`}
-              variant="mint"
+              activeColor={COLORS.mint}
               disabled={!canAfford}
-              icon={
+            >
+              <View style={styles.buttonContent}>
                 <View style={styles.priceContainer}>
                   <Image
                     source={require("../../assets/icons/coin.png")}
@@ -149,14 +149,19 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                     {price}
                   </GameText>
                 </View>
-              }
-            />
+                <GameText variant="buttonMedium" color={COLORS.text}>
+                  KAUFEN
+                </GameText>
+              </View>
+            </Button>
           </View>
         )}
 
         {/* Close button when not in shop context */}
         {!showPurchase && (
-          <PrimaryButton onPress={onClose} label="SCHLIESSEN" variant="cyan" />
+          <Button onPress={onClose} activeColor={COLORS.cyan}>
+            <GameText variant="buttonMedium">SCHLIESSEN</GameText>
+          </Button>
         )}
       </View>
     </Modal>
@@ -194,11 +199,15 @@ const styles = StyleSheet.create({
   ctaContainer: {
     width: "100%",
   },
+  buttonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SPACING.md,
+  },
   priceContainer: {
     flexDirection: "row",
     alignItems: "center",
     gap: SPACING.xs,
-    marginLeft: SPACING.sm,
   },
   coinIcon: {
     width: 18,
