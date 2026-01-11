@@ -143,7 +143,6 @@ const styles = StyleSheet.create({
     resizeMode: "stretch",
   },
   content: {
-    // Content wrapper fills the container
-    flex: 1,
+    // No flex: 1 - sizes based on children like a normal View
   },
 });

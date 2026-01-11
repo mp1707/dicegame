@@ -19,7 +19,7 @@ import {
   ANIMATION,
 } from "../../constants/theme";
 import { GameText } from "../shared";
-import { Surface, PixelSurface } from "../ui-kit";
+import { PixelSurface } from "../ui-kit";
 import { Sparks } from "../ui-kit/Sparks";
 import { useGameStore } from "../../store/gameStore";
 import { useShallow } from "zustand/react/shallow";
@@ -583,13 +583,19 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
     <View style={[styles.container, style]}>
       <View style={styles.content}>
         {/* Left Panel: Info */}
-        <Surface variant="elevated" padding="none" style={styles.leftPanel}>
+        <PixelSurface
+          tintColor={COLORS.surface2}
+          padding="none"
+          style={styles.leftPanel}
+          contentStyle={styles.leftPanelContent}
+        >
           {/* Row 1: Level + Money */}
           <View style={styles.topRow}>
-            <Surface
-              variant="stripInset"
-              padding="none"
+            <PixelSurface
+              tintColor={COLORS.surface}
+              padding="lg"
               style={styles.labelValueSlot}
+              contentStyle={styles.labelValueSlotContent}
             >
               <GameText variant="labelSmall" color={COLORS.textMuted}>
                 LEVEL
@@ -597,11 +603,12 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
               <GameText variant="scoreboardSmall" color={COLORS.text}>
                 {levelNumber}
               </GameText>
-            </Surface>
-            <Surface
-              variant="stripInset"
+            </PixelSurface>
+            <PixelSurface
+              tintColor={COLORS.surface}
               padding="none"
               style={styles.moneySlot}
+              contentStyle={styles.moneySlotContent}
             >
               <Image
                 source={require("../../assets/icons/coin.png")}
@@ -610,25 +617,32 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
               <GameText variant="scoreboardSmall" color={COLORS.gold}>
                 {formatNumber(displayedMoney)}
               </GameText>
-            </Surface>
+            </PixelSurface>
           </View>
 
           {/* Row 2: Score Display */}
-          <Surface variant="stripInset" padding="none" style={styles.scoreSlot}>
+          <PixelSurface
+            tintColor={COLORS.surface}
+            padding="none"
+            style={styles.scoreSlot}
+            contentStyle={styles.scoreSlotContent}
+          >
             {renderScoreContent()}
-          </Surface>
-        </Surface>
+          </PixelSurface>
+        </PixelSurface>
 
         {/* Right Panel: Goal */}
         <PixelSurface
           tintColor={COLORS.surface2}
           padding="none"
           style={styles.rightPanel}
+          contentStyle={styles.rightPanelContent}
         >
           <PixelSurface
             tintColor={COLORS.surface}
             padding="none"
             style={styles.goalInset}
+            contentStyle={styles.goalInsetContent}
           >
             {renderGoalContent()}
           </PixelSurface>
@@ -692,13 +706,19 @@ const styles = StyleSheet.create({
   },
   leftPanel: {
     flex: 1,
+  },
+  leftPanelContent: {
+    flex: 1,
     gap: SPACING.stripInsetGap,
     padding: SPACING.stripInsetGap,
   },
   rightPanel: {
     width: "35%",
-    justifyContent: "space-between",
     overflow: "hidden",
+  },
+  rightPanelContent: {
+    flex: 1,
+    justifyContent: "space-between",
   },
   topRow: {
     flexDirection: "row",
@@ -706,22 +726,29 @@ const styles = StyleSheet.create({
   },
   labelValueSlot: {
     flex: 1,
+  },
+  labelValueSlotContent: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: SPACING.xxs,
-    paddingHorizontal: SPACING.xs,
+    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.sm,
   },
   moneySlot: {
     flex: 1,
+  },
+  moneySlotContent: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "flex-end",
     gap: SPACING.xs,
-    paddingVertical: SPACING.xxs,
-    paddingHorizontal: SPACING.xs,
+    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.sm,
   },
   scoreSlot: {
+    flex: 1,
+  },
+  scoreSlotContent: {
     flex: 1,
     justifyContent: "center",
     paddingVertical: SPACING.xxs,
@@ -757,6 +784,9 @@ const styles = StyleSheet.create({
   goalInset: {
     flex: 1,
     margin: SPACING.stripInsetGap,
+  },
+  goalInsetContent: {
+    flex: 1,
   },
   goalContent: {
     flex: 1,
