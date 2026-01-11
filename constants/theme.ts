@@ -59,7 +59,7 @@ export const COLORS = {
   overlays: {
     whiteSubtle: "rgba(255,255,255,0.05)",
     whiteMild: "rgba(255,255,255,0.1)",
-    whiteMedium: "rgba(255,255,255,0.15)",
+    whiteMedium: "rgba(255, 255, 255, 0.15)",
     whiteStrong: "rgba(255,255,255,0.2)",
     blackSubtle: "rgba(0,0,0,0.1)",
     blackMild: "rgba(0,0,0,0.2)",

@@ -15,7 +15,14 @@ const pixelSurface = require("../../assets/ui/pixelSurface.png");
 /**
  * Padding presets for Surface
  */
-export type SurfacePadding = "none" | "xs" | "sm" | "md" | "lg" | number;
+export type SurfacePadding =
+  | "none"
+  | "xxs"
+  | "xs"
+  | "sm"
+  | "md"
+  | "lg"
+  | number;
 
 interface SurfaceProps {
   /**
@@ -60,6 +67,7 @@ interface SurfaceProps {
  */
 const PADDING_VALUES: Record<Exclude<SurfacePadding, number>, number> = {
   none: 0,
+  xxs: SPACING.xxs,
   xs: SPACING.xs,
   sm: SPACING.sm,
   md: SPACING.md,
@@ -143,6 +151,6 @@ const styles = StyleSheet.create({
     resizeMode: "stretch",
   },
   content: {
-    // No flex: 1 - sizes based on children like a normal View
+    flex: 1, // Fill available space when parent has flex: 1
   },
 });

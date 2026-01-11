@@ -167,10 +167,10 @@ const styles = StyleSheet.create({
     // Container allows external styling
   },
   surface: {
-    // Flat surface for disabled state
+    flex: 1, // Fill the container for disabled state
   },
   pressable: {
-    // Pressable for active states
+    flex: 1, // Fill the container for active states
   },
   content: {
     alignItems: "center",

@@ -194,7 +194,7 @@ export const Pressable: React.FC<PressableProps> = React.memo(
               tintColor={tintColor}
               padding={padding}
               opacity={opacity}
-              contentStyle={contentStyle}
+              contentStyle={[styles.surfaceContent, contentStyle]}
               style={styles.mainSurface}
             >
               {children}
@@ -217,22 +217,28 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 0,
     right: 0,
+    bottom: 0, // Stretch to fill height
     // top is set dynamically based on depth
   },
   shadowSurface: {
-    // Fill the shadow layer
+    flex: 1, // Fill the shadow layer
   },
   shadowContent: {
     opacity: 0, // Hide shadow content, just need the shape for sizing
+    flex: 1,
   },
   surfaceLayer: {
     // Sits on top, animates down on press
+    flex: 1,
     zIndex: 1,
   },
   pressable: {
-    // Fills the surface layer
+    flex: 1, // Fills the surface layer
   },
   mainSurface: {
-    // Main visible surface
+    flex: 1, // Main visible surface fills pressable
+  },
+  surfaceContent: {
+    flex: 1, // Content area fills the surface
   },
 });
