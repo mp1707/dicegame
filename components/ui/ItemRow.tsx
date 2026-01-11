@@ -52,54 +52,61 @@ export const ItemRow: React.FC<ItemRowProps> = ({ style }) => {
   return (
     <View style={[styles.container, style]}>
       <View style={styles.row}>
-        {/* Items Section */}
-        <View style={styles.slotsSection}>
-          {itemSlots.map((itemId, index) => {
-            const isEmpty = !itemId;
+        {/* Items Section with Counter Below */}
+        <View style={styles.slotGroup}>
+          <View style={styles.slotsSection}>
+            {itemSlots.map((itemId, index) => {
+              const isEmpty = !itemId;
 
-            return (
-              <View key={itemId || `item-${index}`} style={styles.slot}>
-                {isEmpty ? (
-                  <GlassPanel style={styles.slotInset} />
-                ) : (
-                  <Pressable
-                    onPress={() => handleItemPress(itemId)}
-                    style={styles.slotPressable}
-                  >
-                    <GlassPanel style={styles.slotInset}>
-                      <Image
-                        source={ITEM_ICONS[itemId] || ITEM_ICONS.fokus}
-                        style={styles.slotIcon}
-                      />
-                    </GlassPanel>
-                  </Pressable>
-                )}
+              return (
+                <View key={itemId || `item-${index}`} style={styles.slot}>
+                  {isEmpty ? (
+                    <GlassPanel style={styles.slotInset} />
+                  ) : (
+                    <Pressable
+                      onPress={() => handleItemPress(itemId)}
+                      style={styles.slotPressable}
+                    >
+                      <GlassPanel style={styles.slotInset}>
+                        <Image
+                          source={ITEM_ICONS[itemId] || ITEM_ICONS.fokus}
+                          style={styles.slotIcon}
+                        />
+                      </GlassPanel>
+                    </Pressable>
+                  )}
+                </View>
+              );
+            })}
+          </View>
+          {/* Items Counter - Below and Right-Aligned */}
+          <GameText
+            variant="labelSmall"
+            color={COLORS.textMuted}
+            style={styles.counter}
+          >
+            {ownedItems.length}/{MAX_ITEM_SLOTS}
+          </GameText>
+        </View>
+
+        {/* Consumables Section with Counter Below */}
+        <View style={styles.slotGroup}>
+          <View style={styles.slotsSection}>
+            {consumableSlots.map((_, index) => (
+              <View key={`consumable-${index}`} style={styles.slot}>
+                <GlassPanel style={styles.slotInset} />
               </View>
-            );
-          })}
+            ))}
+          </View>
+          {/* Consumables Counter - Below and Right-Aligned */}
+          <GameText
+            variant="labelSmall"
+            color={COLORS.textMuted}
+            style={styles.counter}
+          >
+            0/{MAX_CONSUMABLE_SLOTS}
+          </GameText>
         </View>
-
-        {/* Items Counter */}
-        <GameText variant="labelSmall" color={COLORS.textMuted}>
-          {ownedItems.length}/{MAX_ITEM_SLOTS}
-        </GameText>
-
-        {/* Divider */}
-        <View style={styles.divider} />
-
-        {/* Consumables Section (Placeholder) */}
-        <View style={styles.slotsSection}>
-          {consumableSlots.map((_, index) => (
-            <View key={`consumable-${index}`} style={styles.slot}>
-              <GlassPanel style={styles.slotInset} />
-            </View>
-          ))}
-        </View>
-
-        {/* Consumables Counter */}
-        <GameText variant="labelSmall" color={COLORS.textMuted}>
-          0/{MAX_CONSUMABLE_SLOTS}
-        </GameText>
       </View>
     </View>
   );
@@ -114,14 +121,17 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "center",
-    gap: SPACING.xs,
+    gap: SPACING.xl * 2, // Gap between items and consumables groups
+  },
+  slotGroup: {
+    alignItems: "flex-end", // Counter right-aligned below slots
   },
   slotsSection: {
     flexDirection: "row",
     alignItems: "center",
-    gap: SPACING.xxs,
+    gap: SPACING.md, // Increased gap between slots
   },
   slot: {
     alignItems: "center",
@@ -130,20 +140,17 @@ const styles = StyleSheet.create({
     borderRadius: DIMENSIONS.borderRadiusSmall,
   },
   slotInset: {
-    width: 28,
-    height: 28,
+    width: 40, // Increased from 28
+    height: 40, // Increased from 28
     alignItems: "center",
     justifyContent: "center",
   },
   slotIcon: {
-    width: 14,
-    height: 14,
+    width: 28, // Increased from 14
+    height: 28, // Increased from 14
     resizeMode: "contain",
   },
-  divider: {
-    width: 1,
-    height: 20,
-    backgroundColor: COLORS.overlays.whiteMild,
-    marginHorizontal: SPACING.xs,
+  counter: {
+    marginTop: SPACING.xs, // Space between slots and counter
   },
 });

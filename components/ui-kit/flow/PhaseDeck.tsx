@@ -65,9 +65,10 @@ export const PhaseDeck: React.FC<PhaseDeckProps> = ({ diceTray }) => {
   const trayOverlay = renderTrayOverlay();
 
   // Determine what to render in the main content area
+  // ItemRow is now rendered at the top level, so content is Tray + ScoringGrid only
   const renderContent = () => {
     if (isFullPlayLayout(phase)) {
-      // Full gameplay layout: Tray + ItemRow + ScoringGrid (ScorePanel is now in TopMenuStrip)
+      // Full gameplay layout: Tray + ScoringGrid (ItemRow is above, ScorePanel is in TopMenuStrip)
       return (
         <View style={styles.playLayout}>
           {/* Tray */}
@@ -75,29 +76,18 @@ export const PhaseDeck: React.FC<PhaseDeckProps> = ({ diceTray }) => {
             <TrayWindow overlay={trayOverlay}>{diceTray}</TrayWindow>
           </View>
 
-          {/* ItemRow */}
-          <View
-            style={[styles.sectionWrapper, { height: layout.itemRowHeight }]}
-          >
-            <ItemRow />
-          </View>
-
-          {/* Bottom Panel (ScoringGrid) */}
-          <View style={styles.bottomPanelFlex}>
+          {/* Bottom Panel (ScoringGrid) - WITH PADDING */}
+          <View style={[styles.bottomPanelFlex, styles.paddedSection]}>
             <BottomPanel />
           </View>
         </View>
       );
     }
 
-    // Simplified layout for all other phases
-    // ItemRow + BottomPanel which takes the remaining space
+    // Simplified layout for all other phases: BottomPanel only
+    // ItemRow is already rendered at top level
     return (
-      <View style={styles.bottomPanelFlex}>
-        {/* ItemRow (Always Visible) */}
-        <View style={[styles.sectionWrapper, { height: layout.itemRowHeight }]}>
-          <ItemRow />
-        </View>
+      <View style={[styles.bottomPanelFlex, styles.paddedSection]}>
         <BottomPanel />
       </View>
     );
@@ -105,16 +95,33 @@ export const PhaseDeck: React.FC<PhaseDeckProps> = ({ diceTray }) => {
 
   return (
     <View style={styles.container}>
-      {/* 1. TopMenuStrip (Fixed height - Always Visible) */}
+      {/* 1. TopMenuStrip (Fixed height - Always Visible) - FULL BLEED */}
       <View style={[styles.sectionWrapper, { height: layout.topStripHeight }]}>
         <TopMenuStrip />
       </View>
 
-      {/* 2. Content Area (flex:1 - Phase-dependent) */}
+      {/* 2. ItemRow (Fixed height - Always Visible) - WITH PADDING */}
+      <View
+        style={[
+          styles.sectionWrapper,
+          styles.paddedSection,
+          { height: layout.itemRowHeight },
+        ]}
+      >
+        <ItemRow />
+      </View>
+
+      {/* 3. Content Area (flex:1 - Phase-dependent) */}
       <View style={styles.contentBlock}>{renderContent()}</View>
 
-      {/* 3. Footer (Fixed height - Always Visible) */}
-      <View style={[styles.sectionWrapper, { height: layout.footerHeight }]}>
+      {/* 4. Footer (Fixed height - Always Visible) */}
+      <View
+        style={[
+          styles.sectionWrapper,
+          styles.paddedSection,
+          { height: layout.footerHeight },
+        ]}
+      >
         <FooterControls />
       </View>
     </View>
@@ -125,11 +132,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     gap: SPACING.sm, // Unified gap between all major sections
-    paddingHorizontal: SPACING.sm,
+    // No horizontal padding - TopMenuStrip goes full bleed
     paddingVertical: SPACING.sm,
   },
   sectionWrapper: {
     overflow: "hidden", // Strict containment for fixed-height sections
+  },
+  paddedSection: {
+    paddingHorizontal: SPACING.sm, // Horizontal padding for non-full-bleed sections
   },
   contentBlock: {
     flex: 1,
@@ -137,7 +147,7 @@ const styles = StyleSheet.create({
   },
   playLayout: {
     flex: 1,
-    gap: SPACING.sm, // Internal gap for Tray/ScorePanel/BottomPanel
+    gap: SPACING.sm, // Internal gap for Tray/ScoringGrid
   },
   bottomPanelFlex: {
     flex: 1,

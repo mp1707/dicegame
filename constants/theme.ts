@@ -288,13 +288,12 @@ export const LAYOUT = {
   // Section weights (percentages of usable height, total = 100)
   // TopMenuStrip replaces header + scoreRow (both integrated)
   weights: {
-    topStrip: 14, // ~115pt - Increased for Level/Money/Punkte/Hände/Würfe/Goal
-    itemRow: 6, // ~49pt - Compact row for items + consumables
-    diceTray: 32, // ~262pt - Slightly reduced
-    // scoreRow removed - integrated into topStrip
-    scoringGrid: 19, // ~155pt - Unchanged
-    footer: 10, // ~82pt - Unchanged
-    // Sum: 14+6+32+19+10 = 81%. 19% gap for breathing room.
+    topStrip: 12,
+    itemRow: 10,
+    diceTray: 35,
+    scoringGrid: 10,
+    footer: 10,
+    // Sum: 12+10+35+10+10 = 77%. 23% gap for breathing room.
   },
 
   // Scoring grid internal distribution (ratios within scoringGrid height)

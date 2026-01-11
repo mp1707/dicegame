@@ -454,22 +454,34 @@ export const FooterControls = () => {
           pointerEvents="none"
         />
         <View style={styles.ctaRow}>
-          {/* Hands Display (Left) - Only show during gameplay phases */}
+          {/* Hands + Würfe Display (Left) - Only show during gameplay phases */}
           {(phase === "LEVEL_PLAY" || phase === "LEVEL_RESULT") && (
-            <GlassPanel style={styles.statPill}>
-              <View style={styles.statContent}>
+            <GlassPanel style={styles.statPanel}>
+              {/* Hands Row */}
+              <View style={styles.statRow}>
                 <GameText variant="labelSmall" color={COLORS.textMuted}>
-                  HÄNDE
+                  Hände
                 </GameText>
-                <View style={styles.statRow}>
-                  <Image
-                    source={require("../../assets/icons/Glove.png")}
-                    style={styles.iconSm}
-                  />
-                  <GameText variant="scoreboardSmall" color={COLORS.cyan}>
-                    {handsRemaining}
-                  </GameText>
-                </View>
+                <Image
+                  source={require("../../assets/icons/Glove.png")}
+                  style={styles.iconSm}
+                />
+                <GameText variant="scoreboardSmall" color={COLORS.cyan}>
+                  {handsRemaining}
+                </GameText>
+              </View>
+              {/* Würfe Row */}
+              <View style={styles.statRow}>
+                <GameText variant="labelSmall" color={COLORS.textMuted}>
+                  Würfe
+                </GameText>
+                <Image
+                  source={require("../../assets/icons/die.png")}
+                  style={styles.iconSm}
+                />
+                <GameText variant="scoreboardSmall" color={COLORS.gold}>
+                  {rollsRemaining}
+                </GameText>
               </View>
             </GlassPanel>
           )}
@@ -477,26 +489,6 @@ export const FooterControls = () => {
           <Animated.View style={[styles.ctaArea, animatedStyle]}>
             {renderCTA()}
           </Animated.View>
-
-          {/* Rolls Display (Right) - Only show during gameplay phases */}
-          {(phase === "LEVEL_PLAY" || phase === "LEVEL_RESULT") && (
-            <GlassPanel style={styles.statPill}>
-              <View style={styles.statContent}>
-                <GameText variant="labelSmall" color={COLORS.textMuted}>
-                  WÜRFE
-                </GameText>
-                <View style={styles.statRow}>
-                  <Image
-                    source={require("../../assets/icons/die.png")}
-                    style={styles.iconSm}
-                  />
-                  <GameText variant="scoreboardSmall" color={COLORS.gold}>
-                    {rollsRemaining}
-                  </GameText>
-                </View>
-              </View>
-            </GlassPanel>
-          )}
         </View>
       </View>
     );
@@ -517,41 +509,31 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   ctaRow: {
-    // NEW wrapper for 3-column footer layout
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "stretch",
     gap: SPACING.md,
-    justifyContent: "space-between",
   },
   glowPulse: {
     ...StyleSheet.absoluteFillObject,
     borderRadius: DIMENSIONS.borderRadiusLarge,
     transform: [{ scaleX: 1.1 }, { scaleY: 1.3 }],
-    left: "25%", // Center behind main button (approx)
-    width: "50%",
   },
   ctaButton: {
     flex: 1,
     shadowOpacity: 0.6,
   },
   ctaArea: {
-    flex: 2, // Main button takes 50% width (2/4)
+    flex: 1, // CTA takes remaining space
     flexDirection: "row",
     gap: SPACING.sm,
     justifyContent: "center",
   },
-  statPill: {
-    flex: 1, // Side stats take 25% width each (1/4)
-    height: "100%", // Match button height
+  statPanel: {
     justifyContent: "center",
-    borderRadius: DIMENSIONS.borderRadius,
-  },
-  statContent: {
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
     gap: SPACING.xxs,
-    paddingHorizontal: SPACING.xs,
+    borderRadius: DIMENSIONS.borderRadius,
   },
   statRow: {
     flexDirection: "row",
@@ -562,7 +544,6 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     resizeMode: "contain",
-    marginLeft: -SPACING.xs,
   },
   dualButtonRow: {
     flex: 1,

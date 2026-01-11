@@ -66,8 +66,6 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
     isWinAnimating,
     phase,
     pendingUpgradeType,
-    handsRemaining,
-    rollsRemaining,
     selectedHandId,
     handLevels,
     revealState,
@@ -81,8 +79,6 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
       isWinAnimating: s.isWinAnimating,
       phase: s.phase,
       pendingUpgradeType: s.pendingUpgradeType,
-      handsRemaining: s.handsRemaining,
-      rollsRemaining: s.rollsRemaining,
       selectedHandId: s.selectedHandId,
       handLevels: s.handLevels,
       revealState: s.revealState,
@@ -277,8 +273,7 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
             setTimeout(() => {
               updateRevealAnimation({
                 animationPhase: "total",
-                displayTotal:
-                  useGameStore.getState().levelScore + finalScore,
+                displayTotal: useGameStore.getState().levelScore + finalScore,
               });
               triggerLightImpact();
               totalColorProgress.value = 0;
@@ -591,7 +586,11 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
         <Surface variant="elevated" padding="none" style={styles.leftPanel}>
           {/* Row 1: Level + Money */}
           <View style={styles.topRow}>
-            <Surface variant="stripInset" padding="none" style={styles.statSlot}>
+            <Surface
+              variant="stripInset"
+              padding="none"
+              style={styles.labelValueSlot}
+            >
               <GameText variant="labelSmall" color={COLORS.textMuted}>
                 LEVEL
               </GameText>
@@ -599,7 +598,11 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
                 {levelNumber}
               </GameText>
             </Surface>
-            <Surface variant="stripInset" padding="none" style={styles.statSlot}>
+            <Surface
+              variant="stripInset"
+              padding="none"
+              style={styles.moneySlot}
+            >
               <Image
                 source={require("../../assets/icons/coin.png")}
                 style={styles.iconSm}
@@ -614,31 +617,13 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
           <Surface variant="stripInset" padding="none" style={styles.scoreSlot}>
             {renderScoreContent()}
           </Surface>
-
-          {/* Row 3: Hands + Rolls */}
-          <View style={styles.bottomRow}>
-            <Surface variant="stripInset" padding="none" style={styles.statSlot}>
-              <GameText variant="labelSmall" color={COLORS.textMuted}>
-                Hände
-              </GameText>
-              <GameText variant="scoreboardSmall" color={COLORS.cyan}>
-                {handsRemaining}
-              </GameText>
-            </Surface>
-            <Surface variant="stripInset" padding="none" style={styles.statSlot}>
-              <GameText variant="labelSmall" color={COLORS.textMuted}>
-                Würfe
-              </GameText>
-              <GameText variant="scoreboardSmall" color={COLORS.gold}>
-                {rollsRemaining}
-              </GameText>
-            </Surface>
-          </View>
         </Surface>
 
         {/* Right Panel: Goal */}
         <Surface variant="elevated" padding="none" style={styles.rightPanel}>
-          <View style={styles.goalContainer}>{renderGoalContent()}</View>
+          <Surface variant="stripInset" padding="none" style={styles.goalInset}>
+            {renderGoalContent()}
+          </Surface>
 
           {/* Progress Bar */}
           {showProgressBar && (
@@ -710,15 +695,19 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: SPACING.stripInsetGap,
   },
-  bottomRow: {
-    flexDirection: "row",
-    gap: SPACING.stripInsetGap,
-  },
-  statSlot: {
+  labelValueSlot: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "space-between",
+    paddingVertical: SPACING.xxs,
+    paddingHorizontal: SPACING.xs,
+  },
+  moneySlot: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
     gap: SPACING.xs,
     paddingVertical: SPACING.xxs,
     paddingHorizontal: SPACING.xs,
@@ -756,13 +745,12 @@ const styles = StyleSheet.create({
     alignItems: "baseline",
     gap: 2,
   },
-  goalContainer: {
+  goalInset: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: SPACING.xs,
+    margin: SPACING.stripInsetGap,
   },
   goalContent: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
   },
