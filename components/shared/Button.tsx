@@ -125,21 +125,8 @@ export const Button: React.FC<ButtonProps> = React.memo(
       ? selectedColor
       : activeColor;
 
-    // Disabled state: render flat Surface without elevation
-    if (disabled) {
-      return (
-        <View style={[styles.container, style]}>
-          <Surface
-            tintColor={currentColor}
-            padding={padding}
-            contentStyle={[styles.content, contentStyle]}
-            style={styles.surface}
-          >
-            <View style={styles.disabledContent}>{children}</View>
-          </Surface>
-        </View>
-      );
-    }
+    // Render Pressable for all states to maintain 3D structure
+    // Disabled state is handled by Pressable prop
 
     // Active or Selected state: render Pressable with elevation
     return (

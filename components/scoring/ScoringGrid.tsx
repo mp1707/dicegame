@@ -135,22 +135,30 @@ const useHandSlot = (handId: HandId) => {
 interface LevelBadgeProps {
   level: number;
   style?: object;
+  textColor?: string;
+  isSelected?: boolean;
 }
 
-const LevelBadge = React.memo(({ level, style }: LevelBadgeProps) => (
-  <Surface
-    tintColor={COLORS.overlays.whiteMedium}
-    padding="xxs"
-    style={[styles.levelBadge, style]}
-    contentStyle={styles.levelBadgeContent}
-  >
-    <GameText variant="caption" style={styles.levelText}>
-      LV {level}
-    </GameText>
-  </Surface>
-));
+const LevelBadge = React.memo(
+  ({ level, style, textColor, isSelected }: LevelBadgeProps) => (
+    <Surface
+      tintColor={
+        isSelected ? COLORS.overlays.blackSubtle : COLORS.overlays.whiteMedium
+      }
+      padding="xxs"
+      style={[styles.levelBadge, style]}
+      contentStyle={styles.levelBadgeContent}
+    >
+      <GameText
+        variant="caption"
+        style={[styles.levelText, textColor ? { color: textColor } : undefined]}
+      >
+        LV {level}
+      </GameText>
+    </Surface>
+  )
+);
 
-// Upper Section Button: Centered icon, label below, level badge top-right (partially outside)
 interface UpperSectionButtonProps {
   handId: HandId;
   label: string;
@@ -164,7 +172,7 @@ const UpperSectionButton = React.memo(
 
     const getButtonColor = () => {
       if (isUsed) return COLORS.surface2;
-      if (isSelected) return COLORS.purple;
+      if (isSelected) return COLORS.cyan;
       return COLORS.purple;
     };
 
@@ -175,7 +183,7 @@ const UpperSectionButton = React.memo(
           disabled={disabled}
           selected={isSelected}
           activeColor={getButtonColor()}
-          selectedColor={COLORS.purple}
+          selectedColor={COLORS.cyan}
           disabledColor={COLORS.surface2}
           padding="sm"
           depth={3}
@@ -200,6 +208,8 @@ const UpperSectionButton = React.memo(
               color={
                 isUsed
                   ? COLORS.goldDark
+                  : isSelected
+                  ? "#000000"
                   : disabled
                   ? COLORS.textMuted
                   : COLORS.text
@@ -209,8 +219,16 @@ const UpperSectionButton = React.memo(
               {label}
             </GameText>
           </View>
+          <LevelBadge
+            level={level}
+            textColor={isSelected ? "#000000" : undefined}
+            isSelected={isSelected}
+            style={[
+              styles.upperLevelBadge,
+              { opacity: disabled && !isUsed ? 0.5 : 1 },
+            ]}
+          />
         </Button>
-        <LevelBadge level={level} style={styles.upperLevelBadge} />
       </View>
     );
   }
@@ -230,7 +248,7 @@ const LowerSectionButton = React.memo(
 
     const getButtonColor = () => {
       if (isUsed) return COLORS.surface2;
-      if (isSelected) return COLORS.purple;
+      if (isSelected) return COLORS.cyan;
       return COLORS.purple;
     };
 
@@ -240,7 +258,7 @@ const LowerSectionButton = React.memo(
         disabled={disabled}
         selected={isSelected}
         activeColor={getButtonColor()}
-        selectedColor={COLORS.purple}
+        selectedColor={COLORS.cyan}
         disabledColor={COLORS.surface2}
         padding="sm"
         depth={3}
@@ -265,12 +283,18 @@ const LowerSectionButton = React.memo(
           </View>
           {/* Right column: Level badge + Label */}
           <View style={styles.lowerRightColumn}>
-            <LevelBadge level={level} />
+            <LevelBadge
+              level={level}
+              isSelected={isSelected}
+              textColor={isSelected ? "#000000" : undefined}
+            />
             <GameText
               variant="body"
               color={
                 isUsed
                   ? COLORS.goldDark
+                  : isSelected
+                  ? "#000000"
                   : disabled
                   ? COLORS.textMuted
                   : COLORS.text

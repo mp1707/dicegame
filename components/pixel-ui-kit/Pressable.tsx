@@ -13,6 +13,7 @@ import Animated, {
   withSpring,
   interpolate,
   Extrapolate,
+  withTiming,
 } from "react-native-reanimated";
 import { Surface, SurfacePadding } from "./Surface";
 import { COLORS, ANIMATION } from "../../constants/theme";
@@ -127,9 +128,8 @@ export const Pressable: React.FC<PressableProps> = React.memo(
       if (disabled) return;
 
       // Animate to pressed state
-      pressProgress.value = withSpring(1, {
-        damping: 20,
-        stiffness: 400,
+      pressProgress.value = withTiming(1, {
+        duration: 50,
       });
 
       triggerLightImpact();
@@ -137,10 +137,9 @@ export const Pressable: React.FC<PressableProps> = React.memo(
     };
 
     const handlePressOut = () => {
-      // Animate back to unpressed with satisfying spring
-      pressProgress.value = withSpring(0, {
-        damping: 15,
-        stiffness: 300,
+      // Animate back to unpressed with overdamped spring (no bounce)
+      pressProgress.value = withTiming(0, {
+        duration: 50,
       });
 
       onPressOut?.();
