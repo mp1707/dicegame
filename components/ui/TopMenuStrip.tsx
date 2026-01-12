@@ -501,9 +501,11 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
   const renderGoalContent = () => {
     if (phase === "SHOP_MAIN" || phase === "SHOP_PICK_UPGRADE") {
       return (
-        <GameText variant="displayLarge" color={COLORS.text}>
-          SHOP
-        </GameText>
+        <View style={styles.goalContent}>
+          <GameText variant="displayLarge" color={COLORS.text}>
+            SHOP
+          </GameText>
+        </View>
       );
     }
 
@@ -794,6 +796,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   diceEditorGoal: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
     gap: SPACING.xs,
