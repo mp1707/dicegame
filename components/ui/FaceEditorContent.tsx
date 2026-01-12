@@ -182,11 +182,11 @@ const AnimatedFaceTile: React.FC<AnimatedFaceTileProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: SPACING.screenPadding,
+    paddingHorizontal: SPACING.sm,
   },
   gridContainer: {
     flex: 1,
-    gap: SPACING.sm,
+    gap: SPACING.xs,
     justifyContent: "center",
   },
   row: {
@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
   },
   tileWrapper: {
     flex: 1,
-    maxWidth: 80, // Same as DieEditorContent
+    maxWidth: 70, // Same as DieEditorContent
   },
   tile: {
     aspectRatio: 1, // Ensure square tiles

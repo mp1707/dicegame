@@ -13,7 +13,6 @@ import { FooterControls } from "../../ui/FooterControls";
 import { CashoutTrayOverlay } from "../../ui/CashoutTrayOverlay";
 import { ShopTrayOverlay } from "../../ui/ShopTrayOverlay";
 import { UpgradeTrayOverlay } from "../../ui/UpgradeTrayOverlay";
-import { DiceEditorTrayOverlay } from "../../ui/DiceEditorTrayOverlay";
 import { LoseTrayOverlay } from "../../ui/LoseTrayOverlay";
 
 /**
@@ -52,9 +51,6 @@ export const PhaseDeck: React.FC<PhaseDeckProps> = ({ diceTray }) => {
         return <ShopTrayOverlay />;
       case "SHOP_PICK_UPGRADE":
         return <UpgradeTrayOverlay />;
-      case "DICE_EDITOR_DIE":
-      case "DICE_EDITOR_FACE":
-        return <DiceEditorTrayOverlay />;
       case "LOSE_SCREEN":
         return <LoseTrayOverlay />;
       default:

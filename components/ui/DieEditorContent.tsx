@@ -170,24 +170,22 @@ const AnimatedDieTile: React.FC<AnimatedDieTileProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: SPACING.screenPadding,
+    paddingHorizontal: SPACING.sm,
   },
   rowsContainer: {
     flex: 1,
     justifyContent: "center",
-    gap: SPACING.lg,
-    paddingTop: SPACING.md,
+    gap: SPACING.sm,
   },
   diceRow: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    gap: SPACING.md,
-    paddingHorizontal: SPACING.xs,
+    gap: SPACING.sm,
   },
   tileWrapper: {
     flex: 1,
-    maxWidth: 80,
+    maxWidth: 70,
   },
   tile: {
     aspectRatio: 1, // Ensure square tiles

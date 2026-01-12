@@ -1,9 +1,6 @@
 export { GameText } from "./GameText";
 export type { GameTextProps, GameTextVariant } from "./GameText";
 
-export { TileButton } from "./TileButton";
-export type { TileButtonProps, TileButtonState } from "./TileButton";
-
 export { Button } from "./Button";
 
 export { SquareTileButton } from "./SquareTileButton";
