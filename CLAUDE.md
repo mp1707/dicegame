@@ -96,10 +96,11 @@ dice-game/
 │   ├── Die.tsx              # 3D die with tap-to-lock + colored pips
 │   ├── DiceTray.tsx         # 3D scene with physics
 │   ├── ui/
-│   │   ├── PlayConsole.tsx  # Unified container: HUDHeader + TrayWindow + ScoreLip
-│   │   ├── ScoreLip.tsx     # Integrated score readout strip (inside PlayConsole)
+│   │   ├── PhaseDeck.tsx    # Sliding transition orchestrator
+│   │   ├── PHASE_DECK.md    # PhaseDeck documentation
+│   │   ├── TopMenuStrip.tsx # Unified container (Level, Money, Goal, Selected Hand)
 │   │   ├── FooterControls.tsx
-│   │   ├── CashoutResultList.tsx # Inline reward breakdown
+│   │   ├── CashoutRewardsPanel.tsx # Inline reward breakdown
 │   │   ├── ShopContent.tsx  # Shop grid with upgrade items + purchasable items
 │   │   ├── DieEditorContent.tsx # Die selection panel (DICE_EDITOR_DIE phase)
 │   │   ├── FaceEditorContent.tsx # Face selection panel (DICE_EDITOR_FACE phase)
@@ -109,12 +110,8 @@ dice-game/
 │   │   ├── Pressable.tsx    # 3D press effect for buttons
 │   │   ├── PixelChip.tsx    # Status badge
 │   │   ├── PixelDivider.tsx # Visual separator
-│   │   └── index.ts         # Barrel exports
-│   ├── ui-kit/              # Legacy + animation components
 │   │   ├── Sparks.tsx       # Particle effects for celebrations
-│   │   ├── index.ts         # Barrel exports
-│   │   └── flow/
-│   │       └── PhaseDeck.tsx # Sliding transition orchestrator
+│   │   └── index.ts         # Barrel exports
 │   ├── scoring/
 │   │   ├── ScoringGrid.tsx  # 13 hand slots (upper + lower sections)
 │   │   └── CLAUDE.md        # Scoring animation documentation
@@ -127,8 +124,7 @@ dice-game/
 
 **UI Components**:
 
-- **`components/ui-kit/CLAUDE.md`** - Material layer system, UI guidelines, component catalog
-- **`components/ui-kit/flow/CLAUDE.md`** - PhaseDeck layout orchestration, phase transitions
+- **`components/ui/PHASE_DECK.md`** - PhaseDeck layout orchestration, phase transitions
 - **`components/ui/dice-editor/CLAUDE.md`** - Dice enhancement editor flow (DICE_EDITOR phases)
 - **`components/scoring/CLAUDE.md`** - Scoring reveal animation choreography
 
@@ -312,13 +308,13 @@ All money and cost displays follow a consistent pattern:
 - Header: `PlayConsole.tsx` (18px coin, scoreboardSmall, gold)
 - Shop prices: `ShopItemCard.tsx` (14px coin, bodySmall, gold/muted)
 
-### PhaseDeck Layout (`components/ui-kit/flow/PhaseDeck.tsx`)
+### PhaseDeck Layout (`components/ui/PhaseDeck.tsx`)
 
-PhaseDeck is the main game layout orchestrator. PlayConsole is **always visible** - only the bottom panel content switches based on phase.
+PhaseDeck is the main game layout orchestrator. TopMenuStrip is **always visible** - only the bottom panel content switches based on phase.
 
-**Architecture**: PlayConsole (always visible) + BottomPanel (switches content) + Footer (phase-aware CTAs)
+**Architecture**: TopMenuStrip (always visible) + BottomPanel (switches content) + Footer (phase-aware CTAs)
 
-See **`components/ui-kit/flow/CLAUDE.md`** for complete phase mapping, content components, and integration guide.
+See **`components/ui/PHASE_DECK.md`** for complete phase mapping, content components, and integration guide.
 
 ---
 

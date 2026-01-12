@@ -1,6 +1,6 @@
 # PhaseDeck Layout System
 
-PhaseDeck is the main game layout orchestrator that manages phase-based transitions. **PlayConsole is always visible** - only the bottom panel content switches based on the current game phase.
+PhaseDeck is the main game layout orchestrator that manages phase-based transitions. **TopMenuStrip is always visible** - only the bottom panel content switches based on the current game phase.
 
 ---
 
@@ -8,7 +8,7 @@ PhaseDeck is the main game layout orchestrator that manages phase-based transiti
 
 PhaseDeck consists of three main layers:
 
-1. **PlayConsole** - Always visible (HUDHeader + TrayWindow + ScoreLip)
+1. **TopMenuStrip** - Always visible (Level, Money, Goal, Selected Hand)
 2. **BottomPanel** - Switches content based on phase
 3. **Footer** - Phase-aware CTA buttons
 
@@ -18,12 +18,12 @@ PhaseDeck consists of three main layers:
 
 ```
 PhaseDeck
-├── PlayConsole (ALWAYS VISIBLE)
-│   ├── HUDHeader (Level, Money, Goal)
-│   ├── TrayWindow (Dice 3D scene OR SingleDiePreview)
-│   └── ScoreLip (Score + Progress)
+├── TopMenuStrip (ALWAYS VISIBLE)
+│   ├── Stats (Level, Money)
+│   ├── Hand/Rolls info
+│   └── Goal/Score info
 ├── BottomPanel (CONTENT SWITCHES)
-│   ├── LEVEL_PLAY → ScoringGrid
+│   ├── LEVEL_PLAY → TrayWindow + ScoringGrid
 │   ├── LEVEL_RESULT → CashoutRewardsPanel
 │   ├── SHOP_MAIN → ShopContent
 │   ├── SHOP_PICK_UPGRADE → UpgradeContent
@@ -37,13 +37,13 @@ PhaseDeck
 
 ---
 
-## PlayConsole Phase-Aware Header
+## Phase-Aware Header
 
-The goal header in PlayConsole changes based on the current phase:
+The goal header in TopMenuStrip changes based on the current phase:
 
 | Phase                  | Header Display             | Progress Bar         |
 | ---------------------- | -------------------------- | -------------------- |
-| **LEVEL_PLAY**         | "ERREICHE X PUNKTE"        | Visible (score/goal) |
+| **LEVEL_PLAY**         | "ZIEL" + Amount            | Visible (score/goal) |
 | **SHOP phases**        | "SHOP" (large text)        | Hidden               |
 | **DICE_EDITOR phases** | "WÜRFEL VERBESSERN" + pill | Hidden               |
 
@@ -56,7 +56,7 @@ The goal header in PlayConsole changes based on the current phase:
 
 ## TrayOverlay Titles
 
-Tray overlays use `TrayOverlayTitle` component with fade-in + move-up animation (FadeInUp/FadeOutDown):
+Tray overlays use `TrayOverlayTitle` component with fade-in + move-up animation:
 
 | Phase                 | Title                  | Subtitle                   |
 | --------------------- | ---------------------- | -------------------------- |
@@ -143,39 +143,20 @@ Wrapper for `DiePreview3D` that connects to store. Used during DICE_EDITOR_DIE a
 
 ### Slide Animation
 
-Phase transitions use easing-based slide animations configured in `ANIMATION.phase.*`:
-
-```typescript
-// constants/theme.ts
-ANIMATION.phase = {
-  springConfig: { damping: 28, stiffness: 380 },
-  parallax: {
-    trayModule: 0.5, // Moves 50% of screen width
-    scoreRow: 0.6, // Moves 60% of screen width
-    scoringGrid: 0.75, // Moves 75% of screen width
-    footer: 0.9, // Moves 90% of screen width
-  },
-};
-```
+Phase transitions use easing-based slide animations configured in `ANIMATION.phase.*`.
 
 **Parallax effect**: Different layers move at different speeds, creating depth during transitions.
 
 ### Transition Timing
 
-```typescript
-ANIMATION.transition = {
-  incomingDelay: 40, // Delay before incoming panel
-  ctaSwapProgress: 0.6, // When to swap CTA (60% progress)
-  ctaGlowPulseDuration: 400, // Glow pulse behind new CTA
-};
-```
+See `ANIMATION.transition` keys in `constants/theme.ts`.
 
 ---
 
 ## Integration in App.tsx
 
 ```typescript
-import { PhaseDeck } from "./components/ui-kit/flow";
+import { PhaseDeck } from "./components/ui/PhaseDeck";
 import { DiceTray } from "./components/DiceTray";
 
 <PhaseDeck
@@ -246,20 +227,3 @@ START
      return <Button label="ACTION" onPress={handleAction} />;
    }
    ```
-
-5. **Update header** in `PlayConsole.tsx` (if needed):
-   ```typescript
-   const getHeaderTitle = () => {
-     if (phase === "NEW_PHASE") return "NEW TITLE";
-     ...
-   };
-   ```
-
----
-
-## Related Documentation
-
-- **UI Kit**: See `components/ui-kit/CLAUDE.md` for container components
-- **Dice Editor**: See `components/ui/dice-editor/CLAUDE.md` for dice editor phases
-- **Animation timing**: See `ANIMATION.phase.*` and `ANIMATION.transition.*` in `constants/theme.ts`
-- **Game state**: See `store/gameStore.ts` for phase management

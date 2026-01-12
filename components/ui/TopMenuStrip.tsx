@@ -20,7 +20,7 @@ import {
 } from "../../constants/theme";
 import { GameText } from "../shared";
 import { Surface } from "../pixel-ui-kit";
-import { Sparks } from "../ui-kit/Sparks";
+import { Sparks } from "../pixel-ui-kit/Sparks";
 import { useGameStore } from "../../store/gameStore";
 import { useShallow } from "zustand/react/shallow";
 import { formatNumber } from "../../utils/yahtzeeScoring";

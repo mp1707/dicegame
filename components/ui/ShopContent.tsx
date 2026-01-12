@@ -1,21 +1,14 @@
-import React, { useMemo } from "react";
+import React from "react";
 import { View, StyleSheet, Image, Pressable } from "react-native";
-import { ArrowUp, Lock, Sparkles } from "lucide-react-native";
-import { COLORS, SPACING, ANIMATION, DIMENSIONS } from "../../constants/theme";
+import { ArrowUp, Lock } from "lucide-react-native";
+import { COLORS, SPACING } from "../../constants/theme";
 import { useGameStore, ShopOfferType } from "../../store/gameStore";
 import { getDiceUpgradeCost, getUpgradeCost } from "../../utils/gameCore";
 import { getShopItemById } from "../../items";
 import { GameText, TileButtonState } from "../shared";
 import { Surface } from "../pixel-ui-kit";
-import Animated, {
-  FadeInRight,
-  ZoomIn,
-  FadeInDown,
-} from "react-native-reanimated";
-import {
-  triggerSelectionHaptic,
-  triggerImpactMedium,
-} from "../../utils/haptics";
+import Animated, { FadeInDown } from "react-native-reanimated";
+import { triggerSelectionHaptic } from "../../utils/haptics";
 import { ShopHeader } from "./ShopHeader";
 
 // Icon mapping for shop items

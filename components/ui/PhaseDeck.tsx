@@ -1,19 +1,19 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
-import { useLayout } from "../../../utils/LayoutContext";
-import { SPACING } from "../../../constants/theme";
-import { useGameStore, GamePhase } from "../../../store/gameStore";
+import { useLayout } from "../../utils/LayoutContext";
+import { SPACING } from "../../constants/theme";
+import { useGameStore, GamePhase } from "../../store/gameStore";
 
 // Import components
-import { TopMenuStrip } from "../../ui/TopMenuStrip";
-import { ItemRow } from "../../ui/ItemRow";
-import { TrayWindow } from "../../ui/TrayWindow";
-import { BottomPanel } from "../../ui/BottomPanel";
-import { FooterControls } from "../../ui/FooterControls";
-import { CashoutTrayOverlay } from "../../ui/CashoutTrayOverlay";
-import { ShopTrayOverlay } from "../../ui/ShopTrayOverlay";
-import { UpgradeTrayOverlay } from "../../ui/UpgradeTrayOverlay";
-import { LoseTrayOverlay } from "../../ui/LoseTrayOverlay";
+import { TopMenuStrip } from "./TopMenuStrip";
+import { ItemRow } from "./ItemRow";
+import { TrayWindow } from "./TrayWindow";
+import { BottomPanel } from "./BottomPanel";
+import { FooterControls } from "./FooterControls";
+import { CashoutTrayOverlay } from "./CashoutTrayOverlay";
+import { ShopTrayOverlay } from "./ShopTrayOverlay";
+import { UpgradeTrayOverlay } from "./UpgradeTrayOverlay";
+import { LoseTrayOverlay } from "./LoseTrayOverlay";
 
 /**
  * Helper to determine if we show full gameplay layout (Tray + ScorePanel + ScoringGrid)

@@ -13,6 +13,8 @@ import { GameText } from "./GameText";
 import { Surface } from "../pixel-ui-kit";
 import { COLORS, SPACING } from "../../constants/theme";
 
+export type TileButtonState = "selected" | "active" | "used" | "invalid";
+
 export interface SquareTileButtonProps {
   /** Image source for the icon */
   iconSource: ImageSourcePropType;

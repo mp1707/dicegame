@@ -12,7 +12,7 @@ import { DiceTray } from "./components/DiceTray";
 import { SingleDiePreview } from "./components/SingleDiePreview";
 import { OverviewModal } from "./components/modals/OverviewModal";
 import { ItemDetailModal } from "./components/modals/ItemDetailModal";
-import { PhaseDeck } from "./components/ui-kit/flow";
+import { PhaseDeck } from "./components/ui/PhaseDeck";
 import { StaticBackground } from "./components/ui/StaticBackground";
 import { useGameStore } from "./store/gameStore";
 import { getShopItemById } from "./items";
