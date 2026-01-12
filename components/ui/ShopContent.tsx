@@ -211,11 +211,7 @@ export const ShopContent: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <Surface
-        tintColor={COLORS.surface}
-        padding="md"
-        style={styles.panelContent}
-      >
+      <View style={styles.panelContent}>
         <ShopHeader />
 
         {/* 2x2 Grid Layout */}
@@ -266,7 +262,7 @@ export const ShopContent: React.FC = () => {
               />
             }
             title={shopItem?.name.toUpperCase() || "ITEMS"}
-            subtitle="CONSUMABLE"
+            subtitle="RELIKT"
             price={itemPrice}
             state={itemState}
             onPress={() => handleSelectOffer("item")}
@@ -283,7 +279,7 @@ export const ShopContent: React.FC = () => {
             delay={280}
           />
         </View>
-      </Surface>
+      </View>
     </View>
   );
 };
