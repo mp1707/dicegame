@@ -579,18 +579,18 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
           contentStyle={styles.selectedHandSlotContent}
         >
           <View style={styles.handNameRow}>
-            <GameText variant="label" color={COLORS.text} numberOfLines={1}>
-              {handName}
-            </GameText>
             <View style={styles.levelChip}>
               <GameText variant="labelSmall" color={COLORS.cyan}>
                 LV{handLevel}
               </GameText>
             </View>
+            <GameText variant="label" color={COLORS.text}>
+              {handName}
+            </GameText>
           </View>
           {/* Final score in a Surface spanning the same width as blue x red */}
           <View style={styles.formulaSurfaces}>
-            <Animated.View style={finalScoreAnimatedStyle}>
+            <Animated.View style={[finalScoreAnimatedStyle, { flex: 1 }]}>
               <Surface
                 tintColor={COLORS.surface}
                 padding="xs"
@@ -616,17 +616,17 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
         contentStyle={styles.selectedHandSlotContent}
       >
         <View style={styles.handNameRow}>
-          <GameText variant="label" color={COLORS.text} numberOfLines={1}>
-            {handName}
-          </GameText>
           <View style={styles.levelChip}>
             <GameText variant="labelSmall" color={COLORS.cyan}>
               LV{handLevel}
             </GameText>
           </View>
+          <GameText variant="label" color={COLORS.text}>
+            {handName}
+          </GameText>
         </View>
         <View style={styles.formulaSurfaces}>
-          <Animated.View style={pointsAnimatedStyle}>
+          <Animated.View style={[pointsAnimatedStyle, { flex: 1 }]}>
             <Surface
               tintColor={COLORS.upgradePoints}
               padding="xs"
@@ -641,7 +641,7 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
           <GameText variant="label" color={COLORS.textMuted}>
             x
           </GameText>
-          <Animated.View style={multAnimatedStyle}>
+          <Animated.View style={[multAnimatedStyle, { flex: 1 }]}>
             <Surface
               tintColor={COLORS.upgradeMult}
               padding="xs"
@@ -668,73 +668,75 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
           style={styles.leftPanel}
           contentStyle={styles.leftPanelContent}
         >
-          {/* Row 1: Level + Money */}
-          <View style={styles.topRow}>
-            <Surface
-              tintColor={COLORS.surface}
-              padding="lg"
-              style={styles.labelValueSlot}
-              contentStyle={styles.labelValueSlotContent}
-            >
-              <GameText variant="labelSmall" color={COLORS.textMuted}>
-                LEVEL
-              </GameText>
-              <GameText variant="scoreboardSmall" color={COLORS.text}>
-                {levelNumber}
-              </GameText>
-            </Surface>
-            <Surface
-              tintColor={COLORS.surface}
-              padding="none"
-              style={styles.moneySlot}
-              contentStyle={styles.moneySlotContent}
-            >
-              <Image
-                source={require("../../assets/icons/coin.png")}
-                style={styles.iconSm}
-              />
-              <GameText variant="scoreboardSmall" color={COLORS.gold}>
-                {formatNumber(displayedMoney)}
-              </GameText>
-            </Surface>
-          </View>
+          <View style={styles.leftPanelTopSection}>
+            {/* Row 1: Level + Money */}
+            <View style={styles.topRow}>
+              <Surface
+                tintColor={COLORS.surface}
+                padding="lg"
+                style={styles.labelValueSlot}
+                contentStyle={styles.labelValueSlotContent}
+              >
+                <GameText variant="labelSmall" color={COLORS.textMuted}>
+                  LEVEL
+                </GameText>
+                <GameText variant="scoreboardSmall" color={COLORS.text}>
+                  {levelNumber}
+                </GameText>
+              </Surface>
+              <Surface
+                tintColor={COLORS.surface}
+                padding="none"
+                style={styles.moneySlot}
+                contentStyle={styles.moneySlotContent}
+              >
+                <Image
+                  source={require("../../assets/icons/coin.png")}
+                  style={styles.iconSm}
+                />
+                <GameText variant="scoreboardSmall" color={COLORS.gold}>
+                  {formatNumber(displayedMoney)}
+                </GameText>
+              </Surface>
+            </View>
 
-          {/* Row 2: Hände + Würfe (always visible in all phases) */}
-          <View style={styles.statsRow}>
-            <Surface
-              tintColor={COLORS.surface}
-              padding="xs"
-              style={styles.statSlot}
-              contentStyle={styles.statSlotContent}
-            >
-              <Image
-                source={require("../../assets/icons/Glove.png")}
-                style={styles.iconSm}
-              />
-              <GameText variant="labelSmall" color={COLORS.textMuted}>
-                Hände
-              </GameText>
-              <GameText variant="scoreboardSmall" color={COLORS.text}>
-                {handsRemaining}
-              </GameText>
-            </Surface>
-            <Surface
-              tintColor={COLORS.surface}
-              padding="xs"
-              style={styles.statSlot}
-              contentStyle={styles.statSlotContent}
-            >
-              <Image
-                source={require("../../assets/icons/die.png")}
-                style={styles.iconSm}
-              />
-              <GameText variant="labelSmall" color={COLORS.textMuted}>
-                Würfe
-              </GameText>
-              <GameText variant="scoreboardSmall" color={COLORS.text}>
-                {rollsRemaining}
-              </GameText>
-            </Surface>
+            {/* Row 2: Hände + Würfe (always visible in all phases) */}
+            <View style={styles.statsRow}>
+              <Surface
+                tintColor={COLORS.surface}
+                padding="xs"
+                style={styles.statSlot}
+                contentStyle={styles.statSlotContent}
+              >
+                <Image
+                  source={require("../../assets/icons/Glove.png")}
+                  style={styles.iconSm}
+                />
+                <GameText variant="labelSmall" color={COLORS.textMuted}>
+                  Hände
+                </GameText>
+                <GameText variant="scoreboardSmall" color={COLORS.text}>
+                  {handsRemaining}
+                </GameText>
+              </Surface>
+              <Surface
+                tintColor={COLORS.surface}
+                padding="xs"
+                style={styles.statSlot}
+                contentStyle={styles.statSlotContent}
+              >
+                <Image
+                  source={require("../../assets/icons/die.png")}
+                  style={styles.iconSm}
+                />
+                <GameText variant="labelSmall" color={COLORS.textMuted}>
+                  Würfe
+                </GameText>
+                <GameText variant="scoreboardSmall" color={COLORS.text}>
+                  {rollsRemaining}
+                </GameText>
+              </Surface>
+            </View>
           </View>
 
           {/* Row 3: Selected Hand Section (always visible, handles counting animation) */}
@@ -814,6 +816,10 @@ const styles = StyleSheet.create({
     gap: SPACING.stripInsetGap,
     padding: SPACING.stripInsetGap,
   },
+  leftPanelTopSection: {
+    flex: 1,
+    gap: SPACING.stripInsetGap,
+  },
   rightPanel: {
     width: "35%",
     overflow: "hidden",
@@ -824,6 +830,7 @@ const styles = StyleSheet.create({
     padding: SPACING.stripInsetGap,
   },
   topRow: {
+    flex: 1,
     flexDirection: "row",
     gap: SPACING.stripInsetGap,
   },
@@ -831,24 +838,27 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   labelValueSlotContent: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: SPACING.xs,
+    paddingVertical: SPACING.xxs,
     paddingHorizontal: SPACING.sm,
   },
   moneySlot: {
     flex: 1,
   },
   moneySlotContent: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "flex-end",
     gap: SPACING.xs,
-    paddingVertical: SPACING.xs,
+    paddingVertical: SPACING.xxs,
     paddingHorizontal: SPACING.sm,
   },
   statsRow: {
+    flex: 1,
     flexDirection: "row",
     gap: SPACING.stripInsetGap,
   },
@@ -856,6 +866,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statSlotContent: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -869,10 +880,11 @@ const styles = StyleSheet.create({
   selectedHandSlotContent: {
     flex: 1,
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "stretch",
     justifyContent: "space-between",
-    paddingVertical: SPACING.xxs,
+    paddingVertical: SPACING.xs,
     paddingHorizontal: SPACING.sm,
+    gap: SPACING.xs,
   },
   selectedHandPlaceholderContent: {
     flex: 1,
@@ -882,10 +894,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.sm,
   },
   handNameRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.xs,
-    flex: 1,
+    flexDirection: "column",
+    alignItems: "flex-start",
+    justifyContent: "center",
+    gap: SPACING.xxs,
+    flex: 0.4,
   },
   levelChip: {
     backgroundColor: COLORS.overlays.cyanSubtle,
@@ -898,24 +911,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: SPACING.xs,
+    flex: 0.6,
   },
   formulaSurface: {
-    minWidth: 40,
+    flex: 1,
+    minHeight: 36,
   },
   formulaSurfaceContent: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: SPACING.xxs,
+    paddingVertical: SPACING.xs,
     paddingHorizontal: SPACING.sm,
   },
   finalScoreSurface: {
-    // Width to match blue + x + red (approximately 40 + gap + text + gap + 40)
-    minWidth: 100,
+    flex: 1,
+    minHeight: 36,
   },
   finalScoreSurfaceContent: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: SPACING.xxs,
+    paddingVertical: SPACING.xs,
     paddingHorizontal: SPACING.md,
   },
   goalInset: {
