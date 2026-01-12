@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useMemo } from "react";
-import { View, StyleSheet, Image } from "react-native";
-import { GameText, Button } from "../shared";
+import { View, StyleSheet } from "react-native";
+import { Button } from "../shared";
 import { FooterButton } from "./FooterButton";
 import { Surface } from "../pixel-ui-kit";
 import { COLORS, SPACING, DIMENSIONS, ANIMATION } from "../../constants/theme";
@@ -32,7 +32,6 @@ import Animated, {
 export const FooterControls = () => {
   const layout = useLayout();
   const rollsRemaining = useGameStore((s) => s.rollsRemaining);
-  const handsRemaining = useGameStore((s) => s.handsRemaining);
   const isRolling = useGameStore((s) => s.isRolling);
   const triggerRoll = useGameStore((s) => s.triggerRoll);
   const phase = useGameStore((s) => s.phase);
@@ -430,51 +429,6 @@ export const FooterControls = () => {
         style={styles.ctaRow}
         contentStyle={styles.ctaRowContent}
       >
-        {/* Hands + Würfe Display (Left) - Only show during gameplay phases */}
-        {(phase === "LEVEL_PLAY" || phase === "LEVEL_RESULT") && (
-          <View style={styles.statsColumn}>
-            {/* Hands Panel */}
-            <Surface
-              tintColor={COLORS.surface}
-              padding="xs"
-              style={styles.singleStat}
-            >
-              <View style={styles.statRow}>
-                <GameText variant="labelSmall" color={COLORS.textMuted}>
-                  Hände
-                </GameText>
-                <Image
-                  source={require("../../assets/icons/Glove.png")}
-                  style={styles.iconSm}
-                />
-                <GameText variant="scoreboardSmall" color={COLORS.cyan}>
-                  {handsRemaining}
-                </GameText>
-              </View>
-            </Surface>
-
-            {/* Würfe Panel */}
-            <Surface
-              tintColor={COLORS.surface}
-              padding="xs"
-              style={styles.singleStat}
-            >
-              <View style={styles.statRow}>
-                <GameText variant="labelSmall" color={COLORS.textMuted}>
-                  Würfe
-                </GameText>
-                <Image
-                  source={require("../../assets/icons/die.png")}
-                  style={styles.iconSm}
-                />
-                <GameText variant="scoreboardSmall" color={COLORS.gold}>
-                  {rollsRemaining}
-                </GameText>
-              </View>
-            </Surface>
-          </View>
-        )}
-
         <Animated.View style={[styles.ctaArea, animatedStyle]}>
           {renderCTA()}
         </Animated.View>
@@ -520,33 +474,7 @@ const styles = StyleSheet.create({
     gap: SPACING.sm,
     justifyContent: "center",
   },
-  statsColumn: {
-    justifyContent: "center",
-    gap: SPACING.xs,
-  },
-  singleStat: {
-    // Individual stat panels
-    justifyContent: "center",
-    paddingHorizontal: SPACING.md,
-  },
-  statOuter: {
-    justifyContent: "center",
-  },
-  statInner: {
-    justifyContent: "center",
-    paddingHorizontal: SPACING.md,
-    gap: SPACING.xxs,
-  },
-  statRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.xs,
-  },
-  iconSm: {
-    width: 20,
-    height: 20,
-    resizeMode: "contain",
-  },
+
   dualButtonRow: {
     flex: 1,
     flexDirection: "row",

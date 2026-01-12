@@ -288,7 +288,7 @@ export const LAYOUT = {
   // Section weights (percentages of usable height, total = 100)
   // TopMenuStrip replaces header + scoreRow (both integrated)
   weights: {
-    topStrip: 12,
+    topStrip: 15,
     itemRow: 10,
     diceTray: 37,
     scoringGrid: 15,

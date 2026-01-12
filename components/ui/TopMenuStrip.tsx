@@ -41,17 +41,22 @@ interface TopMenuStripProps {
 /**
  * TopMenuStrip - Balatro-style top status strip
  *
- * Combines HUDHeader and ScorePanel into a single compact strip.
- * Uses new Surface variants: strip, elevated, stripInset
- *
- * Layout:
+ * Layout (updated per concept sketch):
  * ┌──────────────────────────────────────────────────────────────┐
  * │ ┌────────────────────────┐   ┌────────────────────────────┐ │
- * │ │ [LEVEL] [$Money]       │   │       ERREICHE              │ │
- * │ │ [Punkte/Hand   X × Y]  │   │         50                  │ │
- * │ │ [Hände X]  [Würfe Y]   │   │       PUNKTE                │ │
- * │ └────────────────────────┘   └────────────────────────────┘ │
+ * │ │ [LEVEL] [$Money]       │   │       ZIEL                  │ │
+ * │ │ [🧤Hände X] [🎲Würfe Y] │   │         50                  │ │
+ * │ │ [Hand Name + Lvl]      │   ├────────────────────────────┤ │
+ * │ │ [🔵20] × [🔴3]          │   │       Punkte                │ │
+ * │ └────────────────────────┘   │         0                   │ │
+ * │                              └────────────────────────────┘ │
  * └──────────────────────────────────────────────────────────────┘
+ *
+ * Animation Flow:
+ * 1. Counting phase: Points accumulate in blue Surface with scale animation
+ * 2. Final phase: Shows hand's final score centered where formula was
+ * 3. Total phase: Punkte section counts up from current to new total
+ *                 while Selected Hand Section keeps showing hand's final score
  */
 export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
   const layout = useLayout();
@@ -69,6 +74,8 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
     selectedHandId,
     handLevels,
     revealState,
+    handsRemaining,
+    rollsRemaining,
   } = useGameStore(
     useShallow((s) => ({
       currentLevelIndex: s.currentLevelIndex,
@@ -82,6 +89,8 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
       selectedHandId: s.selectedHandId,
       handLevels: s.handLevels,
       revealState: s.revealState,
+      handsRemaining: s.handsRemaining,
+      rollsRemaining: s.rollsRemaining,
     }))
   );
 
@@ -95,6 +104,11 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
   const [displayedMoney, setDisplayedMoney] = useState(money);
   const prevMoneyRef = useRef(money);
   const countUpIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // === Punkte Count-Up Animation ===
+  const [displayedPunkte, setDisplayedPunkte] = useState(levelScore);
+  const punkteCountUpIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const punkteScale = useSharedValue(1);
 
   const animateMoneyCountUp = useCallback((from: number, to: number) => {
     if (countUpIntervalRef.current) {
@@ -125,6 +139,62 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
     }, stepDuration);
   }, []);
 
+  // Punkte count-up animation function
+  const animatePunkteCountUp = useCallback(
+    (from: number, to: number, onComplete: () => void) => {
+      if (punkteCountUpIntervalRef.current) {
+        clearInterval(punkteCountUpIntervalRef.current);
+      }
+
+      const duration = 800; // Count-up duration
+      const steps = 25;
+      const stepDuration = duration / steps;
+      const diff = to - from;
+
+      triggerLightImpact();
+
+      // Start with a pop animation
+      punkteScale.value = withSequence(
+        withTiming(1.12, { duration: 100, easing: Easing.out(Easing.back(2)) }),
+        withTiming(1, { duration: 150, easing: Easing.out(Easing.quad) })
+      );
+
+      let currentStep = 0;
+      punkteCountUpIntervalRef.current = setInterval(() => {
+        currentStep++;
+        const progress = currentStep / steps;
+        // Ease out cubic for satisfying deceleration
+        const easedProgress = 1 - Math.pow(1 - progress, 3);
+        setDisplayedPunkte(Math.round(from + diff * easedProgress));
+
+        // Light haptic on certain steps for tactile feedback
+        if (currentStep % 5 === 0) {
+          triggerSelectionHaptic();
+        }
+
+        if (currentStep >= steps) {
+          if (punkteCountUpIntervalRef.current) {
+            clearInterval(punkteCountUpIntervalRef.current);
+            punkteCountUpIntervalRef.current = null;
+          }
+          setDisplayedPunkte(to);
+
+          // Final pop
+          punkteScale.value = withSequence(
+            withTiming(1.08, {
+              duration: 80,
+              easing: Easing.out(Easing.back(1.5)),
+            }),
+            withTiming(1, { duration: 120, easing: Easing.out(Easing.quad) })
+          );
+
+          onComplete();
+        }
+      }, stepDuration);
+    },
+    []
+  );
+
   useEffect(() => {
     const prevMoney = prevMoneyRef.current;
     prevMoneyRef.current = money;
@@ -141,6 +211,13 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
       }
     };
   }, [money, phase, animateMoneyCountUp]);
+
+  // Keep displayedPunkte in sync when not animating
+  useEffect(() => {
+    if (!revealState?.active) {
+      setDisplayedPunkte(levelScore);
+    }
+  }, [levelScore, revealState?.active]);
 
   // === Win Animation Values (from HUDHeader) ===
   const progress = useSharedValue(0);
@@ -199,8 +276,6 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
   const pointsScale = useSharedValue(1);
   const multScale = useSharedValue(1);
   const finalScoreScale = useSharedValue(1);
-  const totalScoreScale = useSharedValue(1);
-  const totalColorProgress = useSharedValue(0);
   const animationInProgress = useRef(false);
 
   const snapTiming = { duration: 100, easing: Easing.out(Easing.cubic) };
@@ -221,7 +296,7 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
   const bonusPoints = revealState?.breakdown?.bonusPoints ?? 0;
   const bonusMult = revealState?.breakdown?.bonusMult ?? 0;
 
-  // Score reveal animation (from ScorePanel)
+  // Score reveal animation
   useEffect(() => {
     if (
       !revealState?.active ||
@@ -256,6 +331,7 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
 
         setTimeout(
           () => {
+            // Phase: FINAL - Show hand's final score in Selected Hand Section
             updateRevealAnimation({
               animationPhase: "final",
               currentDieIndex: -1,
@@ -263,41 +339,32 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
             triggerSelectionHaptic();
 
             finalScoreScale.value = withSequence(
-              withTiming(1.08, {
-                duration: 80,
-                easing: Easing.out(Easing.back(1.5)),
+              withTiming(1.12, {
+                duration: 100,
+                easing: Easing.out(Easing.back(2)),
               }),
-              withTiming(1, { duration: 64, easing: Easing.out(Easing.quad) })
+              withTiming(1, { duration: 80, easing: Easing.out(Easing.quad) })
             );
 
+            // After showing final score, start the Punkte count-up
             setTimeout(() => {
+              // Phase: TOTAL - Count up the Punkte section
               updateRevealAnimation({
                 animationPhase: "total",
                 displayTotal: useGameStore.getState().levelScore + finalScore,
               });
-              triggerLightImpact();
-              totalColorProgress.value = 0;
 
-              totalScoreScale.value = withSequence(
-                withTiming(1.08, {
-                  duration: 80,
-                  easing: Easing.out(Easing.back(1.5)),
-                }),
-                withTiming(1, { duration: 64, easing: Easing.out(Easing.quad) })
-              );
+              const currentScore = useGameStore.getState().levelScore;
+              const newTotal = currentScore + finalScore;
 
-              totalColorProgress.value = withDelay(
-                200,
-                withTiming(1, {
-                  duration: 800,
-                  easing: Easing.out(Easing.quad),
-                })
-              );
-
-              setTimeout(() => {
-                animationInProgress.current = false;
-                finalizeHand();
-              }, 1600);
+              // Animate the Punkte section count-up
+              animatePunkteCountUp(currentScore, newTotal, () => {
+                // Animation complete, wait a bit then finalize
+                setTimeout(() => {
+                  animationInProgress.current = false;
+                  finalizeHand();
+                }, 400);
+              });
             }, 560);
           },
           totalBonusMult > 0 ? 350 : 0
@@ -336,11 +403,19 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
       pointsScale.value = 1;
       multScale.value = 1;
       finalScoreScale.value = 1;
-      totalScoreScale.value = 1;
-      totalColorProgress.value = 0;
+      punkteScale.value = 1;
       animationInProgress.current = false;
     }
   }, [revealState?.active]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (punkteCountUpIntervalRef.current) {
+        clearInterval(punkteCountUpIntervalRef.current);
+      }
+    };
+  }, []);
 
   // === Animated Styles ===
   const progressStyle = useAnimatedStyle(() => ({
@@ -357,7 +432,7 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
     color: interpolateColor(
       goalColorAnim.value,
       [0, 1],
-      [COLORS.gold, COLORS.mint]
+      [COLORS.coral, COLORS.mint]
     ),
   }));
 
@@ -378,16 +453,11 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
     transform: [{ scale: finalScoreScale.value }],
   }));
 
-  const totalScoreAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: totalScoreScale.value }],
-    color: interpolateColor(
-      totalColorProgress.value,
-      [0, 1],
-      [COLORS.gold, COLORS.text]
-    ),
+  const punkteAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: punkteScale.value }],
   }));
 
-  // Calculate display values
+  // Calculate display values for the formula
   const currentPoints =
     revealState?.active && revealState.breakdown
       ? revealState.breakdown.basePoints +
@@ -396,106 +466,16 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
       : basePoints;
 
   const displayMult = baseMult + bonusMult;
-  const displayTotal =
-    revealState?.active && revealState.animationPhase === "total"
-      ? revealState.displayTotal
-      : levelScore;
 
-  // === Render Score Content ===
-  const renderScoreContent = () => {
-    if (!selectedHandId) {
-      // No hand selected - show "Punkte X"
-      return (
-        <View style={styles.scoreContentRow}>
-          <GameText variant="label" color={COLORS.textMuted}>
-            Punkte
-          </GameText>
-          <GameText variant="scoreboardMedium" color={COLORS.text}>
-            {levelScore}
-          </GameText>
-        </View>
-      );
-    }
+  // Determine what to show in the Selected Hand Section
+  const isFinalPhase =
+    revealState?.active && revealState.animationPhase === "final";
+  const isTotalPhase =
+    revealState?.active && revealState.animationPhase === "total";
 
-    // Hand selected - show formula or animation states
-    if (revealState?.active && revealState.animationPhase === "total") {
-      return (
-        <View style={styles.scoreContentRow}>
-          <GameText variant="label" color={COLORS.textMuted}>
-            Punkte
-          </GameText>
-          <Animated.View style={totalScoreAnimatedStyle}>
-            <GameText variant="scoreboardMedium" color={COLORS.gold}>
-              {displayTotal}
-            </GameText>
-          </Animated.View>
-        </View>
-      );
-    }
-
-    if (revealState?.active && revealState.animationPhase === "final") {
-      return (
-        <View style={styles.scoreContentRow}>
-          <GameText variant="label" color={COLORS.textMuted}>
-            {handName}
-          </GameText>
-          <Animated.View style={finalScoreAnimatedStyle}>
-            <GameText variant="scoreboardMedium" color={COLORS.text}>
-              {revealState.breakdown?.finalScore}
-            </GameText>
-          </Animated.View>
-        </View>
-      );
-    }
-
-    // Show formula: HandName  X × Y
-    return (
-      <View style={styles.scoreContentRow}>
-        <View style={styles.handNameRow}>
-          <GameText variant="label" color={COLORS.text} numberOfLines={1}>
-            {handName}
-          </GameText>
-          <View style={styles.levelChip}>
-            <GameText variant="labelSmall" color={COLORS.cyan}>
-              LV{handLevel}
-            </GameText>
-          </View>
-        </View>
-        <View style={styles.formulaContainer}>
-          <Animated.View style={pointsAnimatedStyle}>
-            <View style={styles.formulaPart}>
-              <GameText variant="scoreboardSmall" color={COLORS.text}>
-                {currentPoints}
-              </GameText>
-              {bonusPoints > 0 && revealState?.active && (
-                <GameText variant="labelSmall" color={COLORS.upgradePoints}>
-                  (+{bonusPoints})
-                </GameText>
-              )}
-            </View>
-          </Animated.View>
-          <GameText variant="label" color={COLORS.textMuted}>
-            ×
-          </GameText>
-          <Animated.View style={multAnimatedStyle}>
-            <View style={styles.formulaPart}>
-              <GameText
-                variant="scoreboardSmall"
-                color={bonusMult > 0 ? COLORS.upgradeMult : COLORS.cyan}
-              >
-                {displayMult}
-              </GameText>
-              {bonusMult > 0 && revealState?.active && (
-                <GameText variant="labelSmall" color={COLORS.upgradeMult}>
-                  (+{bonusMult})
-                </GameText>
-              )}
-            </View>
-          </Animated.View>
-        </View>
-      </View>
-    );
-  };
+  const displayPointsValue = isFinalPhase
+    ? revealState.breakdown?.finalScore ?? currentPoints
+    : currentPoints;
 
   // === Render Goal Content ===
   const renderGoalContent = () => {
@@ -556,7 +536,7 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
     return (
       <View style={styles.goalContent}>
         <GameText variant="labelSmall" color={COLORS.textMuted}>
-          ERREICHE
+          ZIEL
         </GameText>
         <Animated.Text
           style={[
@@ -567,19 +547,116 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
         >
           {formatCompactNumber(levelGoal)}
         </Animated.Text>
-        <GameText variant="labelSmall" color={COLORS.textMuted}>
-          PUNKTE
-        </GameText>
       </View>
     );
   };
 
-  // Check if we should show the progress bar
-  const showProgressBar =
-    phase !== "SHOP_MAIN" &&
-    phase !== "SHOP_PICK_UPGRADE" &&
-    phase !== "DICE_EDITOR_DIE" &&
-    phase !== "DICE_EDITOR_FACE";
+  // === Render Selected Hand Section ===
+  const renderSelectedHandSection = () => {
+    // No hand selected - show placeholder
+    if (!selectedHandId) {
+      return (
+        <Surface
+          tintColor={COLORS.surface}
+          padding="xs"
+          style={styles.selectedHandSlot}
+          contentStyle={styles.selectedHandPlaceholderContent}
+        >
+          <GameText variant="label" color={COLORS.textMuted}>
+            Wähle eine Hand
+          </GameText>
+        </Surface>
+      );
+    }
+
+    // During final or total phase - show hand's final score in a Surface
+    if (isFinalPhase || isTotalPhase) {
+      return (
+        <Surface
+          tintColor={COLORS.surface}
+          padding="xs"
+          style={styles.selectedHandSlot}
+          contentStyle={styles.selectedHandSlotContent}
+        >
+          <View style={styles.handNameRow}>
+            <GameText variant="label" color={COLORS.text} numberOfLines={1}>
+              {handName}
+            </GameText>
+            <View style={styles.levelChip}>
+              <GameText variant="labelSmall" color={COLORS.cyan}>
+                LV{handLevel}
+              </GameText>
+            </View>
+          </View>
+          {/* Final score in a Surface spanning the same width as blue x red */}
+          <View style={styles.formulaSurfaces}>
+            <Animated.View style={finalScoreAnimatedStyle}>
+              <Surface
+                tintColor={COLORS.surface}
+                padding="xs"
+                style={styles.finalScoreSurface}
+                contentStyle={styles.finalScoreSurfaceContent}
+              >
+                <GameText variant="scoreboardMedium" color={COLORS.text}>
+                  {revealState?.breakdown?.finalScore}
+                </GameText>
+              </Surface>
+            </Animated.View>
+          </View>
+        </Surface>
+      );
+    }
+
+    // Normal state or during counting - show formula with blue/red Surfaces
+    return (
+      <Surface
+        tintColor={COLORS.surface}
+        padding="xs"
+        style={styles.selectedHandSlot}
+        contentStyle={styles.selectedHandSlotContent}
+      >
+        <View style={styles.handNameRow}>
+          <GameText variant="label" color={COLORS.text} numberOfLines={1}>
+            {handName}
+          </GameText>
+          <View style={styles.levelChip}>
+            <GameText variant="labelSmall" color={COLORS.cyan}>
+              LV{handLevel}
+            </GameText>
+          </View>
+        </View>
+        <View style={styles.formulaSurfaces}>
+          <Animated.View style={pointsAnimatedStyle}>
+            <Surface
+              tintColor={COLORS.upgradePoints}
+              padding="xs"
+              style={styles.formulaSurface}
+              contentStyle={styles.formulaSurfaceContent}
+            >
+              <GameText variant="scoreboardSmall" color={COLORS.text}>
+                {displayPointsValue}
+              </GameText>
+            </Surface>
+          </Animated.View>
+          <GameText variant="label" color={COLORS.textMuted}>
+            x
+          </GameText>
+          <Animated.View style={multAnimatedStyle}>
+            <Surface
+              tintColor={COLORS.upgradeMult}
+              padding="xs"
+              style={styles.formulaSurface}
+              contentStyle={styles.formulaSurfaceContent}
+            >
+              <GameText variant="scoreboardSmall" color={COLORS.text}>
+                {displayMult}
+              </GameText>
+            </Surface>
+          </Animated.View>
+        </View>
+      </Surface>
+    );
+  };
 
   return (
     <View style={[styles.container, style]}>
@@ -622,24 +699,56 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
             </Surface>
           </View>
 
-          {/* Row 2: Score Display */}
-          <Surface
-            tintColor={COLORS.surface}
-            padding="none"
-            style={styles.scoreSlot}
-            contentStyle={styles.scoreSlotContent}
-          >
-            {renderScoreContent()}
-          </Surface>
+          {/* Row 2: Hände + Würfe (always visible in all phases) */}
+          <View style={styles.statsRow}>
+            <Surface
+              tintColor={COLORS.surface}
+              padding="xs"
+              style={styles.statSlot}
+              contentStyle={styles.statSlotContent}
+            >
+              <Image
+                source={require("../../assets/icons/Glove.png")}
+                style={styles.iconSm}
+              />
+              <GameText variant="labelSmall" color={COLORS.textMuted}>
+                Hände
+              </GameText>
+              <GameText variant="scoreboardSmall" color={COLORS.text}>
+                {handsRemaining}
+              </GameText>
+            </Surface>
+            <Surface
+              tintColor={COLORS.surface}
+              padding="xs"
+              style={styles.statSlot}
+              contentStyle={styles.statSlotContent}
+            >
+              <Image
+                source={require("../../assets/icons/die.png")}
+                style={styles.iconSm}
+              />
+              <GameText variant="labelSmall" color={COLORS.textMuted}>
+                Würfe
+              </GameText>
+              <GameText variant="scoreboardSmall" color={COLORS.text}>
+                {rollsRemaining}
+              </GameText>
+            </Surface>
+          </View>
+
+          {/* Row 3: Selected Hand Section (always visible, handles counting animation) */}
+          {renderSelectedHandSection()}
         </Surface>
 
-        {/* Right Panel: Goal */}
+        {/* Right Panel: Goal + Punkte */}
         <Surface
           tintColor={COLORS.surface2}
           padding="none"
           style={styles.rightPanel}
           contentStyle={styles.rightPanelContent}
         >
+          {/* Goal Section */}
           <Surface
             tintColor={COLORS.surface}
             padding="none"
@@ -649,31 +758,22 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
             {renderGoalContent()}
           </Surface>
 
-          {/* Progress Bar */}
-          {false && (
-            <Animated.View style={[styles.progressBarTrack, barTrackStyle]}>
-              <Animated.View style={[styles.progressBarFill, progressStyle]}>
-                <Animated.View
-                  style={[
-                    StyleSheet.absoluteFill,
-                    { width: "40%" },
-                    shineStyle,
-                  ]}
-                >
-                  <LinearGradient
-                    colors={[
-                      "transparent",
-                      COLORS.overlays.whiteStrong,
-                      "transparent",
-                    ]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={StyleSheet.absoluteFill}
-                  />
-                </Animated.View>
-              </Animated.View>
+          {/* Punkte Section (always visible, with count-up animation) */}
+          <Surface
+            tintColor={COLORS.surface}
+            padding="none"
+            style={styles.punkteInset}
+            contentStyle={styles.punkteContent}
+          >
+            <GameText variant="labelSmall" color={COLORS.textMuted}>
+              Punkte
+            </GameText>
+            <Animated.View style={punkteAnimatedStyle}>
+              <GameText variant="scoreboardMedium" color={COLORS.text}>
+                {displayedPunkte}
+              </GameText>
             </Animated.View>
-          )}
+          </Surface>
 
           {/* Win Sparks */}
           {isWinAnimating && (
@@ -720,7 +820,8 @@ const styles = StyleSheet.create({
   },
   rightPanelContent: {
     flex: 1,
-    justifyContent: "space-between",
+    gap: SPACING.stripInsetGap,
+    padding: SPACING.stripInsetGap,
   },
   topRow: {
     flexDirection: "row",
@@ -747,25 +848,44 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.xs,
     paddingHorizontal: SPACING.sm,
   },
-  scoreSlot: {
+  statsRow: {
+    flexDirection: "row",
+    gap: SPACING.stripInsetGap,
+  },
+  statSlot: {
     flex: 1,
   },
-  scoreSlotContent: {
-    flex: 1,
-    justifyContent: "center",
-    paddingVertical: SPACING.xxs,
-    paddingHorizontal: SPACING.sm,
-  },
-  scoreContentRow: {
+  statSlotContent: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: SPACING.sm,
+    gap: SPACING.xs,
+    paddingVertical: SPACING.xxs,
+    paddingHorizontal: SPACING.sm,
+  },
+  selectedHandSlot: {
+    flex: 1,
+  },
+  selectedHandSlotContent: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: SPACING.xxs,
+    paddingHorizontal: SPACING.sm,
+  },
+  selectedHandPlaceholderContent: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: SPACING.xxs,
+    paddingHorizontal: SPACING.sm,
   },
   handNameRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: SPACING.xs,
+    flex: 1,
   },
   levelChip: {
     backgroundColor: COLORS.overlays.cyanSubtle,
@@ -773,24 +893,46 @@ const styles = StyleSheet.create({
     paddingVertical: 1,
     borderRadius: DIMENSIONS.borderRadiusSmall,
   },
-  formulaContainer: {
+  formulaSurfaces: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: SPACING.xs,
   },
-  formulaPart: {
-    flexDirection: "row",
-    alignItems: "baseline",
-    gap: 2,
+  formulaSurface: {
+    minWidth: 40,
+  },
+  formulaSurfaceContent: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: SPACING.xxs,
+    paddingHorizontal: SPACING.sm,
+  },
+  finalScoreSurface: {
+    // Width to match blue + x + red (approximately 40 + gap + text + gap + 40)
+    minWidth: 100,
+  },
+  finalScoreSurfaceContent: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: SPACING.xxs,
+    paddingHorizontal: SPACING.md,
   },
   goalInset: {
     flex: 1,
-    margin: SPACING.stripInsetGap,
   },
   goalInsetContent: {
     flex: 1,
   },
   goalContent: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  punkteInset: {
+    flex: 1,
+  },
+  punkteContent: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
@@ -807,16 +949,6 @@ const styles = StyleSheet.create({
     borderRadius: DIMENSIONS.borderRadiusSmall,
     borderWidth: 1,
     borderColor: COLORS.overlays.whiteSubtle,
-  },
-  progressBarTrack: {
-    width: "100%",
-    height: 2,
-    backgroundColor: COLORS.overlays.blackMild,
-  },
-  progressBarFill: {
-    height: "100%",
-    backgroundColor: COLORS.gold,
-    overflow: "hidden",
   },
   iconSm: {
     width: DIMENSIONS.iconSize.xs,
