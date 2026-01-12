@@ -210,7 +210,7 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
   const handInfo = selectedHandId
     ? CATEGORIES.find((c) => c.id === selectedHandId)
     : null;
-  const handName = handInfo?.labelShort ?? "—";
+  const handName = handInfo?.labelDe ?? "—";
   const handLevel = selectedHandId ? handLevels[selectedHandId] : 1;
   const basePoints = selectedHandId
     ? getBasePoints(selectedHandId, handLevel)

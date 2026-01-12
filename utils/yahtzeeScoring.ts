@@ -38,13 +38,13 @@ export const CATEGORIES: CategoryInfo[] = [
   // Lower section
   {
     id: "threeOfKind",
-    labelDe: "Dreier Pasch",
+    labelDe: "Dreierpasch",
     labelShort: "3er P.",
     section: "lower",
   },
   {
     id: "fourOfKind",
-    labelDe: "Vierer Pasch",
+    labelDe: "Viererpasch",
     labelShort: "4er P.",
     section: "lower",
   },
@@ -68,7 +68,7 @@ export const CATEGORIES: CategoryInfo[] = [
   },
   {
     id: "yahtzee",
-    labelDe: "Fünfer Pasch",
+    labelDe: "Fünferpasch",
     labelShort: "5er P.",
     section: "lower",
   },
