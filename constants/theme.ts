@@ -288,9 +288,9 @@ export const LAYOUT = {
   // Section weights (percentages of usable height, total = 100)
   // TopMenuStrip replaces header + scoreRow (both integrated)
   weights: {
-    topStrip: 15,
+    topStrip: 17,
     itemRow: 10,
-    diceTray: 37,
+    diceTray: 35,
     scoringGrid: 15,
     footer: 8,
     // Sum: 12+10+35+10+10 = 77%. 23% gap for breathing room.

@@ -708,16 +708,24 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
                 style={styles.statSlot}
                 contentStyle={styles.statSlotContent}
               >
-                <Image
-                  source={require("../../assets/icons/Glove.png")}
-                  style={styles.iconSm}
-                />
                 <GameText variant="labelSmall" color={COLORS.textMuted}>
                   Hände
                 </GameText>
-                <GameText variant="scoreboardSmall" color={COLORS.text}>
-                  {handsRemaining}
-                </GameText>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: SPACING.xs,
+                  }}
+                >
+                  <Image
+                    source={require("../../assets/icons/Glove.png")}
+                    style={styles.iconSm}
+                  />
+                  <GameText variant="scoreboardSmall" color={COLORS.text}>
+                    {handsRemaining}
+                  </GameText>
+                </View>
               </Surface>
               <Surface
                 tintColor={COLORS.surface}
@@ -725,16 +733,24 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
                 style={styles.statSlot}
                 contentStyle={styles.statSlotContent}
               >
-                <Image
-                  source={require("../../assets/icons/die.png")}
-                  style={styles.iconSm}
-                />
                 <GameText variant="labelSmall" color={COLORS.textMuted}>
                   Würfe
                 </GameText>
-                <GameText variant="scoreboardSmall" color={COLORS.text}>
-                  {rollsRemaining}
-                </GameText>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: SPACING.xs,
+                  }}
+                >
+                  <Image
+                    source={require("../../assets/icons/die.png")}
+                    style={styles.iconSm}
+                  />
+                  <GameText variant="scoreboardSmall" color={COLORS.text}>
+                    {rollsRemaining}
+                  </GameText>
+                </View>
               </Surface>
             </View>
           </View>
@@ -817,7 +833,7 @@ const styles = StyleSheet.create({
     padding: SPACING.stripInsetGap,
   },
   leftPanelTopSection: {
-    flex: 1,
+    flex: 3,
     gap: SPACING.stripInsetGap,
   },
   rightPanel: {
@@ -875,7 +891,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.sm,
   },
   selectedHandSlot: {
-    flex: 1,
+    flex: 2,
   },
   selectedHandSlotContent: {
     flex: 1,
@@ -883,7 +899,7 @@ const styles = StyleSheet.create({
     alignItems: "stretch",
     justifyContent: "space-between",
     paddingVertical: SPACING.xs,
-    paddingHorizontal: SPACING.sm,
+    paddingLeft: SPACING.sm,
     gap: SPACING.xs,
   },
   selectedHandPlaceholderContent: {
@@ -898,7 +914,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     justifyContent: "center",
     gap: SPACING.xxs,
-    flex: 0.4,
+    flex: 1,
   },
   levelChip: {
     backgroundColor: COLORS.overlays.cyanSubtle,
@@ -911,7 +927,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: SPACING.xs,
-    flex: 0.6,
+    flex: 2,
   },
   formulaSurface: {
     flex: 1,
@@ -936,7 +952,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
   },
   goalInset: {
-    flex: 1,
+    flex: 3,
   },
   goalInsetContent: {
     flex: 1,
@@ -947,7 +963,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   punkteInset: {
-    flex: 1,
+    flex: 2,
   },
   punkteContent: {
     flex: 1,

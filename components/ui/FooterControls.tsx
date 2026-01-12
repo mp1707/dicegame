@@ -423,16 +423,9 @@ export const FooterControls = () => {
 
   const renderCTAArea = () => {
     return (
-      <Surface
-        tintColor={COLORS.surface2}
-        padding="xs"
-        style={styles.ctaRow}
-        contentStyle={styles.ctaRowContent}
-      >
-        <Animated.View style={[styles.ctaArea, animatedStyle]}>
-          {renderCTA()}
-        </Animated.View>
-      </Surface>
+      <Animated.View style={[styles.ctaArea, animatedStyle]}>
+        {renderCTA()}
+      </Animated.View>
     );
   };
 
@@ -450,15 +443,7 @@ const styles = StyleSheet.create({
     position: "relative",
     justifyContent: "center",
   },
-  ctaRow: {
-    flex: 1,
-  },
-  ctaRowContent: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "stretch",
-    gap: SPACING.md,
-  },
+
   glowPulse: {
     ...StyleSheet.absoluteFillObject,
     borderRadius: DIMENSIONS.borderRadiusLarge,
@@ -466,7 +451,6 @@ const styles = StyleSheet.create({
   },
   ctaButton: {
     flex: 1,
-    shadowOpacity: 0.6,
   },
   ctaArea: {
     flex: 1, // CTA takes remaining space
