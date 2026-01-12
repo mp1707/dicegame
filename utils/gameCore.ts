@@ -335,6 +335,17 @@ export function getContributingDiceIndices(
 }
 
 /**
+ * Per-die contribution for animation
+ */
+export interface DieContribution {
+  dieIndex: number;
+  pipValue: number; // Face value (1-6)
+  bonusPoints: number; // From blue enhancements on this die
+  bonusMult: number; // From red enhancements on this die
+  totalPoints: number; // pipValue + bonusPoints
+}
+
+/**
  * Get scoring breakdown for display
  */
 export interface ScoringBreakdown {
@@ -347,6 +358,8 @@ export interface ScoringBreakdown {
   bonusMult: number; // From red (mult) pip enhancements
   finalScore: number;
   contributingIndices: number[];
+  /** Per-die contribution breakdown for animation */
+  dieContributions: DieContribution[];
 }
 
 export function getScoringBreakdown(
@@ -364,13 +377,27 @@ export function getScoringBreakdown(
   // Calculate enhancement bonuses from contributing dice only
   let bonusPoints = 0;
   let bonusMult = 0;
+  const dieContributions: DieContribution[] = [];
 
-  if (enhancements) {
-    for (const dieIndex of contributingIndices) {
-      const faceValue = dice[dieIndex];
-      bonusPoints += bonusPointsForDieFace(dieIndex, faceValue, enhancements);
-      bonusMult += bonusMultForDieFace(dieIndex, faceValue, enhancements);
-    }
+  for (const dieIndex of contributingIndices) {
+    const faceValue = dice[dieIndex];
+    const dieBonusPoints = enhancements
+      ? bonusPointsForDieFace(dieIndex, faceValue, enhancements)
+      : 0;
+    const dieBonusMult = enhancements
+      ? bonusMultForDieFace(dieIndex, faceValue, enhancements)
+      : 0;
+
+    bonusPoints += dieBonusPoints;
+    bonusMult += dieBonusMult;
+
+    dieContributions.push({
+      dieIndex,
+      pipValue: faceValue,
+      bonusPoints: dieBonusPoints,
+      bonusMult: dieBonusMult,
+      totalPoints: faceValue + dieBonusPoints,
+    });
   }
 
   // Enhanced scoring formula: (base + pips + bonusPoints) × (mult + bonusMult)
@@ -388,6 +415,7 @@ export function getScoringBreakdown(
     bonusMult,
     finalScore,
     contributingIndices,
+    dieContributions,
   };
 }
 

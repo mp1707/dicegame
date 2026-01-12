@@ -65,6 +65,11 @@ export interface RevealState {
   animationPhase: "counting" | "final" | "total";
   currentDieIndex: number; // Which die is being animated (-1 = none yet)
   accumulatedPips: number; // Running total of pips counted so far
+  accumulatedMult: number; // Running total of mult bonuses counted so far
+  /** Current die's point contribution (pip + bonus points) for floating score display */
+  currentDiePoints: number | null;
+  /** Current die's mult contribution for floating score display */
+  currentDieMult: number | null;
   displayTotal?: number; // The total level score to display in "total" phase
 }
 
@@ -482,6 +487,9 @@ export const useGameStore = create<GameState>((set, get) => ({
         animationPhase: "counting",
         currentDieIndex: -1,
         accumulatedPips: 0,
+        accumulatedMult: 0,
+        currentDiePoints: null,
+        currentDieMult: null,
       },
     });
   },

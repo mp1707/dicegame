@@ -307,27 +307,19 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
     }
 
     animationInProgress.current = true;
-    const {
-      contributingIndices,
-      finalScore,
-      bonusMult: totalBonusMult,
-    } = revealState.breakdown;
+    const { dieContributions, finalScore } = revealState.breakdown;
 
     let accumulatedPips = 0;
+    let accumulatedMult = 0;
     let dieIdx = 0;
 
     const animateNextDie = () => {
-      if (dieIdx >= contributingIndices.length) {
-        if (totalBonusMult > 0) {
-          multScale.value = withSequence(
-            withTiming(1.15, {
-              duration: 100,
-              easing: Easing.out(Easing.back(2)),
-            }),
-            withTiming(1, { duration: 80, easing: Easing.out(Easing.quad) })
-          );
-          triggerSelectionHaptic();
-        }
+      if (dieIdx >= dieContributions.length) {
+        // Clear floating scores when done counting
+        updateRevealAnimation({
+          currentDiePoints: null,
+          currentDieMult: null,
+        });
 
         setTimeout(
           () => {
@@ -367,26 +359,49 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
               });
             }, 560);
           },
-          totalBonusMult > 0 ? 350 : 0
+          0
         );
         return;
       }
 
-      const actualDieIndex = contributingIndices[dieIdx];
-      const currentDiceValues = useGameStore.getState().diceValues;
-      const pipValue = currentDiceValues[actualDieIndex];
-      accumulatedPips += pipValue;
+      // Get per-die contribution data
+      const contribution = dieContributions[dieIdx];
+      const { dieIndex, totalPoints, bonusMult: dieMult } = contribution;
 
+      // Accumulate pips (including bonus points from enhancements)
+      accumulatedPips += totalPoints;
+
+      // Update reveal state with current die's contribution for floating score display
       updateRevealAnimation({
-        currentDieIndex: actualDieIndex,
+        currentDieIndex: dieIndex,
         accumulatedPips,
+        currentDiePoints: totalPoints,
+        currentDieMult: dieMult > 0 ? dieMult : null,
       });
       triggerSelectionHaptic();
 
+      // Animate points display
       pointsScale.value = withSequence(
         withTiming(1.06, snapTiming),
         withTiming(1, returnTiming)
       );
+
+      // If this die has mult bonus, update mult incrementally
+      if (dieMult > 0) {
+        accumulatedMult += dieMult;
+        updateRevealAnimation({
+          accumulatedMult,
+        });
+
+        // Animate mult display with satisfying pop
+        multScale.value = withSequence(
+          withTiming(1.15, {
+            duration: 100,
+            easing: Easing.out(Easing.back(2)),
+          }),
+          withTiming(1, { duration: 80, easing: Easing.out(Easing.quad) })
+        );
+      }
 
       setTimeout(() => {
         dieIdx++;
@@ -458,14 +473,19 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
   }));
 
   // Calculate display values for the formula
+  // During counting: accumulatedPips now includes bonus points per die (totalPoints)
   const currentPoints =
     revealState?.active && revealState.breakdown
-      ? revealState.breakdown.basePoints +
-        revealState.accumulatedPips +
-        bonusPoints
+      ? revealState.breakdown.basePoints + revealState.accumulatedPips
       : basePoints;
 
-  const displayMult = baseMult + bonusMult;
+  // During counting: use accumulatedMult for incremental mult updates
+  // After counting (final/total phases): show full mult
+  const isCountingPhase =
+    revealState?.active && revealState.animationPhase === "counting";
+  const displayMult = isCountingPhase
+    ? baseMult + (revealState?.accumulatedMult ?? 0)
+    : baseMult + bonusMult;
 
   // Determine what to show in the Selected Hand Section
   const isFinalPhase =
