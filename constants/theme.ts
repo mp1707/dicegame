@@ -343,12 +343,6 @@ export const DIMENSIONS = {
   },
 } as const;
 
-// @deprecated - Use useLayout().diceTrayHeight instead
-// Kept for backwards compatibility during migration
-export const calculateDiceTrayHeight = (screenHeight: number): number => {
-  return Math.round(screenHeight * 0.32);
-};
-
 // Slot Visual States - Continuous rounded stroke, "Toy" bevels
 export const SLOT_STATES = {
   empty: {

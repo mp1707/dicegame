@@ -23,12 +23,12 @@ const myEffect: TriggerHandler = (context, effects) => {
 };
 
 export const MY_ITEM: ItemDefinition = {
-  id: "my_item",              // Unique identifier
-  name: "Mein Item",          // Display name (German)
+  id: "my_item", // Unique identifier
+  name: "Mein Item", // Display name (German)
   description: "Beim Start des Levels: +10 Punkte.", // German description
-  rarity: "uncommon",         // common | uncommon | rare | epic
-  cost: 7,                    // Shop price ($)
-  icon: "my_icon.png",        // From assets/items/
+  rarity: "uncommon", // common | uncommon | rare | epic
+  cost: 7, // Shop price ($)
+  icon: "my_icon.png", // From assets/items/
   triggers: [
     {
       triggerId: "LEVEL_START",
@@ -47,7 +47,7 @@ import { MY_ITEM } from "./my_item";
 
 export const SHOP_ITEMS: ItemDefinition[] = [
   FOKUS_ITEM,
-  MY_ITEM,  // Add here
+  MY_ITEM, // Add here
 ];
 
 // Export for direct imports
@@ -61,7 +61,7 @@ export { MY_ITEM } from "./my_item";
 ```typescript
 const ITEM_ICONS: Record<string, any> = {
   fokus: require("../../assets/items/brain.png"),
-  my_item: require("../../assets/items/my_icon.png"),  // Add here
+  my_item: require("../../assets/items/my_icon.png"), // Add here
 };
 ```
 
@@ -70,7 +70,7 @@ const ITEM_ICONS: Record<string, any> = {
 ```typescript
 const ITEM_ICONS: Record<string, any> = {
   fokus: require("../../assets/items/brain.png"),
-  my_item: require("../../assets/items/my_icon.png"),  // Add here
+  my_item: require("../../assets/items/my_icon.png"), // Add here
 };
 ```
 
@@ -78,9 +78,9 @@ const ITEM_ICONS: Record<string, any> = {
 
 ## Current Items
 
-| ID | Name | Cost | Trigger | Effect |
-|----|------|------|---------|--------|
-| `fokus` | Fokus | $7 | `LEVEL_START` | Converts extra hands into rolls (4H+3R→1H+6R) |
+| ID      | Name  | Cost | Trigger       | Effect                                        |
+| ------- | ----- | ---- | ------------- | --------------------------------------------- |
+| `fokus` | Fokus | $7   | `LEVEL_START` | Converts extra hands into rolls (4H+3R→1H+6R) |
 
 ---
 
@@ -89,6 +89,7 @@ const ITEM_ICONS: Record<string, any> = {
 ### 1. Shop Display
 
 Items appear in the shop grid (`ShopContent.tsx`) with:
+
 - Item icon (from `assets/items/`)
 - Item name
 - Price (gold coin icon + cost)
@@ -99,7 +100,8 @@ Items appear in the shop grid (`ShopContent.tsx`) with:
 ### 2. Detail Modal
 
 Tapping an item shows `ItemDetailModal` with:
-- Large icon in InsetSlot container
+
+- Large icon in recessed container
 - Item name (displayMedium)
 - Full description with highlighted keywords
 - Rarity badge (chip)
@@ -108,6 +110,7 @@ Tapping an item shows `ItemDetailModal` with:
 ### 3. Purchase
 
 On purchase:
+
 1. Item is added to `ownedItems` in gameStore
 2. Money is deducted
 3. Item is registered with trigger system via `registerItem()`
@@ -117,6 +120,7 @@ On purchase:
 ### 4. Display in Scoring Grid
 
 Owned items appear in `SpecialSection` at top of scoring grid:
+
 - Row of item icons with borders
 - Tappable to view details
 - Always visible during gameplay
@@ -124,6 +128,7 @@ Owned items appear in `SpecialSection` at top of scoring grid:
 ### 5. Info Modal (No Purchase)
 
 Tapping an owned item shows the same detail modal but:
+
 - **No "KAUFEN" button** (item already owned)
 - Shows full description and effect
 - Dismiss with tap outside or close button
@@ -134,22 +139,22 @@ Tapping an owned item shows the same detail modal but:
 
 Items modify effect fields in handlers. Available fields in `EffectContext` (`utils/itemEffects.ts`):
 
-| Field | Type | Purpose |
-|-------|------|---------|
-| `bonusPoints` | number | Add to scoring points |
-| `bonusMult` | number | Add to scoring mult |
-| `extraRolls` | number | Grant additional rolls |
-| `handsToRemove` | number | Reduce available hands (Fokus) |
-| `moneyChange` | number | Add/remove money |
-| `diceModifications` | Map | Set/bump die values |
-| `lockChanges` | Map | Lock/unlock dice |
+| Field               | Type   | Purpose                        |
+| ------------------- | ------ | ------------------------------ |
+| `bonusPoints`       | number | Add to scoring points          |
+| `bonusMult`         | number | Add to scoring mult            |
+| `extraRolls`        | number | Grant additional rolls         |
+| `handsToRemove`     | number | Reduce available hands (Fokus) |
+| `moneyChange`       | number | Add/remove money               |
+| `diceModifications` | Map    | Set/bump die values            |
+| `lockChanges`       | Map    | Lock/unlock dice               |
 
 **Usage example**:
 
 ```typescript
 const myHandler: TriggerHandler = (context, effects) => {
-  effects.bonusPoints += 20;  // +20 points
-  effects.extraRolls += 1;    // +1 roll
+  effects.bonusPoints += 20; // +20 points
+  effects.extraRolls += 1; // +1 roll
 };
 ```
 
@@ -161,14 +166,15 @@ const myHandler: TriggerHandler = (context, effects) => {
 
 Specific words are automatically highlighted in the description:
 
-| German Word | Color | Purpose |
-|-------------|-------|---------|
-| "Hände", "Hand" | Cyan | Emphasize hand references |
-| "Würfe", "Wurf", "Würfel" | Gold | Emphasize roll/dice references |
+| German Word               | Color | Purpose                        |
+| ------------------------- | ----- | ------------------------------ |
+| "Hände", "Hand"           | Cyan  | Emphasize hand references      |
+| "Würfe", "Wurf", "Würfel" | Gold  | Emphasize roll/dice references |
 
-### InsetSlot Icon Container
+### Icon Container
 
-The item icon appears in a recessed InsetSlot for visual depth:
+The item icon appears in a recessed container for visual depth:
+
 - Darker background than panel
 - Top shadow for "sunken" effect
 - Icon centered within
@@ -176,11 +182,13 @@ The item icon appears in a recessed InsetSlot for visual depth:
 ### Optional Purchase CTA
 
 When in shop context:
+
 - Shows "KAUFEN" button with price
 - Button state: affordable (mint) or unaffordable (muted)
 - Price displayed with coin icon
 
 When viewing owned item:
+
 - No CTA button
 - Modal is informational only
 
@@ -240,7 +248,7 @@ export const LUCKY_CLOVER: ItemDefinition = {
   triggers: [
     {
       triggerId: "SCORE_APPLIED",
-      condition: (ctx) => ctx.lockedDice.every(locked => locked),
+      condition: (ctx) => ctx.lockedDice.every((locked) => locked),
       handler: addBonusPoints(30),
     },
   ],
@@ -248,6 +256,7 @@ export const LUCKY_CLOVER: ItemDefinition = {
 ```
 
 **In items/index.ts**:
+
 ```typescript
 import { LUCKY_CLOVER } from "./lucky_clover";
 export const SHOP_ITEMS = [FOKUS_ITEM, LUCKY_CLOVER];
@@ -255,6 +264,7 @@ export { LUCKY_CLOVER } from "./lucky_clover";
 ```
 
 **Icon mappings** (both ShopContent.tsx and SpecialSection.tsx):
+
 ```typescript
 const ITEM_ICONS: Record<string, any> = {
   fokus: require("../../assets/items/brain.png"),
@@ -269,12 +279,14 @@ const ITEM_ICONS: Record<string, any> = {
 The Fokus item is the first purchasable item and serves as a template:
 
 **Effect**: Converts extra hands into rolls at level start
+
 - 4 hands + 3 rolls → 1 hand + 6 rolls (net: -3 hands, +3 rolls)
 - German description: "Beim Start des Levels: Tausche 3 Hände in 3 Würfe."
 
 **Implementation**: See `items/fokus.ts` for complete code
 
 **Key patterns**:
+
 - Uses `LEVEL_START` trigger (fires once per level)
 - Modifies `handsToRemove` and `extraRolls` in effect context
 - Clear trade-off: more rolls but fewer attempts

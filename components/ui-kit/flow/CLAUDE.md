@@ -41,13 +41,14 @@ PhaseDeck
 
 The goal header in PlayConsole changes based on the current phase:
 
-| Phase | Header Display | Progress Bar |
-|-------|----------------|--------------|
-| **LEVEL_PLAY** | "ERREICHE X PUNKTE" | Visible (score/goal) |
-| **SHOP phases** | "SHOP" (large text) | Hidden |
-| **DICE_EDITOR phases** | "WÜRFEL VERBESSERN" + pill | Hidden |
+| Phase                  | Header Display             | Progress Bar         |
+| ---------------------- | -------------------------- | -------------------- |
+| **LEVEL_PLAY**         | "ERREICHE X PUNKTE"        | Visible (score/goal) |
+| **SHOP phases**        | "SHOP" (large text)        | Hidden               |
+| **DICE_EDITOR phases** | "WÜRFEL VERBESSERN" + pill | Hidden               |
 
 **DICE_EDITOR pill examples**:
+
 - "+10 Punkte" (blue) - Points enhancement
 - "+1 Mult" (red) - Mult enhancement
 
@@ -57,43 +58,47 @@ The goal header in PlayConsole changes based on the current phase:
 
 Tray overlays use `TrayOverlayTitle` component with fade-in + move-up animation (FadeInUp/FadeOutDown):
 
-| Phase | Title | Subtitle |
-|-------|-------|----------|
-| **SHOP_MAIN** | "Wähle ein Upgrade" | (none - SHOP is in header) |
-| **SHOP_PICK_UPGRADE** | "Verbessere eine Hand" | "+5 Punkte" |
-| **DICE_EDITOR_DIE** | "Würfel wählen" | "Schritt 1/2" |
-| **DICE_EDITOR_FACE** | "Seite wählen" | "Schritt 2/2" |
+| Phase                 | Title                  | Subtitle                   |
+| --------------------- | ---------------------- | -------------------------- |
+| **SHOP_MAIN**         | "Wähle ein Upgrade"    | (none - SHOP is in header) |
+| **SHOP_PICK_UPGRADE** | "Verbessere eine Hand" | "+5 Punkte"                |
+| **DICE_EDITOR_DIE**   | "Würfel wählen"        | "Schritt 1/2"              |
+| **DICE_EDITOR_FACE**  | "Seite wählen"         | "Schritt 2/2"              |
 
 ---
 
 ## Phase → BottomPanel Content Mapping
 
-| Phase | Content Component | Footer CTA | Description |
-|-------|-------------------|------------|-------------|
-| **LEVEL_PLAY** | ScoringGrid | Roll/Accept | Main gameplay with hand slots |
-| **LEVEL_RESULT** | CashoutRewardsPanel | SHOP | Reward breakdown after level win |
-| **SHOP_MAIN** | ShopContent | NEXT LEVEL | Shop grid (upgrades + items) |
-| **SHOP_PICK_UPGRADE** | UpgradeContent | ZURÜCK | Choose 1 of 3 hands to upgrade |
-| **DICE_EDITOR_DIE** | DieEditorContent | ZURÜCK + WEITER | Select which die to enhance |
-| **DICE_EDITOR_FACE** | FaceEditorContent | ZURÜCK + VERBESSERN | Select which face to enhance |
-| **WIN_SCREEN** | EndContent | NEUER RUN | Victory screen |
-| **LOSE_SCREEN** | EndContent | NEUER RUN | Game over screen |
+| Phase                 | Content Component   | Footer CTA          | Description                      |
+| --------------------- | ------------------- | ------------------- | -------------------------------- |
+| **LEVEL_PLAY**        | ScoringGrid         | Roll/Accept         | Main gameplay with hand slots    |
+| **LEVEL_RESULT**      | CashoutRewardsPanel | SHOP                | Reward breakdown after level win |
+| **SHOP_MAIN**         | ShopContent         | NEXT LEVEL          | Shop grid (upgrades + items)     |
+| **SHOP_PICK_UPGRADE** | UpgradeContent      | ZURÜCK              | Choose 1 of 3 hands to upgrade   |
+| **DICE_EDITOR_DIE**   | DieEditorContent    | ZURÜCK + WEITER     | Select which die to enhance      |
+| **DICE_EDITOR_FACE**  | FaceEditorContent   | ZURÜCK + VERBESSERN | Select which face to enhance     |
+| **WIN_SCREEN**        | EndContent          | NEUER RUN           | Victory screen                   |
+| **LOSE_SCREEN**       | EndContent          | NEUER RUN           | Game over screen                 |
 
 ---
 
 ## Content Components (`components/ui/`)
 
 ### Panel Switcher
+
 - **BottomPanel.tsx** - Phase-based content switcher with easing-based slide transitions
 
 ### Gameplay Phase
+
 - **ScoringGrid.tsx** (in `components/scoring/`) - 13 hand slots (6 upper, 7 lower)
 
 ### Result Phase
+
 - **CashoutRewardsPanel.tsx** - Celebratory reward breakdown with hero payout, staggered rows, sparkles
 - **CashoutTrayOverlay.tsx** - Tray overlay for cashout phase
 
 ### Shop Phases
+
 - **ShopContent.tsx** - Shop grid with header, money capsule, 2×2 ShopItemCard grid
 - **ShopItemCard.tsx** - Individual shop item card with affordable/unaffordable/soon states, shimmer animation
 - **ShopHeader.tsx** - Money display in shop
@@ -102,15 +107,18 @@ Tray overlays use `TrayOverlayTitle` component with fade-in + move-up animation 
 - **UpgradeTrayOverlay.tsx** - Tray overlay for upgrade selection
 
 ### Dice Editor Phases
+
 - **DieEditorContent.tsx** - Die selection row with 5 TileButtons (DICE_EDITOR_DIE phase)
 - **FaceEditorContent.tsx** - Face selection 2×3 grid with TileButtons (DICE_EDITOR_FACE phase)
 - **DiceEditorTrayOverlay.tsx** - Tray overlay for dice editor (both phases)
 
 ### End Screens
+
 - **EndContent.tsx** - Compact win/lose display with stats
 - **LoseTrayOverlay.tsx** - Tray overlay for lose screen
 
 ### Shared Components
+
 - **SparkleEffect.tsx** - Particle micro-animation for celebratory effects
 - **TrayOverlayTitle.tsx** - Animated title component for tray overlays
 
@@ -123,6 +131,7 @@ Tray overlays use `TrayOverlayTitle` component with fade-in + move-up animation 
 Wrapper for `DiePreview3D` that connects to store. Used during DICE_EDITOR_DIE and DICE_EDITOR_FACE phases to show a single rotatable die in the PlayConsole tray (replaces the normal 5-dice DiceTray).
 
 **Features**:
+
 - Multi-axis auto-rotation (Y + X axes)
 - Manual rotation with drag
 - Face snapping (DICE_EDITOR_FACE only)
@@ -141,12 +150,12 @@ Phase transitions use easing-based slide animations configured in `ANIMATION.pha
 ANIMATION.phase = {
   springConfig: { damping: 28, stiffness: 380 },
   parallax: {
-    trayModule: 0.5,    // Moves 50% of screen width
-    scoreRow: 0.6,      // Moves 60% of screen width
-    scoringGrid: 0.75,  // Moves 75% of screen width
-    footer: 0.9,        // Moves 90% of screen width
+    trayModule: 0.5, // Moves 50% of screen width
+    scoreRow: 0.6, // Moves 60% of screen width
+    scoringGrid: 0.75, // Moves 75% of screen width
+    footer: 0.9, // Moves 90% of screen width
   },
-}
+};
 ```
 
 **Parallax effect**: Different layers move at different speeds, creating depth during transitions.
@@ -155,10 +164,10 @@ ANIMATION.phase = {
 
 ```typescript
 ANIMATION.transition = {
-  incomingDelay: 40,         // Delay before incoming panel
-  ctaSwapProgress: 0.6,      // When to swap CTA (60% progress)
+  incomingDelay: 40, // Delay before incoming panel
+  ctaSwapProgress: 0.6, // When to swap CTA (60% progress)
   ctaGlowPulseDuration: 400, // Glow pulse behind new CTA
-}
+};
 ```
 
 ---
@@ -171,15 +180,13 @@ import { DiceTray } from "./components/DiceTray";
 
 <PhaseDeck
   diceTray={
-    <DiceTray
-      containerHeight={diceTrayHeight}
-      containerWidth={screenWidth}
-    />
+    <DiceTray containerHeight={diceTrayHeight} containerWidth={screenWidth} />
   }
-/>
+/>;
 ```
 
 **Props**:
+
 - `diceTray`: The 3D dice tray component (or SingleDiePreview during dice editor)
 
 ---
@@ -205,6 +212,7 @@ START
 ## Adding a New Phase
 
 1. **Define phase** in `store/gameStore.ts`:
+
    ```typescript
    type GamePhase =
      | "LEVEL_PLAY"
@@ -213,6 +221,7 @@ START
    ```
 
 2. **Add content component** in `components/ui/`:
+
    ```typescript
    // NewPhaseContent.tsx
    export const NewPhaseContent = () => {
@@ -221,6 +230,7 @@ START
    ```
 
 3. **Map phase to content** in `BottomPanel.tsx`:
+
    ```typescript
    const content = {
      LEVEL_PLAY: <ScoringGrid />,
@@ -230,9 +240,10 @@ START
    ```
 
 4. **Add footer CTA** in `FooterControls.tsx`:
+
    ```typescript
    if (phase === "NEW_PHASE") {
-     return <PrimaryButton label="ACTION" onPress={handleAction} />;
+     return <Button label="ACTION" onPress={handleAction} />;
    }
    ```
 

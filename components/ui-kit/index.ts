@@ -1,15 +1,6 @@
-// UI Kit - Material Layer Components
-// Use these for non-interactive container surfaces
+// UI Kit - Remaining Components
+// Most container components have been migrated to pixel-ui-kit
 
-export { HUDCard } from "./HUDCard";
-export { InsetSlot } from "./InsetSlot";
-export { Chip } from "./Chip";
-export type { ChipColor } from "./Chip";
-
-export { SectionHeader } from "./SectionHeader";
-export { Divider } from "./Divider";
-
-export { NumericCapsule } from "./NumericCapsule";
-export { TrayOverlay } from "./TrayOverlay";
+export { Sparks } from "./Sparks";
 
 // Flow components (PhaseDeck) - will be exported from ./flow

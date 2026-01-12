@@ -9,12 +9,14 @@ This app runs 3D physics simulation, complex animations, and reactive state. **T
 When the player is "thinking" (dice settled, no animations running), the app should do **almost nothing**:
 
 ✅ **Idle State Requirements**:
+
 - No render loop invalidations (use `frameloop="demand"`)
 - No JS intervals/timeouts ticking
 - Animations cancelled or complete
 - CPU/GPU usage near baseline
 
 ❌ **Common Mistakes**:
+
 - Unconditional `invalidate()` calls in useFrame
 - Infinite animations without phase-awareness
 - Background timers that never stop
@@ -105,27 +107,30 @@ if (posDist < 0.01) return; // Already at target, skip work
 ### Anti-Patterns
 
 ❌ **Calling `invalidate()` unconditionally in useFrame**
+
 ```typescript
 // BAD - Renders every frame even when nothing changes
 useFrame((state) => {
-  state.invalidate();  // Always re-render
+  state.invalidate(); // Always re-render
   // ... other logic
 });
 ```
 
 ❌ **Lerping values that are already at target**
+
 ```typescript
 // BAD - Continues lerping even when camera hasn't moved
 useFrame(() => {
-  camera.position.lerp(targetPos, 0.1);  // No early exit
+  camera.position.lerp(targetPos, 0.1); // No early exit
 });
 ```
 
 ❌ **Running useFrame logic when component is offscreen**
+
 ```typescript
 // BAD - Animates dice outline even during shop phase
 useFrame(() => {
-  updatePulse();  // Should check if in LEVEL_PLAY phase
+  updatePulse(); // Should check if in LEVEL_PLAY phase
 });
 ```
 
@@ -206,6 +211,7 @@ selectionProgress.value = withTiming(
 ```
 
 **Benefits**:
+
 - Guaranteed sync with animation completion
 - No timing drift
 - Animation can be interrupted without leaving orphaned timeout
@@ -213,30 +219,34 @@ selectionProgress.value = withTiming(
 ### Anti-Patterns
 
 ❌ **`withRepeat(..., -1)` without phase-awareness** (infinite loop)
+
 ```typescript
 // BAD - Shimmer never stops
 shimmerPosition.value = withRepeat(
   withTiming(1, { duration: 800 }),
-  -1  // Infinite, no cleanup
+  -1 // Infinite, no cleanup
 );
 ```
 
 ❌ **`setInterval` on JS thread for animations** (use Reanimated)
+
 ```typescript
 // BAD - JS thread animations cause jank
 setInterval(() => {
-  setRotation(r => r + 1);
+  setRotation((r) => r + 1);
 }, 16);
 ```
 
 ❌ **Hardcoded `setTimeout` delays that don't match animation durations**
+
 ```typescript
 // BAD - Duration drift if animation changes
 withTiming(1, { duration: 420 });
-setTimeout(callback, 400);  // Off by 20ms
+setTimeout(callback, 400); // Off by 20ms
 ```
 
 ❌ **Not cleaning up animations in useEffect return**
+
 ```typescript
 // BAD - Animation continues after unmount
 useEffect(() => {
@@ -317,7 +327,7 @@ const HandSlot = React.memo(({ handId, labelLine1 }: Props) => {
 ### Memoized Components in This Codebase
 
 - **HandSlot** (13 instances in ScoringGrid)
-- **TileButton**, **Surface**, **InsetSlot**, **Chip** (UI-kit)
+- **TileButton**, **Button**, **Surface** (pixel-ui-kit)
 - **Layout context value** (`useLayoutUnits.ts`)
 
 ---
@@ -362,18 +372,18 @@ Before adding new features, verify:
 
 ## Key Files with Performance-Critical Code
 
-| File | Critical Patterns |
-|------|-------------------|
-| **DiceTray.tsx** | Settle detection, shader warmup |
-| **Die.tsx** | Object pooling, frame guard for settle, reveal animation |
-| **DieOutline.tsx** | Conditional invalidate, material caching |
-| **DiePreview3D.tsx** | Camera early exit, pre-allocated vectors |
-| **PlayConsole.tsx** | Batched Zustand selectors |
-| **ScoringGrid.tsx** | Memoized HandSlot components |
-| **ShopItemCard.tsx** | Phase-aware shimmer cancellation |
-| **UpgradeContent.tsx** | Reanimated callbacks |
-| **BottomPanel.tsx** | Memoized animation configs |
-| **useLayoutUnits.ts** | Memoized context value |
+| File                   | Critical Patterns                                        |
+| ---------------------- | -------------------------------------------------------- |
+| **DiceTray.tsx**       | Settle detection, shader warmup                          |
+| **Die.tsx**            | Object pooling, frame guard for settle, reveal animation |
+| **DieOutline.tsx**     | Conditional invalidate, material caching                 |
+| **DiePreview3D.tsx**   | Camera early exit, pre-allocated vectors                 |
+| **PlayConsole.tsx**    | Batched Zustand selectors                                |
+| **ScoringGrid.tsx**    | Memoized HandSlot components                             |
+| **ShopItemCard.tsx**   | Phase-aware shimmer cancellation                         |
+| **UpgradeContent.tsx** | Reanimated callbacks                                     |
+| **BottomPanel.tsx**    | Memoized animation configs                               |
+| **useLayoutUnits.ts**  | Memoized context value                                   |
 
 ---
 
@@ -388,20 +398,20 @@ Before adding new features, verify:
 
 ### Common Culprits
 
-| Symptom | Likely Cause | Solution |
-|---------|--------------|----------|
-| Frame drops during idle | Unconditional `invalidate()` | Add early-exit conditions |
-| Stutters every few seconds | Object allocation in useFrame | Pre-allocate objects outside loop |
-| Battery drain | Infinite animations | Cancel when offscreen/phase changes |
-| Lag after shop | Animations not cleaned up | Add cleanup in useEffect return |
-| Slow list scrolling | Missing React.memo | Wrap list items |
-| Cascade re-renders | Separate Zustand subscriptions | Use useShallow for batch |
+| Symptom                    | Likely Cause                   | Solution                            |
+| -------------------------- | ------------------------------ | ----------------------------------- |
+| Frame drops during idle    | Unconditional `invalidate()`   | Add early-exit conditions           |
+| Stutters every few seconds | Object allocation in useFrame  | Pre-allocate objects outside loop   |
+| Battery drain              | Infinite animations            | Cancel when offscreen/phase changes |
+| Lag after shop             | Animations not cleaned up      | Add cleanup in useEffect return     |
+| Slow list scrolling        | Missing React.memo             | Wrap list items                     |
+| Cascade re-renders         | Separate Zustand subscriptions | Use useShallow for batch            |
 
 ---
 
 ## Related Documentation
 
 - **3D render optimization**: See `components/Die.tsx` for useFrame patterns
-- **Animation timing**: See `constants/theme.ts` for all ANIMATION.* constants
+- **Animation timing**: See `constants/theme.ts` for all ANIMATION.\* constants
 - **State management**: See `store/gameStore.ts` for Zustand setup
 - **Scoring animation**: See `components/scoring/CLAUDE.md` for reveal choreography

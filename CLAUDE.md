@@ -104,27 +104,20 @@ dice-game/
 │   │   ├── DieEditorContent.tsx # Die selection panel (DICE_EDITOR_DIE phase)
 │   │   ├── FaceEditorContent.tsx # Face selection panel (DICE_EDITOR_FACE phase)
 │   │   └── DiePreview3D.tsx # 3D die viewer for face selection
-│   ├── ui-kit/              # Material layer system
-│   │   ├── Surface.tsx      # Base container (panel, inset, chip, overlay)
-│   │   ├── HUDCard.tsx      # Panel wrapper with optional header
-│   │   ├── InsetSlot.tsx    # Recessed sub-surface
-│   │   ├── Chip.tsx         # Non-interactive status badge
-│   │   ├── ProgressBar.tsx  # Horizontal progress bar with animation
-│   │   ├── NumericCapsule.tsx # Fixed-width number display (prevents layout shift)
-│   │   ├── SectionHeader.tsx # Section title with icon
-│   │   ├── Divider.tsx      # Visual separator
+│   ├── pixel-ui-kit/        # Pixel-art 9-slice UI components
+│   │   ├── Surface.tsx      # Base container with pixel texture
+│   │   ├── Pressable.tsx    # 3D press effect for buttons
+│   │   ├── PixelChip.tsx    # Status badge
+│   │   ├── PixelDivider.tsx # Visual separator
+│   │   └── index.ts         # Barrel exports
+│   ├── ui-kit/              # Legacy + animation components
+│   │   ├── Sparks.tsx       # Particle effects for celebrations
 │   │   ├── index.ts         # Barrel exports
 │   │   └── flow/
 │   │       └── PhaseDeck.tsx # Sliding transition orchestrator
 │   ├── scoring/
-│   │   ├── SpecialSection.tsx # Owned items display (tap to view details)
-│   │   ├── UpperSection.tsx # 6 dice slots (1-6)
-│   │   └── LowerSection.tsx # 7 poker hand slots
-│   ├── screens/
-│   │   ├── ResultScreen.tsx # Level complete rewards (exports ResultPanel)
-│   │   ├── ShopScreen.tsx   # Shop with upgrades (exports ShopPanel)
-│   │   ├── UpgradePickerScreen.tsx # (exports UpgradePickerPanel)
-│   │   └── EndScreen.tsx    # Win/Lose screens (exports EndPanel)
+│   │   ├── ScoringGrid.tsx  # 13 hand slots (upper + lower sections)
+│   │   └── CLAUDE.md        # Scoring animation documentation
 │   └── modals/
 │       ├── OverviewModal.tsx # Hand levels + formulas
 │       └── ItemDetailModal.tsx # Item details with highlighted keywords
@@ -239,7 +232,7 @@ All 13 hand slots use 3 states defined in `theme.ts`:
 
 ### Dice Tray Sizing
 
-To change the dice tray size in the UI and keep the 3D scene in sync, adjust the UI height in `App.tsx` via `calculateDiceTrayHeight` (in `constants/theme.ts`) and pass both `containerHeight` and `containerWidth` into `DiceTray`. Inside `components/DiceTray.tsx`, derive the 3D floor dimensions from the canvas aspect ratio (e.g., `floorDepth = floorWidth / aspect`) and compute the camera height from the floor size and FOV so the floor fills the viewport without cropping. This keeps the tray full width across devices, prevents dice from rolling out of view, and makes the 3D bounds track the UI layout.
+To change the dice tray size in the UI and keep the 3D scene in sync, use the `useLayout()` hook to get `diceTrayHeight` and pass both `containerHeight` and `containerWidth` into `DiceTray`. Inside `components/DiceTray.tsx`, derive the 3D floor dimensions from the canvas aspect ratio (e.g., `floorDepth = floorWidth / aspect`) and compute the camera height from the floor size and FOV so the floor fills the viewport without cropping. This keeps the tray full width across devices, prevents dice from rolling out of view, and makes the 3D bounds track the UI layout.
 
 ### Layout System
 
@@ -282,17 +275,21 @@ const MyComponent = () => {
 // layout.fontScale, screenWidth, screenHeight, usableHeight, insets
 ```
 
-### UI Kit (`components/ui-kit/`)
+### Pixel UI Kit (`components/pixel-ui-kit/`)
 
-The UI kit provides material layers to differentiate containers from interactive elements.
+The pixel UI kit provides 9-slice textured containers with the game's pixel-art aesthetic.
 
-**Key Principle**: Containers should look flat and matte; only buttons should have 3D bevels and glows.
+**Key Principle**: Containers use pixel textures; interactive elements have 3D depth effects.
 
-**Material Hierarchy**: Background → Panel → Inset → Interactive
+**Components**: Surface, Pressable, PixelChip, PixelDivider
 
-**Components**: Surface, HUDCard, InsetSlot, Chip, SectionHeader, Divider, ProgressBar, NumericCapsule
+### Shared Components (`components/shared/`)
 
-See **`components/ui-kit/CLAUDE.md`** for complete component catalog, usage patterns, and UI guidelines.
+Reusable interactive components:
+
+**Components**: Button, TileButton, SquareTileButton, GameText, Modal
+
+See **`components/ui-kit/CLAUDE.md`** for component overview.
 
 ### Money/Cost Display Convention
 
