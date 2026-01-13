@@ -422,29 +422,16 @@ export const DiceTray = ({
         </Suspense>
       </Canvas>
 
-      {/* Floating Score Overlay - positioned based on highlighted die */}
-      {revealState?.active &&
-        revealState.currentDieIndex !== -1 &&
-        (revealState.currentDiePoints || revealState.currentDieMult) && (
-          <FloatingScoreOverlay
-            pointsValue={revealState.currentDiePoints}
-            multValue={revealState.currentDieMult}
-            position={(() => {
-              // Calculate screen position based on slot assignment
-              const dieIndex = revealState.currentDieIndex;
-              const slotIndex = slotAssignmentsRef.current[dieIndex];
-              // Slots are -2, -1, 0, 1, 2 -> map to 0-4
-              // Screen X: slot position maps to container width
-              // The 5 slots span roughly 80% of the width (10% padding each side)
-              const normalizedSlot = (slotIndex - 2) / 4 + 0.5; // 0 to 1
-              const x = containerWidth * (0.1 + normalizedSlot * 0.8);
-              // Y position: center of the tray
-              const y = containerHeight * 0.5;
-              return { x, y };
-            })()}
-            isActive={true}
-          />
-        )}
+      {/* Floating Score Overlay - fixed position at top of dice tray */}
+      <FloatingScoreOverlay
+        pointsValue={revealState?.currentDiePoints ?? null}
+        multValue={revealState?.currentDieMult ?? null}
+        isActive={
+          !!revealState?.active &&
+          revealState.currentDieIndex !== -1 &&
+          !!(revealState.currentDiePoints || revealState.currentDieMult)
+        }
+      />
 
       {/* Game End Overlay */}
       <GameEndOverlay />
