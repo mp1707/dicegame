@@ -319,94 +319,110 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
         updateRevealAnimation({
           currentDiePoints: null,
           currentDieMult: null,
+          floatPhase: "idle",
         });
 
-        setTimeout(
-          () => {
-            // Phase: FINAL - Show hand's final score in Selected Hand Section
+        setTimeout(() => {
+          // Phase: FINAL - Show hand's final score in Selected Hand Section
+          updateRevealAnimation({
+            animationPhase: "final",
+            currentDieIndex: -1,
+          });
+          triggerSelectionHaptic();
+
+          finalScoreScale.value = withSequence(
+            withTiming(1.12, {
+              duration: 100,
+              easing: Easing.out(Easing.back(2)),
+            }),
+            withTiming(1, { duration: 80, easing: Easing.out(Easing.quad) })
+          );
+
+          // After showing final score, start the Punkte count-up
+          setTimeout(() => {
+            // Phase: TOTAL - Count up the Punkte section
             updateRevealAnimation({
-              animationPhase: "final",
-              currentDieIndex: -1,
+              animationPhase: "total",
+              displayTotal: useGameStore.getState().levelScore + finalScore,
             });
-            triggerSelectionHaptic();
 
-            finalScoreScale.value = withSequence(
-              withTiming(1.12, {
-                duration: 100,
-                easing: Easing.out(Easing.back(2)),
-              }),
-              withTiming(1, { duration: 80, easing: Easing.out(Easing.quad) })
-            );
+            const currentScore = useGameStore.getState().levelScore;
+            const newTotal = currentScore + finalScore;
 
-            // After showing final score, start the Punkte count-up
-            setTimeout(() => {
-              // Phase: TOTAL - Count up the Punkte section
-              updateRevealAnimation({
-                animationPhase: "total",
-                displayTotal: useGameStore.getState().levelScore + finalScore,
-              });
-
-              const currentScore = useGameStore.getState().levelScore;
-              const newTotal = currentScore + finalScore;
-
-              // Animate the Punkte section count-up
-              animatePunkteCountUp(currentScore, newTotal, () => {
-                // Animation complete, wait a bit then finalize
-                setTimeout(() => {
-                  animationInProgress.current = false;
-                  finalizeHand();
-                }, 400);
-              });
-            }, 560);
-          },
-          0
-        );
+            // Animate the Punkte section count-up
+            animatePunkteCountUp(currentScore, newTotal, () => {
+              // Animation complete, wait a bit then finalize
+              setTimeout(() => {
+                animationInProgress.current = false;
+                finalizeHand();
+              }, 400);
+            });
+          }, 560);
+        }, 0);
         return;
       }
 
       // Get per-die contribution data
       const contribution = dieContributions[dieIdx];
       const { dieIndex, totalPoints, bonusMult: dieMult } = contribution;
+      const hasMult = dieMult > 0;
 
       // Accumulate pips (including bonus points from enhancements)
       accumulatedPips += totalPoints;
 
-      // Update reveal state with current die's contribution for floating score display
+      // Step 1: Show points with float animation
       updateRevealAnimation({
         currentDieIndex: dieIndex,
         accumulatedPips,
         currentDiePoints: totalPoints,
-        currentDieMult: dieMult > 0 ? dieMult : null,
+        currentDieMult: hasMult ? dieMult : null,
+        floatPhase: "points", // Trigger points float animation
       });
       triggerSelectionHaptic();
 
-      // Animate points display
+      // Animate points display in the formula section
       pointsScale.value = withSequence(
         withTiming(1.06, snapTiming),
         withTiming(1, returnTiming)
       );
 
-      // If this die has mult bonus, update mult incrementally
-      if (dieMult > 0) {
-        accumulatedMult += dieMult;
-        updateRevealAnimation({
-          accumulatedMult,
-        });
+      // Use perDieDelay for pacing - numbers can overlap (each lives longer but next starts quickly)
+      const perDieDelay = ANIMATION.counting.perDieDelay;
 
-        // Animate mult display with satisfying pop
-        multScale.value = withSequence(
-          withTiming(1.15, {
-            duration: 100,
-            easing: Easing.out(Easing.back(2)),
-          }),
-          withTiming(1, { duration: 80, easing: Easing.out(Easing.quad) })
-        );
+      if (hasMult) {
+        // Step 2 (for mult dice): Wait a bit, then show mult
+        setTimeout(() => {
+          accumulatedMult += dieMult;
+
+          // Trigger mult float animation (die will pulse again)
+          updateRevealAnimation({
+            accumulatedMult,
+            floatPhase: "mult", // Trigger mult float animation
+          });
+          triggerSelectionHaptic();
+
+          // Animate mult display with satisfying pop
+          multScale.value = withSequence(
+            withTiming(1.15, {
+              duration: 100,
+              easing: Easing.out(Easing.back(2)),
+            }),
+            withTiming(1, { duration: 80, easing: Easing.out(Easing.quad) })
+          );
+
+          // Move to next die after mult is triggered
+          setTimeout(() => {
+            dieIdx++;
+            animateNextDie();
+          }, ANIMATION.floatingScore.delayBetweenPhases);
+        }, ANIMATION.floatingScore.delayBetweenPhases);
+      } else {
+        // No mult - move to next die after standard delay
+        setTimeout(() => {
+          dieIdx++;
+          animateNextDie();
+        }, perDieDelay);
       }
-
-      setTimeout(() => {
-        dieIdx++;
-        animateNextDie();
-      }, 560);
     };
 
     setTimeout(animateNextDie, 640);

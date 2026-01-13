@@ -604,6 +604,17 @@ export const ANIMATION = {
     pipGlowDuration: 280, // Pip glow pulse duration
     successDelay: 550, // Hold after successful upgrade before close
   },
+
+  // Floating score (level-up style pop + float animation)
+  floatingScore: {
+    popInDuration: 150, // Pop in animation (scale + opacity)
+    popInScale: 1.15, // Peak scale during pop
+    holdDuration: 500, // Time at full visibility before fading
+    fadeDuration: 500, // Fade out duration (while floating)
+    floatDistance: 60, // How far to float up (px)
+    arcCurve: 0.5, // How curved the arc is (ratio of horizontal to vertical)
+    delayBetweenPhases: 300, // Delay between points and mult for same die
+  },
 } as const;
 
 // Physics constants for 3D dice

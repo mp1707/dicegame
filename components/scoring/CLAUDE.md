@@ -9,11 +9,13 @@ When a player accepts a hand, a coordinated reveal animation plays across multip
 ### Step 1: Trigger (`acceptHand()` in gameStore)
 
 **Actions**:
+
 - Sets `revealState.active = true` with scoring breakdown
 - Unlocks all dice (locks no longer needed during scoring)
 - Computes contributing dice indices
 
 **State Changes**:
+
 ```typescript
 {
   revealState: {
@@ -30,16 +32,19 @@ When a player accepts a hand, a coordinated reveal animation plays across multip
 ### Step 2: DiceTray Orchestration
 
 **CameraController**:
+
 - Zooms camera to 60% of default height (40% closer to dice)
 - Creates dramatic focus on the scoring moment
 
 **Slot Assignment**:
+
 - Sorts dice by X position (left-to-right)
 - Assigns each die to an arranged slot position
 - Creates orderly line-up for reveal
 
 **Die Props Updated**:
 Each Die component receives:
+
 - `isRevealActive` - Triggers reveal animation
 - `arrangedPosition` - Target position in lineup
 - `isHighlighted` - Whether this die is currently being counted
@@ -50,6 +55,7 @@ Each Die component receives:
 ### Step 3: Die Animation (in useFrame)
 
 **First Reveal Frame** (initialization):
+
 1. Switches die to dynamic type (in case it was kinematic from locking)
 2. Captures current physics position/rotation
 3. Computes target quaternion to show top face
@@ -57,25 +63,44 @@ Each Die component receives:
 5. Calls `invalidate()` to ensure next frame renders
 
 **Subsequent Frames** (animation loop):
+
 1. Caps `delta` to max 33ms to prevent instant jumps after long pauses (`frameloop="demand"`)
 2. Lerps position toward arranged slot
 3. Slerps rotation toward flat orientation (top face visible)
 4. Physics disabled by zeroing velocities while animation runs
 
 **Why the two-frame pattern?**
+
 - Frame 1 prevents physics from interfering with animation start
 - Subsequent frames smoothly animate to target without physics drift
 
 ---
 
-### Step 4: ScoreLip Counting Animation (3 Phases)
+### Step 4: TopMenuStrip Counting Animation (3 Phases)
 
 **Phase 1: Counting Phase**
 
-Iterates through `contributingIndices` one by one:
-- Updates `currentDieIndex` to highlight each die in turn
-- Accumulates pips and animates score display
-- Per-die delay: **560ms** (was 700ms, optimized 20% faster)
+Iterates through `contributingIndices` one by one. For each die:
+
+**Standard dice (no mult enhancement):**
+
+- Updates `currentDieIndex` to highlight the die (triggers pulse)
+- Sets `floatPhase: "points"` to trigger floating score animation
+- Points number pops in, floats up-left with arc motion, fades out
+- Per-die delay: ~550ms (popIn + float duration)
+
+**Mult-enhanced dice (two-step animation):**
+
+1. **Points step**: Same as standard - die pulses, points float up-left
+2. **Delay**: 250ms between steps
+3. **Mult step**: Die pulses again, `floatPhase: "mult"`, mult number floats up-right
+4. Per-die delay: ~1100ms (two float cycles + delay between)
+
+**FloatingScoreOverlay Animation:**
+
+- **Pop in**: Scale 0.5→1.15→1.0 with opacity fade-in (150ms)
+- **Float away**: Move up in arc (40px up, 16px horizontal), fade out (400ms)
+- Points float up-left, mult floats up-right (creates celebratory "level up" feel)
 
 **Phase 2: Hand Score Display (1s)**
 
@@ -91,16 +116,17 @@ Iterates through `contributingIndices` one by one:
 - After total phase completes, calls `finalizeHand()`
 
 **Timing Reference**:
+
 ```typescript
 // constants/theme.ts
 ANIMATION.counting = {
   initialDelay: 640,
-  perDieDelay: 560,
+  perDieDelay: 560, // Base delay (overridden by float timing)
   handScoreDisplay: 1000,
   totalScoreDisplay: 1600,
   colorFadeDelay: 200,
   colorFadeDuration: 800,
-}
+};
 ```
 
 ---
@@ -108,16 +134,19 @@ ANIMATION.counting = {
 ### Step 5: Die Visual States During Reveal
 
 **Highlighted State** (current die being counted):
+
 - Gold color (`COLORS.gold`)
 - Pulse scale animation (1.0 → 1.12 → 1.0)
 - Draws attention to the active die
 
 **Contributing State** (awaiting highlight):
+
 - Normal opacity (100%)
 - Standard white material
 - Ready to be highlighted when its turn comes
 
 **Non-contributing State** (doesn't match hand):
+
 - Dimmed to **30% opacity**
 - Clearly distinguished from scoring dice
 - Remains visible but de-emphasized
@@ -126,28 +155,31 @@ ANIMATION.counting = {
 
 ## Key Components
 
-| Component | File | Responsibility |
-|-----------|------|----------------|
-| **DiceTray** | `components/DiceTray.tsx` | Camera zoom, slot assignment |
-| **Die** | `components/Die.tsx` | Position lerp, rotation slerp, visual states |
-| **ScoreLip** | `components/ui/ScoreLip.tsx` | Counting animation, score display phases |
-| **GameStore** | `store/gameStore.ts` | `acceptHand()` trigger, reveal state management |
+| Component     | File                         | Responsibility                                  |
+| ------------- | ---------------------------- | ----------------------------------------------- |
+| **DiceTray**  | `components/DiceTray.tsx`    | Camera zoom, slot assignment                    |
+| **Die**       | `components/Die.tsx`         | Position lerp, rotation slerp, visual states    |
+| **ScoreLip**  | `components/ui/ScoreLip.tsx` | Counting animation, score display phases        |
+| **GameStore** | `store/gameStore.ts`         | `acceptHand()` trigger, reveal state management |
 
 ---
 
 ## Performance Considerations
 
 **Frame-demand rendering**:
+
 - Canvas uses `frameloop="demand"`
 - Animation calls `invalidate()` only when needed
 - Stops rendering when animation completes
 
 **Delta capping**:
+
 - Max delta of 33ms prevents instant jumps
 - Handles long pauses between frames (e.g., device sleep)
 - Ensures smooth animation even with variable frame timing
 
 **Physics pause**:
+
 - Physics velocities zeroed during reveal
 - Prevents physics from interfering with animation
 - Re-enabled after reveal completes
@@ -160,22 +192,37 @@ For more performance patterns, see `docs/PERFORMANCE.md`.
 
 All timing values are centralized in `constants/theme.ts` under `ANIMATION.counting.*`:
 
-| Constant | Value (ms) | Purpose |
-|----------|------------|---------|
-| `initialDelay` | 640 | Delay before counting starts |
-| `perDieDelay` | 560 | Time per die highlight |
-| `handScoreDisplay` | 1000 | Hand score pause duration |
-| `totalScoreDisplay` | 1600 | Total score fade duration |
-| `colorFadeDelay` | 200 | Delay before color fade |
-| `colorFadeDuration` | 800 | Gold→white fade duration |
+| Constant            | Value (ms) | Purpose                      |
+| ------------------- | ---------- | ---------------------------- |
+| `initialDelay`      | 640        | Delay before counting starts |
+| `perDieDelay`       | 560        | Time per die highlight       |
+| `handScoreDisplay`  | 1000       | Hand score pause duration    |
+| `totalScoreDisplay` | 1600       | Total score fade duration    |
+| `colorFadeDelay`    | 200        | Delay before color fade      |
+| `colorFadeDuration` | 800        | Gold→white fade duration     |
 
 **Highlight animation**:
+
 ```typescript
 ANIMATION.highlight = {
-  pulseDuration: 200,   // Full pulse cycle
-  peakScale: 1.12,      // Max scale at peak
-  attackRatio: 0.35,    // Ratio of time spent scaling up
-}
+  pulseDuration: 200, // Full pulse cycle
+  peakScale: 1.12, // Max scale at peak
+  attackRatio: 0.35, // Ratio of time spent scaling up
+};
+```
+
+**Floating score animation** (`ANIMATION.floatingScore`):
+
+```typescript
+ANIMATION.floatingScore = {
+  popInDuration: 150, // Pop in animation
+  popInScale: 1.15, // Peak scale during pop
+  holdDuration: 500, // Time at full visibility before fading
+  fadeDuration: 500, // Fade out duration (while floating)
+  floatDistance: 60, // How far to float up (px)
+  arcCurve: 0.5, // Horizontal drift ratio
+  delayBetweenPhases: 300, // Delay between points and mult
+};
 ```
 
 ---
@@ -185,3 +232,4 @@ ANIMATION.highlight = {
 - **Die enhancements**: See `components/ui/dice-editor/CLAUDE.md` for enhancement indicators during reveal
 - **Performance**: See `docs/PERFORMANCE.md` for useFrame optimization patterns
 - **Theme timing**: See `constants/theme.ts` for all animation constants
+- **FloatingScore**: See `components/FloatingScore.tsx` for level-up style floating numbers

@@ -10,6 +10,7 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { useFonts } from "expo-font";
 import { DiceTray } from "./components/DiceTray";
 import { SingleDiePreview } from "./components/SingleDiePreview";
+import { FloatingScoreOverlay } from "./components/FloatingScore";
 import { OverviewModal } from "./components/modals/OverviewModal";
 import { ItemDetailModal } from "./components/modals/ItemDetailModal";
 import { PhaseDeck } from "./components/ui/PhaseDeck";
@@ -72,6 +73,8 @@ const AppContent: React.FC = () => {
   const toggleOverview = useGameStore((s) => s.toggleOverview);
   const phase = useGameStore((s) => s.phase);
   const selectedEditorDie = useGameStore((s) => s.selectedEditorDie);
+  const revealState = useGameStore((s) => s.revealState);
+  const updateRevealAnimation = useGameStore((s) => s.updateRevealAnimation);
 
   // Item modal state
   const itemModalId = useGameStore((s) => s.itemModalId);
@@ -179,6 +182,20 @@ const AppContent: React.FC = () => {
             />
           )}
         </SafeAreaView>
+
+        {/* Global Floating Score Overlay - rendered at app level to avoid clipping */}
+        <FloatingScoreOverlay
+          pointsValue={revealState?.currentDiePoints ?? null}
+          multValue={revealState?.currentDieMult ?? null}
+          floatPhase={revealState?.floatPhase ?? "idle"}
+          onFloatComplete={(completedPhase) => {
+            if (completedPhase === "points" || completedPhase === "mult") {
+              updateRevealAnimation({
+                floatPhase: "idle",
+              });
+            }
+          }}
+        />
       </View>
 
       {/* Global UI Overlays */}

@@ -70,6 +70,8 @@ export interface RevealState {
   currentDiePoints: number | null;
   /** Current die's mult contribution for floating score display */
   currentDieMult: number | null;
+  /** Which floating score phase is active: points float, mult float, or idle */
+  floatPhase: "points" | "mult" | "idle";
   displayTotal?: number; // The total level score to display in "total" phase
 }
 
@@ -492,6 +494,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         accumulatedMult: 0,
         currentDiePoints: null,
         currentDieMult: null,
+        floatPhase: "idle",
       },
     });
   },

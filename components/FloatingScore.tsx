@@ -1,86 +1,231 @@
-import React from "react";
-import { StyleSheet } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { StyleSheet, View } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
+  withSequence,
+  withDelay,
+  Easing,
+  runOnJS,
 } from "react-native-reanimated";
-import { COLORS, SPACING } from "../constants/theme";
-import { Surface } from "./pixel-ui-kit/Surface";
+import { COLORS, ANIMATION } from "../constants/theme";
 import { GameText } from "./shared";
+
+type FloatPhase = "points" | "mult" | "idle";
 
 interface FloatingScoreProps {
   /** Points value to display */
   pointsValue: number | null;
   /** Mult value to display */
   multValue: number | null;
-  /** Whether this score is currently active */
-  isActive: boolean;
+  /** Which floating phase is currently active */
+  floatPhase: FloatPhase;
+  /** Callback when a float animation completes */
+  onFloatComplete?: (phase: FloatPhase) => void;
+}
+
+const { floatingScore: FLOAT_CONFIG } = ANIMATION;
+
+// Total animation duration for a single number
+const TOTAL_DURATION =
+  FLOAT_CONFIG.popInDuration +
+  FLOAT_CONFIG.holdDuration +
+  FLOAT_CONFIG.fadeDuration;
+
+// Float starts after pop-in and continues through hold and fade
+const FLOAT_START_DELAY = FLOAT_CONFIG.popInDuration;
+const FLOAT_DURATION = FLOAT_CONFIG.holdDuration + FLOAT_CONFIG.fadeDuration;
+
+interface SpawnedNumber {
+  id: number;
+  value: number;
+  label: string;
+  color: string;
+  arcDirection: "left" | "right";
+  phase: FloatPhase;
 }
 
 /**
- * FloatingScoreOverlay - Simple fixed-position score display
+ * FloatingNumber - A single spawned number that animates independently
+ */
+const FloatingNumber = ({
+  value,
+  label,
+  color,
+  arcDirection,
+  onAnimationEnd,
+}: {
+  value: number;
+  label: string;
+  color: string;
+  arcDirection: "left" | "right";
+  onAnimationEnd: () => void;
+}) => {
+  const scale = useSharedValue(0.5);
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(0);
+  const translateX = useSharedValue(0);
+  const hasTriggeredEnd = useRef(false);
+
+  useEffect(() => {
+    // Immediately start the animation when mounted
+    const xDirection = arcDirection === "left" ? -1 : 1;
+
+    // Scale: pop in then stay at 1
+    scale.value = withSequence(
+      withTiming(FLOAT_CONFIG.popInScale, {
+        duration: FLOAT_CONFIG.popInDuration * 0.6,
+        easing: Easing.out(Easing.back(2)),
+      }),
+      withTiming(1, {
+        duration: FLOAT_CONFIG.popInDuration * 0.4,
+        easing: Easing.out(Easing.quad),
+      })
+    );
+
+    // Opacity: fade in, hold at 1, then fade out
+    opacity.value = withSequence(
+      withTiming(1, { duration: FLOAT_CONFIG.popInDuration }),
+      withDelay(
+        FLOAT_CONFIG.holdDuration,
+        withTiming(
+          0,
+          {
+            duration: FLOAT_CONFIG.fadeDuration,
+            easing: Easing.in(Easing.quad),
+          },
+          (finished) => {
+            if (finished && !hasTriggeredEnd.current) {
+              hasTriggeredEnd.current = true;
+              runOnJS(onAnimationEnd)();
+            }
+          }
+        )
+      )
+    );
+
+    // Float up: starts after pop, continues through hold and fade
+    translateY.value = withDelay(
+      FLOAT_START_DELAY,
+      withTiming(-FLOAT_CONFIG.floatDistance, {
+        duration: FLOAT_DURATION,
+        easing: Easing.out(Easing.quad),
+      })
+    );
+
+    // Arc motion: horizontal drift
+    translateX.value = withDelay(
+      FLOAT_START_DELAY,
+      withTiming(
+        FLOAT_CONFIG.floatDistance * FLOAT_CONFIG.arcCurve * xDirection,
+        {
+          duration: FLOAT_DURATION,
+          easing: Easing.out(Easing.cubic),
+        }
+      )
+    );
+  }, []);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: scale.value },
+      { translateY: translateY.value },
+      { translateX: translateX.value },
+    ],
+    opacity: opacity.value,
+  }));
+
+  return (
+    <Animated.View style={[styles.numberContainer, animatedStyle]}>
+      <GameText variant="scoreboardLarge" color={color}>
+        {value} {label}
+      </GameText>
+    </Animated.View>
+  );
+};
+
+/**
+ * FloatingScoreOverlay - Number spawner for level-up style floating scores
  *
- * Displays at top center of dice tray during counting animation.
- * Shows "X Punkte" (white) and "X Mult" (red) with Surface background.
+ * Each number spawns at the same center point and animates independently.
+ * Points float up-left, mult floats up-right.
  */
 export const FloatingScoreOverlay = ({
   pointsValue,
   multValue,
-  isActive,
+  floatPhase,
+  onFloatComplete,
 }: FloatingScoreProps) => {
-  const opacity = useSharedValue(0);
+  const [spawnedNumbers, setSpawnedNumbers] = useState<SpawnedNumber[]>([]);
+  const nextIdRef = useRef(0);
+  const prevPhaseRef = useRef<FloatPhase>("idle");
 
-  React.useEffect(() => {
-    opacity.value = withTiming(isActive ? 1 : 0, { duration: 150 });
-  }, [isActive]);
+  // Spawn a new number when floatPhase changes to "points" or "mult"
+  useEffect(() => {
+    if (floatPhase === "points" && prevPhaseRef.current !== "points") {
+      if (pointsValue !== null && pointsValue > 0) {
+        const newNumber: SpawnedNumber = {
+          id: nextIdRef.current++,
+          value: pointsValue,
+          label: "Punkte",
+          color: "#FFFFFF",
+          arcDirection: "left",
+          phase: "points",
+        };
+        setSpawnedNumbers((prev) => [...prev, newNumber]);
+      }
+    } else if (floatPhase === "mult" && prevPhaseRef.current !== "mult") {
+      if (multValue !== null && multValue > 0) {
+        const newNumber: SpawnedNumber = {
+          id: nextIdRef.current++,
+          value: multValue,
+          label: "Mult",
+          color: COLORS.upgradeMult,
+          arcDirection: "right",
+          phase: "mult",
+        };
+        setSpawnedNumbers((prev) => [...prev, newNumber]);
+      }
+    }
+    prevPhaseRef.current = floatPhase;
+  }, [floatPhase, pointsValue, multValue]);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-  }));
-
-  const hasPoints = pointsValue !== null && pointsValue > 0;
-  const hasMult = multValue !== null && multValue > 0;
-
-  if (!hasPoints && !hasMult) return null;
+  const handleAnimationEnd = (id: number, phase: FloatPhase) => {
+    // Remove the completed number from state
+    setSpawnedNumbers((prev) => prev.filter((n) => n.id !== id));
+    // Notify parent that this phase completed
+    onFloatComplete?.(phase);
+  };
 
   return (
-    <Animated.View
-      style={[styles.container, animatedStyle]}
-      pointerEvents="none"
-    >
-      {hasPoints && (
-        <Surface tintColor="#000000" opacity={0.7} padding="sm">
-          <GameText variant="scoreboardMedium" color="#FFFFFF">
-            {pointsValue} Punkte
-          </GameText>
-        </Surface>
-      )}
-      {hasMult && (
-        <Surface
-          tintColor="#000000"
-          opacity={0.7}
-          padding="sm"
-          style={styles.multRow}
-        >
-          <GameText variant="scoreboardMedium" color={COLORS.upgradeMult}>
-            {multValue} Mult
-          </GameText>
-        </Surface>
-      )}
-    </Animated.View>
+    <View style={styles.container} pointerEvents="none">
+      {spawnedNumbers.map((num) => (
+        <FloatingNumber
+          key={num.id}
+          value={num.value}
+          label={num.label}
+          color={num.color}
+          arcDirection={num.arcDirection}
+          onAnimationEnd={() => handleAnimationEnd(num.id, num.phase)}
+        />
+      ))}
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
-    top: 20,
+    top: "40%", // Position at roughly the middle of the dice tray area
     left: 0,
     right: 0,
     alignItems: "center",
+    justifyContent: "center",
+    zIndex: 9999, // Above everything
   },
-  multRow: {
-    marginTop: SPACING.sm,
+  numberContainer: {
+    position: "absolute",
+    // Numbers spawn at the same centered spot
   },
 });

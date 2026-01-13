@@ -16,7 +16,7 @@ import {
 } from "@react-three/drei";
 import * as THREE from "three";
 import { Die } from "./Die";
-import { FloatingScoreOverlay } from "./FloatingScore";
+
 import { useGameStore } from "../store/gameStore";
 import { COLORS } from "../constants/theme";
 import { triggerLightImpact, triggerSelectionHaptic } from "../utils/haptics";
@@ -412,6 +412,11 @@ export const DiceTray = ({
                 isWinAnimating={isWinAnimating}
                 lockedDiceCount={lockedDiceCount}
                 dieEnhancement={diceEnhancements[i]}
+                floatPhase={
+                  revealState?.currentDieIndex === i
+                    ? revealState?.floatPhase ?? "idle"
+                    : "idle"
+                }
               />
             ))}
           </Physics>
@@ -422,16 +427,7 @@ export const DiceTray = ({
         </Suspense>
       </Canvas>
 
-      {/* Floating Score Overlay - fixed position at top of dice tray */}
-      <FloatingScoreOverlay
-        pointsValue={revealState?.currentDiePoints ?? null}
-        multValue={revealState?.currentDieMult ?? null}
-        isActive={
-          !!revealState?.active &&
-          revealState.currentDieIndex !== -1 &&
-          !!(revealState.currentDiePoints || revealState.currentDieMult)
-        }
-      />
+      {/* FloatingScoreOverlay moved to App.tsx to avoid clipping */}
 
       {/* Game End Overlay */}
       <GameEndOverlay />
@@ -443,6 +439,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "transparent", // Let parent bg show through
+    overflow: "visible", // Allow FloatingScore to extend beyond bounds
   },
   canvas: {
     flex: 1,

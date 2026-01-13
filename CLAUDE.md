@@ -216,6 +216,8 @@ This approach makes locked dice truly solid - other dice bounce off naturally wi
 
 When a player accepts a hand, a coordinated reveal animation choreographs dice arrangement, camera zoom, and score counting across multiple components.
 
+**FloatingScoreOverlay**: Shows "level up" style floating numbers above each die as it's counted. Points float up-left, mult floats up-right. Dice with mult enhancement get a two-step animation (points pulse, then mult pulse).
+
 **Choreography**: See **`components/scoring/CLAUDE.md`** for the complete 5-step animation flow and timing constants.
 
 ### Slot Visual States

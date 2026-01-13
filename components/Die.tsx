@@ -126,6 +126,8 @@ interface DieProps {
   lockedDiceCount: number;
   // Dice enhancement state (optional for backwards compatibility)
   dieEnhancement?: DieEnhancement;
+  // Float phase for two-step animation (points/mult)
+  floatPhase?: "points" | "mult" | "idle";
 }
 
 export const Die = ({
@@ -145,6 +147,7 @@ export const Die = ({
   isWinAnimating,
   lockedDiceCount,
   dieEnhancement,
+  floatPhase = "idle",
 }: DieProps & { onWake: (index: number) => void }) => {
   const rigidBody = useRef<RapierRigidBody>(null);
   const prevRollTrigger = useRef(rollTrigger);
@@ -175,6 +178,11 @@ export const Die = ({
   // Highlight pulse tracking
   const wasHighlightedRef = useRef(false);
   const highlightStartTimeRef = useRef(0);
+
+  // Mult pulse tracking (for two-step animation)
+  const prevFloatPhaseRef = useRef<"points" | "mult" | "idle">("idle");
+  const multPulseStartRef = useRef(0);
+  const isMultPulsingRef = useRef(false);
 
   // Win animation tracking
   const wasWinAnimatingRef = useRef(false);
@@ -299,6 +307,20 @@ export const Die = ({
     }
     wasHighlightedRef.current = isHighlighted;
   }, [isHighlighted]);
+
+  // Detect mult phase transition for second pulse (two-step animation)
+  useEffect(() => {
+    if (
+      isHighlighted &&
+      floatPhase === "mult" &&
+      prevFloatPhaseRef.current !== "mult"
+    ) {
+      // Trigger a second pulse for mult
+      multPulseStartRef.current = performance.now();
+      isMultPulsingRef.current = true;
+    }
+    prevFloatPhaseRef.current = floatPhase;
+  }, [floatPhase, isHighlighted]);
 
   // Reset animation state when reveal ends
   useEffect(() => {
@@ -494,7 +516,27 @@ export const Die = ({
     let targetOpacity: number;
     let applyDirectly = false; // For highlight pulse - apply directly without lerp
 
-    if (isHighlighted) {
+    // Mult pulse takes priority when active (second pulse for mult-enhanced dice)
+    if (isMultPulsingRef.current) {
+      const elapsed = now - multPulseStartRef.current;
+      const pulseDuration = 200;
+      const peakScale = 1.12;
+
+      if (elapsed < pulseDuration * 0.35) {
+        const t = elapsed / (pulseDuration * 0.35);
+        const eased = 1 - Math.pow(1 - t, 3);
+        targetScale = THREE.MathUtils.lerp(1.0, peakScale, eased);
+      } else if (elapsed < pulseDuration) {
+        const t = (elapsed - pulseDuration * 0.35) / (pulseDuration * 0.65);
+        const eased = 1 - (1 - t) * (1 - t);
+        targetScale = THREE.MathUtils.lerp(peakScale, 1.0, eased);
+      } else {
+        targetScale = 1.0;
+        isMultPulsingRef.current = false; // Pulse complete
+      }
+      targetOpacity = 1.0;
+      applyDirectly = true;
+    } else if (isHighlighted) {
       // Snappy pulse: quick grow, fast return
       const elapsed = now - highlightStartTimeRef.current;
       const pulseDuration = 200; // Faster pulse
@@ -645,7 +687,8 @@ export const Die = ({
       isRevealActive ||
       isHighlighted ||
       isWinAnimating ||
-      lockPopPhaseRef.current !== "none"
+      lockPopPhaseRef.current !== "none" ||
+      isMultPulsingRef.current
     ) {
       state.invalidate();
     }
