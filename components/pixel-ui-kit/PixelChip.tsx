@@ -1,7 +1,7 @@
 import React from "react";
 import { View, ViewStyle, StyleSheet, StyleProp } from "react-native";
 import { Surface } from "./Surface";
-import { GameText } from "../shared";
+import { GameText } from "../shared/GameText";
 import { COLORS, SPACING, DIMENSIONS } from "../../constants/theme";
 
 export type PixelChipColor = "cyan" | "gold" | "mint" | "coral" | "muted";

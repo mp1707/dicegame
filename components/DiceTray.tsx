@@ -247,22 +247,24 @@ export const DiceTray = ({
   const wasRevealingRef = useRef(false);
 
   // When reveal starts, compute slot assignments based on current X positions
-  if (isRevealing && !wasRevealingRef.current) {
-    // Sort dice indices by their X position (left to right)
-    const sortedIndices = [0, 1, 2, 3, 4]
-      .map((i) => ({ index: i, x: diceXPositionsRef.current[i] }))
-      .sort((a, b) => a.x - b.x)
-      .map((item) => item.index);
+  useEffect(() => {
+    if (isRevealing && !wasRevealingRef.current) {
+      // Sort dice indices by their X position (left to right)
+      const sortedIndices = [0, 1, 2, 3, 4]
+        .map((i) => ({ index: i, x: diceXPositionsRef.current[i] }))
+        .sort((a, b) => a.x - b.x)
+        .map((item) => item.index);
 
-    // Assign slots: leftmost die gets slot 0, next gets slot 1, etc.
-    sortedIndices.forEach((dieIndex, slotIndex) => {
-      slotAssignmentsRef.current[dieIndex] = slotIndex;
-    });
+      // Assign slots: leftmost die gets slot 0, next gets slot 1, etc.
+      sortedIndices.forEach((dieIndex, slotIndex) => {
+        slotAssignmentsRef.current[dieIndex] = slotIndex;
+      });
 
-    // Update reveal state with visual order for counting animation
-    updateRevealAnimation({ visualOrder: sortedIndices });
-  }
-  wasRevealingRef.current = isRevealing;
+      // Update reveal state with visual order for counting animation
+      updateRevealAnimation({ visualOrder: sortedIndices });
+    }
+    wasRevealingRef.current = isRevealing;
+  }, [isRevealing, updateRevealAnimation]);
 
   // Track settled values and sleep state
   const settledValuesRef = useRef<number[]>([...diceValues]);
