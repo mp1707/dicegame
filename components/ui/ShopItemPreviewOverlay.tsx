@@ -43,7 +43,12 @@ interface OfferInfo {
  */
 export const ShopItemPreviewOverlay: React.FC = () => {
   const selectedShopOffer = useGameStore((s) => s.selectedShopOffer);
-  const shopDiceUpgradeType = useGameStore((s) => s.shopDiceUpgradeType);
+  const shopPointsUpgradeAvailable = useGameStore(
+    (s) => s.shopPointsUpgradeAvailable
+  );
+  const shopMultUpgradeAvailable = useGameStore(
+    (s) => s.shopMultUpgradeAvailable
+  );
   const shopItemId = useGameStore((s) => s.shopItemId);
   const money = useGameStore((s) => s.money);
   const handLevels = useGameStore((s) => s.handLevels);
@@ -70,22 +75,37 @@ export const ShopItemPreviewOverlay: React.FC = () => {
           isPurchased: false,
         };
       }
-      case "dice": {
-        if (!shopDiceUpgradeType) return null;
-        const price = getDiceUpgradeCost(shopDiceUpgradeType);
-        const isPoints = shopDiceUpgradeType === "points";
+      case "dice_points": {
+        if (!shopPointsUpgradeAvailable) return null;
+        const price = getDiceUpgradeCost("points");
         return {
           icon: (
             <Image
               source={dieIcon}
-              style={styles.iconImage}
+              style={[styles.iconImage, { tintColor: COLORS.upgradePoints }]}
               resizeMode="contain"
             />
           ),
-          label: isPoints ? "WÜRFEL +PUNKTE" : "WÜRFEL +MULT",
-          description: isPoints
-            ? "Wähle eine Würfelseite und füge +10 Punkte hinzu."
-            : "Wähle eine Würfelseite und füge +1 Mult hinzu.",
+          label: "WÜRFEL +PUNKTE",
+          description: "Wähle eine Würfelseite und füge +10 Punkte hinzu.",
+          price,
+          canAfford: money >= price,
+          isPurchased: false,
+        };
+      }
+      case "dice_mult": {
+        if (!shopMultUpgradeAvailable) return null;
+        const price = getDiceUpgradeCost("mult");
+        return {
+          icon: (
+            <Image
+              source={dieIcon}
+              style={[styles.iconImage, { tintColor: COLORS.upgradeMult }]}
+              resizeMode="contain"
+            />
+          ),
+          label: "WÜRFEL +MULT",
+          description: "Wähle eine Würfelseite und füge +1 Mult hinzu.",
           price,
           canAfford: money >= price,
           isPurchased: false,
@@ -116,7 +136,8 @@ export const ShopItemPreviewOverlay: React.FC = () => {
     }
   }, [
     selectedShopOffer,
-    shopDiceUpgradeType,
+    shopPointsUpgradeAvailable,
+    shopMultUpgradeAvailable,
     shopItemId,
     money,
     handLevels,

@@ -145,7 +145,12 @@ const ShopCard: React.FC<ShopCardProps> = ({
 
 export const ShopContent: React.FC = () => {
   const money = useGameStore((s) => s.money);
-  const shopDiceUpgradeType = useGameStore((s) => s.shopDiceUpgradeType);
+  const shopPointsUpgradeAvailable = useGameStore(
+    (s) => s.shopPointsUpgradeAvailable
+  );
+  const shopMultUpgradeAvailable = useGameStore(
+    (s) => s.shopMultUpgradeAvailable
+  );
   const shopItemId = useGameStore((s) => s.shopItemId);
   const selectedShopOffer = useGameStore((s) => s.selectedShopOffer);
   const selectShopOffer = useGameStore((s) => s.selectShopOffer);
@@ -174,26 +179,25 @@ export const ShopContent: React.FC = () => {
       ? "active"
       : "invalid";
 
-  // Dice upgrade configuration
-  const diceUpgradeConfig = shopDiceUpgradeType
-    ? {
-        name: shopDiceUpgradeType === "points" ? "WÜRFEL +" : "WÜRFEL ×",
-        label: shopDiceUpgradeType === "points" ? "PUNKTE" : "MULT",
-        price: getDiceUpgradeCost(shopDiceUpgradeType),
-        color:
-          shopDiceUpgradeType === "points"
-            ? COLORS.upgradePoints
-            : COLORS.upgradeMult,
-      }
-    : null;
-
-  const dicePrice = diceUpgradeConfig?.price ?? 0;
-  const canAffordDice = diceUpgradeConfig ? money >= dicePrice : false;
-  const diceState: TileButtonState = !diceUpgradeConfig
-    ? "used" // Sold out / unavailable
-    : selectedShopOffer === "dice"
+  // Dice upgrade configuration (POINTS)
+  const pointsPrice = getDiceUpgradeCost("points");
+  const canAffordPoints = money >= pointsPrice;
+  const pointsState: TileButtonState = !shopPointsUpgradeAvailable
+    ? "used"
+    : selectedShopOffer === "dice_points"
     ? "selected"
-    : canAffordDice
+    : canAffordPoints
+    ? "active"
+    : "invalid";
+
+  // Dice upgrade configuration (MULT)
+  const multPrice = getDiceUpgradeCost("mult");
+  const canAffordMult = money >= multPrice;
+  const multState: TileButtonState = !shopMultUpgradeAvailable
+    ? "used"
+    : selectedShopOffer === "dice_mult"
+    ? "selected"
+    : canAffordMult
     ? "active"
     : "invalid";
 
@@ -227,7 +231,7 @@ export const ShopContent: React.FC = () => {
             delay={100}
           />
 
-          {/* 2. Dice Upgrade */}
+          {/* 2. Dice Upgrade (Points) */}
           <ShopCard
             icon={
               <Image
@@ -235,16 +239,16 @@ export const ShopContent: React.FC = () => {
                 style={{
                   width: 28,
                   height: 28,
-                  tintColor: diceUpgradeConfig?.color,
+                  tintColor: COLORS.upgradePoints,
                 }}
                 resizeMode="contain"
               />
             }
-            title={diceUpgradeConfig?.name || "WÜRFEL"}
-            subtitle={diceUpgradeConfig?.label || "UPGRADE"}
-            price={dicePrice}
-            state={diceState}
-            onPress={() => handleSelectOffer("dice")}
+            title="WÜRFEL +"
+            subtitle="PUNKTE"
+            price={pointsPrice}
+            state={pointsState}
+            onPress={() => handleSelectOffer("dice_points")}
             delay={160}
           />
 
@@ -269,13 +273,24 @@ export const ShopContent: React.FC = () => {
             delay={220}
           />
 
-          {/* 4. Powers - Locked */}
+          {/* 4. Dice Upgrade (Mult) */}
           <ShopCard
-            icon={<Lock size={24} color={COLORS.textMuted} />}
-            title="POWERS"
-            subtitle="BALD"
-            state="invalid"
-            onPress={() => {}}
+            icon={
+              <Image
+                source={require("../../assets/icons/die.png")}
+                style={{
+                  width: 28,
+                  height: 28,
+                  tintColor: COLORS.upgradeMult,
+                }}
+                resizeMode="contain"
+              />
+            }
+            title="WÜRFEL ×"
+            subtitle="MULT"
+            price={multPrice}
+            state={multState}
+            onPress={() => handleSelectOffer("dice_mult")}
             delay={280}
           />
         </View>

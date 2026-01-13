@@ -56,7 +56,7 @@ export type GamePhase =
   | "LOSE_SCREEN"; // Ran out of hands with score < goal
 
 // Shop offer types for selection-based shop UI
-export type ShopOfferType = "upgrade" | "dice" | "item";
+export type ShopOfferType = "upgrade" | "dice_points" | "dice_mult" | "item";
 
 export interface RevealState {
   active: boolean;
@@ -112,7 +112,8 @@ interface GameState {
 
   // Shop state
   upgradeOptions: HandId[];
-  shopDiceUpgradeType: DiceUpgradeType | null; // Which dice upgrade is available in shop
+  shopPointsUpgradeAvailable: boolean; // Is point upgrade available in shop?
+  shopMultUpgradeAvailable: boolean; // Is mult upgrade available in shop?
   shopItemId: string | null; // Which purchasable item is available in shop (null if none/purchased)
   selectedShopOffer: ShopOfferType | null; // Currently selected shop offer for preview
 
@@ -217,7 +218,8 @@ const getInitialUIState = () => ({
   overviewVisible: false,
   revealState: null as RevealState | null,
   upgradeOptions: [] as HandId[],
-  shopDiceUpgradeType: null as DiceUpgradeType | null,
+  shopPointsUpgradeAvailable: false,
+  shopMultUpgradeAvailable: false,
   shopItemId: null as string | null,
   selectedShopOffer: null as ShopOfferType | null,
   itemModalId: null as string | null,
@@ -637,13 +639,9 @@ export const useGameStore = create<GameState>((set, get) => ({
       rollsUsedThisLevel,
     });
 
-    // Determine dice upgrade type for shop (80/20 rarity)
+    // Determine dice upgrade availability
     // Only spawn if player has at least one enhanceable face
-    let shopDiceUpgrade: DiceUpgradeType | null = null;
-    if (hasAnyEnhanceableDie(diceEnhancements)) {
-      shopDiceUpgrade =
-        Math.random() < DICE_UPGRADE_CONFIG.rarityPoints ? "points" : "mult";
-    }
+    let enhanceable = hasAnyEnhanceableDie(diceEnhancements);
 
     // Determine which item to spawn in shop
     // For now, spawn Fokus if not already owned
@@ -659,7 +657,8 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({
       money: rewards.newMoney,
       phase: "SHOP_MAIN",
-      shopDiceUpgradeType: shopDiceUpgrade,
+      shopPointsUpgradeAvailable: enhanceable,
+      shopMultUpgradeAvailable: enhanceable,
       shopItemId: shopItem,
       selectedShopOffer: null, // Clear selection when entering shop
     });
@@ -778,7 +777,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   purchaseSelectedOffer: () => {
-    const { selectedShopOffer, shopDiceUpgradeType, shopItemId } = get();
+    const { selectedShopOffer, shopItemId } = get();
 
     if (!selectedShopOffer) return;
 
@@ -787,10 +786,14 @@ export const useGameStore = create<GameState>((set, get) => ({
         // Transition to upgrade picker
         get().selectUpgradeItem();
         break;
-      case "dice":
-        // Open dice editor if available
-        if (shopDiceUpgradeType) {
-          get().openDiceEditor(shopDiceUpgradeType);
+      case "dice_points":
+        if (get().shopPointsUpgradeAvailable) {
+          get().openDiceEditor("points");
+        }
+        break;
+      case "dice_mult":
+        if (get().shopMultUpgradeAvailable) {
+          get().openDiceEditor("mult");
         }
         break;
       case "item":
@@ -900,8 +903,10 @@ export const useGameStore = create<GameState>((set, get) => ({
       diceEnhancements: newEnhancements,
       enhancedFace: selectedEditorFace,
       enhancedPipIndex: pipIndex,
-      // Mark the shop item as purchased
-      shopDiceUpgradeType: null,
+      // Mark the specific shop item as purchased
+      ...(pendingUpgradeType === "points"
+        ? { shopPointsUpgradeAvailable: false }
+        : { shopMultUpgradeAvailable: false }),
     });
 
     // Delay transition to allow animation to play (600ms)

@@ -58,7 +58,12 @@ export const FooterControls = () => {
 
   // Shop selection state
   const selectedShopOffer = useGameStore((s) => s.selectedShopOffer);
-  const shopDiceUpgradeType = useGameStore((s) => s.shopDiceUpgradeType);
+  const shopPointsUpgradeAvailable = useGameStore(
+    (s) => s.shopPointsUpgradeAvailable
+  );
+  const shopMultUpgradeAvailable = useGameStore(
+    (s) => s.shopMultUpgradeAvailable
+  );
   const shopItemId = useGameStore((s) => s.shopItemId);
   const money = useGameStore((s) => s.money);
   const handLevels = useGameStore((s) => s.handLevels);
@@ -79,9 +84,14 @@ export const FooterControls = () => {
         const price = getUpgradeCost(avgLevel);
         return { price, canAfford: money >= price };
       }
-      case "dice": {
-        if (!shopDiceUpgradeType) return null;
-        const price = getDiceUpgradeCost(shopDiceUpgradeType);
+      case "dice_points": {
+        if (!shopPointsUpgradeAvailable) return null;
+        const price = getDiceUpgradeCost("points");
+        return { price, canAfford: money >= price };
+      }
+      case "dice_mult": {
+        if (!shopMultUpgradeAvailable) return null;
+        const price = getDiceUpgradeCost("mult");
         return { price, canAfford: money >= price };
       }
       case "item": {
@@ -93,7 +103,14 @@ export const FooterControls = () => {
       default:
         return null;
     }
-  }, [selectedShopOffer, shopDiceUpgradeType, shopItemId, money, handLevels]);
+  }, [
+    selectedShopOffer,
+    shopPointsUpgradeAvailable,
+    shopMultUpgradeAvailable,
+    shopItemId,
+    money,
+    handLevels,
+  ]);
 
   // Animation shared values
   const ctaTranslateY = useSharedValue(0);
