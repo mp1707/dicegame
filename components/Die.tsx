@@ -301,26 +301,21 @@ export const Die = ({
   };
 
   // Detect highlight transition for pulse animation
+  // Also restarts pulse when mult phase begins (two-step animation)
   useEffect(() => {
-    if (isHighlighted && !wasHighlightedRef.current) {
-      highlightStartTimeRef.current = performance.now();
+    if (isHighlighted) {
+      // Pulse when first highlighted (points phase)
+      if (!wasHighlightedRef.current) {
+        highlightStartTimeRef.current = performance.now();
+      }
+      // Also pulse when mult phase starts (second pulse for same die)
+      if (floatPhase === "mult" && prevFloatPhaseRef.current !== "mult") {
+        highlightStartTimeRef.current = performance.now();
+      }
     }
     wasHighlightedRef.current = isHighlighted;
-  }, [isHighlighted]);
-
-  // Detect mult phase transition for second pulse (two-step animation)
-  useEffect(() => {
-    if (
-      isHighlighted &&
-      floatPhase === "mult" &&
-      prevFloatPhaseRef.current !== "mult"
-    ) {
-      // Trigger a second pulse for mult
-      multPulseStartRef.current = performance.now();
-      isMultPulsingRef.current = true;
-    }
     prevFloatPhaseRef.current = floatPhase;
-  }, [floatPhase, isHighlighted]);
+  }, [isHighlighted, floatPhase]);
 
   // Reset animation state when reveal ends
   useEffect(() => {
