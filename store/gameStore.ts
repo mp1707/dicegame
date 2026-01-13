@@ -73,6 +73,8 @@ export interface RevealState {
   /** Which floating score phase is active: points float, mult float, or idle */
   floatPhase: "points" | "mult" | "idle";
   displayTotal?: number; // The total level score to display in "total" phase
+  /** Dice indices sorted by visual X position (left-to-right) for counting order */
+  visualOrder: number[];
 }
 
 interface GameState {
@@ -495,6 +497,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         currentDiePoints: null,
         currentDieMult: null,
         floatPhase: "idle",
+        visualOrder: [0, 1, 2, 3, 4], // Default, updated by DiceTray when reveal starts
       },
     });
   },

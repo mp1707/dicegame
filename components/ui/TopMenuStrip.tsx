@@ -308,13 +308,20 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
 
     animationInProgress.current = true;
     const { dieContributions, finalScore } = revealState.breakdown;
+    const visualOrder = revealState.visualOrder ?? [0, 1, 2, 3, 4];
+
+    // Sort contributions by visual order (left-to-right as arranged on screen)
+    const sortedContributions = [...dieContributions].sort(
+      (a, b) =>
+        visualOrder.indexOf(a.dieIndex) - visualOrder.indexOf(b.dieIndex)
+    );
 
     let accumulatedPips = 0;
     let accumulatedMult = 0;
     let dieIdx = 0;
 
     const animateNextDie = () => {
-      if (dieIdx >= dieContributions.length) {
+      if (dieIdx >= sortedContributions.length) {
         // Clear floating scores when done counting
         updateRevealAnimation({
           currentDiePoints: null,
@@ -362,8 +369,8 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
         return;
       }
 
-      // Get per-die contribution data
-      const contribution = dieContributions[dieIdx];
+      // Get per-die contribution data (sorted by visual position)
+      const contribution = sortedContributions[dieIdx];
       const { dieIndex, totalPoints, bonusMult: dieMult } = contribution;
       const hasMult = dieMult > 0;
 
@@ -390,7 +397,7 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
       const perDieDelay = ANIMATION.counting.perDieDelay;
 
       if (hasMult) {
-        // Step 2 (for mult dice): Wait a bit, then show mult
+        // Step 2 (for mult dice): Wait perDieDelay, then show mult (triggers second die pulse)
         setTimeout(() => {
           accumulatedMult += dieMult;
 
@@ -410,12 +417,12 @@ export const TopMenuStrip: React.FC<TopMenuStripProps> = ({ style }) => {
             withTiming(1, { duration: 80, easing: Easing.out(Easing.quad) })
           );
 
-          // Move to next die after mult is triggered
+          // Move to next die after perDieDelay (consistent timing)
           setTimeout(() => {
             dieIdx++;
             animateNextDie();
-          }, ANIMATION.floatingScore.delayBetweenPhases);
-        }, ANIMATION.floatingScore.delayBetweenPhases);
+          }, perDieDelay);
+        }, perDieDelay);
       } else {
         // No mult - move to next die after standard delay
         setTimeout(() => {

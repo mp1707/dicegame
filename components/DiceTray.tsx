@@ -181,6 +181,9 @@ export const DiceTray = ({
   const toggleDiceLock = useGameStore((state) => state.toggleDiceLock);
   const selectedHandId = useGameStore((state) => state.selectedHandId);
   const revealState = useGameStore((state) => state.revealState);
+  const updateRevealAnimation = useGameStore(
+    (state) => state.updateRevealAnimation
+  );
   const isWinAnimating = useGameStore((state) => state.isWinAnimating);
   const diceEnhancements = useGameStore((state) => state.diceEnhancements);
 
@@ -255,6 +258,9 @@ export const DiceTray = ({
     sortedIndices.forEach((dieIndex, slotIndex) => {
       slotAssignmentsRef.current[dieIndex] = slotIndex;
     });
+
+    // Update reveal state with visual order for counting animation
+    updateRevealAnimation({ visualOrder: sortedIndices });
   }
   wasRevealingRef.current = isRevealing;
 
