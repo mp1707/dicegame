@@ -188,6 +188,7 @@ const AppContent: React.FC = () => {
           pointsValue={revealState?.currentDiePoints ?? null}
           multValue={revealState?.currentDieMult ?? null}
           floatPhase={revealState?.floatPhase ?? "idle"}
+          currentDieIndex={revealState?.currentDieIndex ?? -1}
           onFloatComplete={(completedPhase) => {
             if (completedPhase === "points" || completedPhase === "mult") {
               updateRevealAnimation({

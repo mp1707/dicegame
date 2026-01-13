@@ -21,6 +21,8 @@ interface FloatingScoreProps {
   multValue: number | null;
   /** Which floating phase is currently active */
   floatPhase: FloatPhase;
+  /** Current die index being counted (-1 = none) */
+  currentDieIndex: number;
   /** Callback when a float animation completes */
   onFloatComplete?: (phase: FloatPhase) => void;
 }
@@ -42,7 +44,7 @@ interface SpawnedNumber {
   value: number;
   label: string;
   color: string;
-  arcDirection: "left" | "right";
+  arcDirection: "none" | "left" | "right";
   phase: FloatPhase;
 }
 
@@ -59,7 +61,7 @@ const FloatingNumber = ({
   value: number;
   label: string;
   color: string;
-  arcDirection: "left" | "right";
+  arcDirection: "none" | "left" | "right";
   onAnimationEnd: () => void;
 }) => {
   const scale = useSharedValue(0.5);
@@ -70,7 +72,8 @@ const FloatingNumber = ({
 
   useEffect(() => {
     // Immediately start the animation when mounted
-    const xDirection = arcDirection === "left" ? -1 : 1;
+    const xDirection =
+      arcDirection === "left" ? -1 : arcDirection === "right" ? 1 : 0;
 
     // Scale: pop in then stay at 1
     scale.value = withSequence(
@@ -155,27 +158,38 @@ export const FloatingScoreOverlay = ({
   pointsValue,
   multValue,
   floatPhase,
+  currentDieIndex,
   onFloatComplete,
 }: FloatingScoreProps) => {
   const [spawnedNumbers, setSpawnedNumbers] = useState<SpawnedNumber[]>([]);
   const nextIdRef = useRef(0);
   const prevPhaseRef = useRef<FloatPhase>("idle");
+  const prevDieIndexRef = useRef<number>(-1);
 
-  // Spawn a new number when floatPhase changes to "points" or "mult"
+  // Spawn a new number when floatPhase changes OR when die index changes while counting
   useEffect(() => {
-    if (floatPhase === "points" && prevPhaseRef.current !== "points") {
+    const phaseChangedToPoints =
+      floatPhase === "points" && prevPhaseRef.current !== "points";
+    const dieChanged =
+      currentDieIndex !== prevDieIndexRef.current && currentDieIndex >= 0;
+
+    // Spawn points: phase just changed to "points" OR die changed while in "points" phase
+    if (floatPhase === "points" && (phaseChangedToPoints || dieChanged)) {
       if (pointsValue !== null && pointsValue > 0) {
         const newNumber: SpawnedNumber = {
           id: nextIdRef.current++,
           value: pointsValue,
           label: "Punkte",
           color: "#FFFFFF",
-          arcDirection: "left",
+          arcDirection: "none",
           phase: "points",
         };
         setSpawnedNumbers((prev) => [...prev, newNumber]);
       }
-    } else if (floatPhase === "mult" && prevPhaseRef.current !== "mult") {
+    }
+
+    // Spawn mult: phase just changed to "mult" (mult always follows its die's points)
+    if (floatPhase === "mult" && prevPhaseRef.current !== "mult") {
       if (multValue !== null && multValue > 0) {
         const newNumber: SpawnedNumber = {
           id: nextIdRef.current++,
@@ -188,8 +202,10 @@ export const FloatingScoreOverlay = ({
         setSpawnedNumbers((prev) => [...prev, newNumber]);
       }
     }
+
     prevPhaseRef.current = floatPhase;
-  }, [floatPhase, pointsValue, multValue]);
+    prevDieIndexRef.current = currentDieIndex;
+  }, [floatPhase, pointsValue, multValue, currentDieIndex]);
 
   const handleAnimationEnd = (id: number, phase: FloatPhase) => {
     // Remove the completed number from state
